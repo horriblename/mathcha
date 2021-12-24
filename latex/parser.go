@@ -185,12 +185,7 @@ func (p *Parser) parseCompositeExpr() Expr {
 		node.AppendChild(p.parseGenericOnce())
 		println("add child to node; depth: ", p.exprLev)
 	}
-	if p.IsEOF() {
-		// FIXME error handler
-		p.eh.AddErr(ERR_MISSING_CLOSE, "CompositeExpr missing '}'")
-	}
 	p.next() // skip "}"
-	// if EOF throw error unclosed CompositeExpr
 	p.dropExpect("}")
 	p.exprLev--
 	return node
