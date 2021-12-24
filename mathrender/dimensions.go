@@ -8,8 +8,8 @@ type Dimensions struct {
 	Width    int
 	Height   int
 	BaseLine int // the lowest point of the block, 0 by default, can go below negative
-	AbsX     int // the absolutute position in the buffer
-	AbsY     int // the absolutute position in the buffer, >=0
+	AbsX     int // the absolute position in the buffer
+	AbsY     int // the absolute position in the buffer, >=0
 	Children []*Dimensions
 }
 

@@ -14,22 +14,22 @@ var _ = strings.Title
 // TODO maybe add Dimensions.Init
 
 type Renderer struct {
-	Buffer  [][]byte
+	Buffer  [][]rune
 	Size    *Dimensions
 	DrawerX int // position of drawer cursor
 	DrawerY int
 }
 
 // Rendering is a 3 step process:
-// 1. build a separate tree with all the dimensions, then create a [][]byte buffer of appropriate size
+// 1. build a separate tree with all the dimensions, then create a [][]rune buffer of appropriate size
 // 2. walk through the ast and dimensions tree in parallel and write the contents to the buffer
-// 3. combine the [][]byte buffer into a string
+// 3. combine the [][]rune buffer into a string
 func (r *Renderer) Load(tree parser.Expr) {
-	// step 1: create [][]byte buffer of appropriate size
+	// step 1: create [][]rune buffer of appropriate size
 	r.Size = calculateDim(tree)
-	r.Buffer = make([][]byte, r.Size.Height)
+	r.Buffer = make([][]rune, r.Size.Height)
 	for i := range r.Buffer {
-		r.Buffer[i] = make([]byte, r.Size.Width)
+		r.Buffer[i] = make([]rune, r.Size.Width)
 	}
 	// step 2: write characters
 	println("w, h, b", r.Size.Width, r.Size.Height, r.Size.BaseLine)

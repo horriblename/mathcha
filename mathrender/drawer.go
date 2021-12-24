@@ -19,7 +19,7 @@ func (r *Renderer) Visit(node parser.Expr, dim *Dimensions) Visitor {
 	return nil
 }
 
-// x is the position of leftmost byte allowed to be written by the node
+// x is the position of leftmost rune allowed to be written by the node
 // y is the position of baseline=0 of the node
 func (r *Renderer) Prerender(node parser.Expr, dim *Dimensions, x int, y int) {
 	switch n := node.(type) {
@@ -59,7 +59,7 @@ func (r *Renderer) PrerenderCmdFrac(node parser.CmdContainer, dim *Dimensions, x
 	fmt.Println("PrerenderCmdFrac...")
 
 	y = y + dim.Children[1].Height
-	a := byte('-')
+	a := rune('-')
 	for i := range r.Buffer[y][x:dim.Width] {
 		r.Buffer[y][i] = a
 	}
@@ -129,7 +129,7 @@ func View(block [][]string) {
 // 	return ret
 // }
 
-func lineWidth(line []byte) int {
+func lineWidth(line []rune) int {
 	w := 0
 	// for i := range line {
 	// 	w += len(line)
