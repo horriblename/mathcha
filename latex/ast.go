@@ -47,7 +47,7 @@ type Literal interface {
 // more interfaces...
 // these interfaces take after Container or Literal and includes some other
 // functions of their own. Each expression node struct defined later should
-// implement one of the following interfaces
+// implement one of the following interfaces, or Literal TODO
 
 // Referring to containers that have indefinite amount of children
 type FlexContainer interface {
