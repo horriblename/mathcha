@@ -35,6 +35,18 @@ func (r *Renderer) Load(tree parser.Expr) {
 	println("w, h, b", r.Size.Width, r.Size.Height, r.Size.BaseLine)
 }
 
+func (r *Renderer) View() string {
+	builder := strings.Builder{}
+	for _, row := range r.Buffer {
+		for _, ru := range row {
+			builder.WriteRune(ru)
+		}
+		builder.WriteByte('\n')
+	}
+
+	return builder.String()
+}
+
 // TODO So right now both calculateDim*() and Prerender*() are mutual
 // recursive functions, maybe merge them afterwards?
 

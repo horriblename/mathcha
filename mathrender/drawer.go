@@ -58,8 +58,8 @@ func (r *Renderer) PrerenderCmdContainer(node parser.CmdContainer, dim *Dimensio
 func (r *Renderer) PrerenderCmdFrac(node parser.CmdContainer, dim *Dimensions, x int, y int) {
 	fmt.Println("PrerenderCmdFrac...")
 
-	y = y + dim.Children[1].Height
-	a := rune('-')
+	//y = y + dim.Children[1].Height
+	a := rune('―')
 	for i := range r.Buffer[y][x:dim.Width] {
 		r.Buffer[y][i] = a
 	}
