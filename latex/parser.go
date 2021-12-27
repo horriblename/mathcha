@@ -1,6 +1,8 @@
 package latex
 
-import "fmt"
+import (
+	"fmt"
+)
 
 type Parser struct {
 	eh        ErrorHandler
@@ -122,9 +124,6 @@ func (p *Parser) parseStringCmd() Expr {
 	var leaf Expr
 
 	switch {
-	case kind == CMD_UNKNOWN:
-		leaf = &(UnknownCmdLit{source: p.lit})
-		break
 	case kind.IsVanillaSym():
 		leaf = &(SimpleCmdLit{source: p.lit})
 		break
@@ -133,6 +132,9 @@ func (p *Parser) parseStringCmd() Expr {
 		break
 	case kind.TakesTwoArg():
 		leaf = p.parseCmd2Arg(kind)
+		break
+	case kind == CMD_UNKNOWN:
+		leaf = &(UnknownCmdLit{source: p.lit})
 		break
 	default:
 		// this shouldn't be triggered
@@ -148,7 +150,7 @@ func (p *Parser) parseSymbolCmd() Expr {
 	leaf := SimpleCmdLit{
 		source: p.lit,
 	}
-	p.next() // FIXME better name?
+	p.next()
 	return &leaf
 }
 
