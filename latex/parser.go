@@ -33,7 +33,7 @@ func (p *Parser) next() {
 	if !p.tokenizer.IsEOF() {
 		p.lit = p.tokenizer.Eat()
 	}
-	println("p.tok:", p.tok.String(), " p.lit:", p.lit,
+	println("next():p.tok:", p.tok.String(), " p.lit:", p.lit,
 		" t.IsEOF:", p.tokenizer.IsEOF(), " p.IsEOF:", p.IsEOF(),
 		" depth:", p.exprLev)
 }
@@ -141,7 +141,8 @@ func (p *Parser) parseStringCmd() Expr {
 		leaf = &(BadExpr{})
 	}
 
-	p.next()
+	// p.next() // FIXME next() should not be called here, but beware to call it 
+   // appropriately from within the above parse functions
 	return leaf
 }
 
