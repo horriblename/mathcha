@@ -53,6 +53,8 @@ type Literal interface {
 type FlexContainer interface {
 	Container
 	AppendChild(Expr)
+	DeleteChildren(int, int)
+	InsertChild(int, Expr)
 	// TODO
 	Identifier() string // temporary solution to identify the concrete type
 }
@@ -231,6 +233,59 @@ func (x *Cmd2ArgExpr) Children() []Expr { return []Expr{x.Arg1, x.Arg2} }
 // FlexContainer methods
 func (x *CompositeExpr) AppendChild(child Expr) { x.Elts = append(x.Elts, child) }
 func (x *TopLevelExpr) AppendChild(child Expr)  { x.Elts = append(x.Elts, child) }
+
+// Deletes Children from index, to index, inclusive
+func (x *CompositeExpr) DeleteChildren(from int, to int) {
+	if from < 0 || to >= len(x.Children()) {
+		panic("DeleteChildren(): index out of range!")
+	}
+	if from > to {
+		panic("DeleteChildren(): 'from' cannot be larger than 'to'")
+	}
+	l := to - from + 1
+	copy(x.Elts[from:], x.Elts[to+1:])
+	for i := range x.Elts[len(x.Elts)-l:] {
+		x.Elts[i] = nil // garbage collection
+	}
+	x.Elts = x.Elts[:len(x.Elts)-l]
+}
+func (x *TopLevelExpr) DeleteChildren(from int, to int) {
+	if from < 0 || to >= len(x.Children()) {
+		panic("DeleteChildren(): index out of range!")
+	}
+	if from > to {
+		panic("DeleteChildren(): 'from' cannot be larger than 'to'")
+	}
+	l := to - from + 1
+	copy(x.Elts[from:], x.Elts[to+1:])
+	for i := range x.Elts[len(x.Elts)-l:] {
+		x.Elts[i] = nil // garbage collection
+	}
+	x.Elts = x.Elts[:len(x.Elts)-l]
+}
+
+// FIXME do I really need to repeat these exact same functions for each struct??
+// Insert child at index; the new child has the index 'at'
+func (x *CompositeExpr) InsertChild(at int, child Expr) {
+	if at < 0 || at >= len(x.Children()) {
+		panic("InsertChild(): invalid index for 'at'")
+	}
+	if len(x.Children()) == 0 && at == 0 {
+		x.AppendChild(child)
+	}
+	x.Elts = append(x.Elts[:at+1], x.Elts[at:]...)
+	x.Elts[at] = child
+}
+func (x *TopLevelExpr) InsertChild(at int, child Expr) {
+	if at < 0 || at >= len(x.Children()) {
+		panic("InsertChild(): invalid index for 'at'")
+	}
+	if len(x.Children()) == 0 && at == 0 {
+		x.AppendChild(child)
+	}
+	x.Elts = append(x.Elts[:at+1], x.Elts[at:]...)
+	x.Elts[at] = child
+}
 
 func (x *CompositeExpr) Identifier() string { return "{" }
 func (x *TopLevelExpr) Identifier() string  { return "" }
