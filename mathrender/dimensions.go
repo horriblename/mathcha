@@ -19,7 +19,7 @@ func calculateDim(node parser.Expr) *Dimensions {
 	case parser.FlexContainer:
 		hi := 1
 		lo := 0
-		var children = []*Dimensions{}
+		var children = []*Dimensions{} // make([]*Dimensions, len(n.Children())) FIXME y doesn't make work here??
 		for _, i := range n.Children() {
 			child := calculateDim(i)
 			dim.Width += child.Width
@@ -33,16 +33,19 @@ func calculateDim(node parser.Expr) *Dimensions {
 		}
 		dim.Height = hi - lo
 		dim.BaseLine = lo
+		dim.Children = children
 		return dim
 	case parser.CmdContainer:
 		return calculateDimCmdContainer(n)
 	case parser.CmdLiteral:
 		dim.Height = 1
 		dim.Width = 1 //len(n.Content())
+		dim.Children = nil
 		return dim
 	case parser.Literal:
 		dim.Height = 1
 		dim.Width = len(n.Content())
+		dim.Children = nil
 		return dim
 	}
 
@@ -50,6 +53,7 @@ func calculateDim(node parser.Expr) *Dimensions {
 	dim.Width = 1
 	dim.Height = 1
 	dim.BaseLine = 0
+	dim.Children = nil
 	return dim
 }
 
@@ -64,6 +68,7 @@ func calculateDimCmdContainer(node parser.CmdContainer) *Dimensions {
 	dim.Width = 1
 	dim.Height = 1
 	dim.BaseLine = 0
+	dim.Children = nil
 	return dim
 }
 
@@ -76,6 +81,7 @@ func calculateDimCmdFrac(node parser.CmdContainer) *Dimensions {
 		Width:    max(dimArg1.Width, dimArg2.Width),
 		Height:   dimArg1.Height + dimArg2.Height + 1,
 		BaseLine: -dimArg2.Height,
+		Children: []*Dimensions{dimArg1, dimArg2},
 	}
 	return &dim
 }
