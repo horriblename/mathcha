@@ -47,13 +47,11 @@ func (r *Renderer) View() string {
 	return builder.String()
 }
 
-// TODO So right now both calculateDim*() and Prerender*() are mutual
-// recursive functions, maybe merge them afterwards?
-
 func ProduceLatex(node parser.Expr) string {
 	latex := ""
 	suffix := ""
-	if n, ok := node.(parser.FlexContainer); ok {
+	switch n := node.(type) {
+	case parser.FlexContainer:
 		if n.Identifier() == "{" { // CompositeExpr
 			latex = "{"
 			suffix = "}"
@@ -62,20 +60,15 @@ func ProduceLatex(node parser.Expr) string {
 			latex += ProduceLatex(c)
 		}
 		return latex + suffix
-	}
-
-	if n, ok := node.(parser.CmdContainer); ok {
+	case parser.CmdContainer:
 		latex = n.Command().GetCmd() + " "
 		for _, c := range n.Children() {
 			latex += ProduceLatex(c)
 		}
 		return latex
-	}
-
-	if n, ok := node.(parser.Literal); ok {
+	case parser.Literal:
 		return n.Content()
-	}
-	if n, ok := node.(parser.CmdLiteral); ok {
+	case parser.CmdLiteral:
 		return n.Content() // TODO return character being mapped to
 	}
 
