@@ -1,6 +1,8 @@
 package latex
 
-import "fmt"
+import (
+	"fmt"
+)
 
 type Parser struct {
 	eh        ErrorHandler
@@ -31,7 +33,7 @@ func (p *Parser) next() {
 	if !p.tokenizer.IsEOF() {
 		p.lit = p.tokenizer.Eat()
 	}
-	println("p.tok:", p.tok.String(), " p.lit:", p.lit,
+	println("next():p.tok:", p.tok.String(), " p.lit:", p.lit,
 		" t.IsEOF:", p.tokenizer.IsEOF(), " p.IsEOF:", p.IsEOF(),
 		" depth:", p.exprLev)
 }
@@ -122,9 +124,6 @@ func (p *Parser) parseStringCmd() Expr {
 	var leaf Expr
 
 	switch {
-	case kind == CMD_UNKNOWN:
-		leaf = &(UnknownCmdLit{source: p.lit})
-		break
 	case kind.IsVanillaSym():
 		leaf = &(SimpleCmdLit{source: p.lit})
 		break
@@ -134,12 +133,16 @@ func (p *Parser) parseStringCmd() Expr {
 	case kind.TakesTwoArg():
 		leaf = p.parseCmd2Arg(kind)
 		break
+	case kind == CMD_UNKNOWN:
+		leaf = &(UnknownCmdLit{source: p.lit})
+		break
 	default:
 		// this shouldn't be triggered
 		leaf = &(BadExpr{})
 	}
 
-	p.next()
+	// p.next() // FIXME next() should not be called here, but beware to call it 
+   // appropriately from within the above parse functions
 	return leaf
 }
 
@@ -148,7 +151,7 @@ func (p *Parser) parseSymbolCmd() Expr {
 	leaf := SimpleCmdLit{
 		source: p.lit,
 	}
-	p.next() // FIXME better name?
+	p.next()
 	return &leaf
 }
 

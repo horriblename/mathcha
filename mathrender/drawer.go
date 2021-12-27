@@ -2,7 +2,6 @@ package mathrender
 
 import (
 	"fmt"
-
 	parser "github.com/horriblename/latex-parser/latex"
 )
 
@@ -79,8 +78,8 @@ func (r *Renderer) Prerender(node parser.Expr, dim *Dimensions, x int, y int) {
 	case parser.CmdContainer:
 		switch n.Command() {
 		case parser.CMD_frac:
-			println("x is", x)
 			r.PrerenderCmdFrac(n, dim, x, y)
+
 		}
 	case parser.Container:
 		r.PrerenderContainer(n, dim, x, y)
