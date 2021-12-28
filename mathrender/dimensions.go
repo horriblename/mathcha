@@ -10,7 +10,7 @@ type Dimensions struct {
 	Height   int
 	BaseLine int    // the lowest point of the block, 0 by default, can go below negative
 	AbsX     int    // the absolute position in the buffer
-	AbsY     int    // the absolute position in the buffer, >=0
+	AbsY     int    // the absolute position of the parent's BaseLine in the buffer, >=0
 	Lit      string // a single line string to be drawn into the buffer if it is a Literal, else ""
 	Children []*Dimensions
 }
