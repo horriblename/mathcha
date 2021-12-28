@@ -126,23 +126,22 @@ func (p *Parser) parseStringCmd() Expr {
 	switch {
 	case kind.IsVanillaSym():
 		leaf = &(SimpleCmdLit{source: p.lit})
-		break
+		p.next()
 	case kind.TakesOneArg():
 		leaf = p.parseCmd1Arg(kind)
-		break
 	case kind.TakesTwoArg():
 		leaf = p.parseCmd2Arg(kind)
-		break
 	case kind == CMD_UNKNOWN:
 		leaf = &(UnknownCmdLit{source: p.lit})
-		break
+		p.next()
 	default:
 		// this shouldn't be triggered
 		leaf = &(BadExpr{})
+		p.next()
 	}
 
-	// p.next() // FIXME next() should not be called here, but beware to call it 
-   // appropriately from within the above parse functions
+	// p.next() // FIXME next() should not be called here, but beware to call it
+	// appropriately from within the above parse functions
 	return leaf
 }
 
@@ -164,10 +163,10 @@ func (p *Parser) parseNumLit() Expr {
 }
 
 func (p *Parser) parseVarLit() Expr {
-	leaf := NumberLit{
+	leaf := VarLit{
 		source: p.lit,
 	}
-	p.next() // skip last number
+	p.next()
 	return &leaf
 }
 
