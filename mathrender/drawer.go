@@ -129,60 +129,6 @@ func (r *Renderer) PrerenderCmdFrac(node parser.CmdContainer, dim *Dimensions, x
 	arg2.AbsY = y + arg2.Height + arg2.BaseLine //FIXME minus arg1.baseline
 }
 
-// func blockConcat(blocks [][][]string, levels []int) [][]string {
-// 	if len(blocks) != len(levels) {
-// 		//FIXME proper error handling
-// 		println("Error in blockConcat(): number of blocks and levels don't match")
-// 	}
-// 	if len(blocks) == 1 {
-// 		// TODO perhaps it would be better to panic when len(blocks) == 0
-// 		return blocks[0]
-// 	}
-
-// 	ret := blocks[0]
-// 	baseLv := levels[0] // levels count upwards, and can go below 0
-// 	height := len(ret)
-
-// 	// first loop checks the vertical size of the blocks to allocate adequate space
-// 	// FIXME we're not using arrays here, so this might not be useful
-// 	for i := 1; i < len(blocks); i++ {
-// 		low := levels[i]           // lower limit of current block
-// 		up := low + len(blocks[i]) // upper limit of current block
-// 		if low < baseLv {
-// 			baseLv = low
-// 		}
-// 		if up > height+baseLv {
-// 			height = up - baseLv
-// 		}
-// 	}
-
-// 	for i := 1; i < len(blocks); i++ {
-// 		block := blocks[i]
-// 		bh := len(block) // height of block
-// 		lv := levels[i]
-// 		startFrom := height - bh - (lv - baseLv) // row index to start from
-
-// 		if height > bh {
-// 			// grow upwards by bh - len(ret)
-// 			w := lineWidth(block)
-// 			padding := strings.Repeat("-", w)
-
-// 			for j := 0; j < startFrom; j++ {
-// 				ret[j] = append(ret[j], padding)
-// 			}
-// 			for j := 0; j < height+lv-1; j++ {
-// 				ret[j] = append(ret[j], padding)
-// 			}
-// 		}
-
-// 		for j := 0; j < bh; j++ {
-// 			ret[j+startFrom] = append(ret[j+startFrom], block[j]...)
-// 		}
-
-// 	}
-// 	return ret
-// }
-
 func lineWidth(line []rune) int {
 	w := 0
 	// for i := range line {
