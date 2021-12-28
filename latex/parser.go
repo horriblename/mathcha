@@ -42,7 +42,7 @@ func (p *Parser) next() {
 // to look ahead
 func (p *Parser) lookahead() Token { return p.tokenizer.Peek() }
 
-// Note that the parser's EOF is separate from the tokenizer's
+// Note that the parser's EOF is separate from the tokenizer's.
 // the Parser's EOF should arrive one iteration of Parser.next()
 // later than the tokenizer
 func (p *Parser) IsEOF() bool { return p.tok == EOF }

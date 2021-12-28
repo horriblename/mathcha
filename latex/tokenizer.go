@@ -87,10 +87,8 @@ type Tokenizer struct {
 	Cursor Pos
 	Stream string
 
-	curr   string
-	tok    Token
-	eof    bool
-	buffer []Token
+	curr string
+	tok  Token
 
 	strCmdRegex *re.Regexp // for matching commands that consist of alphabets
 	symCmdRegex *re.Regexp // for matching commands that consist of symbols e.g. "\;"

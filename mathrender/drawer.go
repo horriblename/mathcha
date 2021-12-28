@@ -5,20 +5,6 @@ import (
 	parser "github.com/horriblename/latex-parser/latex"
 )
 
-func (r *Renderer) Visit(node parser.Expr, dim *Dimensions) Visitor {
-	if node == nil {
-		return nil
-	}
-	switch n := node.(type) {
-	case parser.Container:
-		r.PrerenderContainer(n, dim, r.DrawerX, r.DrawerY)
-		return r
-	}
-
-	r.Prerender(node, dim, r.DrawerX, r.DrawerY)
-	return nil
-}
-
 // breadth-first traverse of the latex tree and dim tree in parallel
 // to build the later rendered 2D rune buffer
 func (r *Renderer) DrawToBuffer(tree parser.Expr, dim *Dimensions) {

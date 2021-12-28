@@ -41,12 +41,9 @@ func calculateDim(node parser.Expr) *Dimensions {
 		return calculateDimCmdContainer(n)
 	case parser.CmdLiteral:
 		dim.Height = 1
-		dim.Width = 1 //len(n.Content())
-		dim.Children = nil
-		dim.Lit = string(GetVanillaRune(n.Command()))
+		dim.Lit = GetVanillaString(n.Command())
 		dim.Width = rw.StringWidth(dim.Lit)
-		println("CmdLiteral and width: ", dim.Lit, dim.Width)
-		println(n.Command().GetCmd())
+		dim.Children = nil
 		return dim
 		// parser.Literal interface types
 	case *parser.SimpleOpLit:
