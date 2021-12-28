@@ -2,14 +2,16 @@ package mathrender
 
 import (
 	parser "github.com/horriblename/latex-parser/latex"
+	rw "github.com/mattn/go-runewidth"
 )
 
 type Dimensions struct {
 	Width    int
 	Height   int
-	BaseLine int // the lowest point of the block, 0 by default, can go below negative
-	AbsX     int // the absolute position in the buffer
-	AbsY     int // the absolute position in the buffer, >=0
+	BaseLine int    // the lowest point of the block, 0 by default, can go below negative
+	AbsX     int    // the absolute position in the buffer
+	AbsY     int    // the absolute position in the buffer, >=0
+	Lit      string // a single line string to be drawn into the buffer if it is a Literal, else ""
 	Children []*Dimensions
 }
 
@@ -41,10 +43,28 @@ func calculateDim(node parser.Expr) *Dimensions {
 		dim.Height = 1
 		dim.Width = 1 //len(n.Content())
 		dim.Children = nil
+		dim.Lit = string(GetVanillaRune(n.Command()))
+		dim.Width = rw.StringWidth(dim.Lit)
+		println("CmdLiteral and width: ", dim.Lit, dim.Width)
+		println(n.Command().GetCmd())
 		return dim
-	case parser.Literal:
+		// parser.Literal interface types
+	case *parser.SimpleOpLit:
 		dim.Height = 1
-		dim.Width = len(n.Content())
+		dim.Lit = " " + n.Content() + " "
+		dim.Width = rw.StringWidth(dim.Lit)
+		dim.Children = nil
+		return dim
+	case *parser.NumberLit:
+		dim.Height = 1
+		dim.Lit = n.Content()
+		dim.Width = rw.StringWidth(dim.Lit)
+		dim.Children = nil
+		return dim
+	case *parser.VarLit:
+		dim.Height = 1
+		dim.Lit = n.Content()
+		dim.Width = rw.StringWidth(dim.Lit)
 		dim.Children = nil
 		return dim
 	}
