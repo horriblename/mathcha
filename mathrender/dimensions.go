@@ -51,7 +51,12 @@ func calculateDim(node parser.Expr) *Dimensions {
 		// parser.Literal interface types
 	case *parser.SimpleOpLit:
 		dim.Height = 1
-		dim.Lit = " " + n.Content() + " "
+		switch n.Content() {
+		case "+", "-", "=":
+			dim.Lit = " " + n.Content() + " "
+		default:
+			dim.Lit = n.Content()
+		}
 		dim.Width = rw.StringWidth(dim.Lit)
 		dim.Children = nil
 		return dim
