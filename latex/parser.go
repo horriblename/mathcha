@@ -21,7 +21,6 @@ type Parser struct {
 func (p *Parser) Init(src string) {
 	//eh := func(pos Pos, msg string) { p.errors = append(p.errors, msg) }
 	p.tokenizer.Init(src /*, eh*/)
-
 	p.next()
 	p.treeRoot = p.parseTopLevel()
 }
@@ -32,6 +31,8 @@ func (p *Parser) next() {
 	p.tok = p.tokenizer.Peek()
 	if !p.tokenizer.IsEOF() {
 		p.lit = p.tokenizer.Eat()
+	} else {
+		p.lit = p.tokenizer.curr // TODO add method to tokenizer instead of directly accessing curr?
 	}
 	println("next():p.tok:", p.tok.String(), " p.lit:", p.lit,
 		" t.IsEOF:", p.tokenizer.IsEOF(), " p.IsEOF:", p.IsEOF(),
@@ -125,7 +126,7 @@ func (p *Parser) parseStringCmd() Expr {
 
 	switch {
 	case kind.IsVanillaSym():
-		leaf = &(SimpleCmdLit{source: p.lit})
+		leaf = &(SimpleCmdLit{source: p.lit, Type: kind})
 		p.next()
 	case kind.TakesOneArg():
 		leaf = p.parseCmd1Arg(kind)
@@ -186,6 +187,10 @@ func (p *Parser) parseCompositeExpr() Expr {
 	for !p.IsEOF() && p.tok != RBRACE {
 		node.AppendChild(p.parseGenericOnce())
 		println("add child to node; depth: ", p.exprLev)
+	}
+	if p.IsEOF() {
+		// FIXME error handling
+		panic("expecting '}' got EOF")
 	}
 	p.next() // skip "}"
 	p.dropExpect("}")

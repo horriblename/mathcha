@@ -12,7 +12,7 @@ import (
 	"strconv"
 )
 
-type Pos int
+type Pos int // TODO remove
 
 // Token is the set of lexical tokens
 type Token int
@@ -143,16 +143,22 @@ func (t *Tokenizer) Peek() Token { return t.tok }
 
 func (t *Tokenizer) Eat() string {
 	t.consumeWhitespaces()
+	// TODO consumeComments
 	if t.IsEOF() {
-		fmt.Println("\x1b[31mthrow error: Eat() when at EOF\x1b[0m")
+		fmt.Println("\x1b[31mthrow error: Tokenizer.Eat() when at EOF\x1b[0m")
+		// FIXME error handling
 		return t.curr
 	}
-	if int(t.Cursor) >= len(t.Stream)-1 {
-		t.eof = true
+	// don't move cursor anymore, just spit out the remaining token
+	fmt.Printf("stream '\x1b[31m%s\x1b[0m%s'\n", t.curr, t.Stream[t.Cursor:])
+	if int(t.Cursor) >= len(t.Stream) {
+		fmt.Printf("last token '\x1b[31m%s\x1b[0m%s'\n", t.curr, t.Stream[t.Cursor:])
+		curr := t.curr
 		t.tok = EOF
-		return t.curr
+		t.curr = ""
+		return curr
 	}
-	stream := t.Stream[t.Cursor:len(t.Stream)]
+	stream := t.Stream[t.Cursor:]
 	curr := t.curr
 	tok := SYM  // ensure a new token is assigned each call
 	length := 1 // default value to catch-all
@@ -209,7 +215,7 @@ func (t *Tokenizer) Eat() string {
 	return curr
 }
 
-func (t *Tokenizer) IsEOF() bool { return t.eof }
+func (t *Tokenizer) IsEOF() bool { return t.tok == EOF }
 func (t *Tokenizer) consumeWhitespaces() {
 	stream := t.Stream[t.Cursor:]
 	if loc := t.spaceRegex.FindStringIndex(stream); loc != nil {
