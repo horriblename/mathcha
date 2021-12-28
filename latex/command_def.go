@@ -103,6 +103,7 @@ const (
 	CMD_colon
 	CMD_llcorner
 	CMD_dotplus
+	CMD_nmid
 	CMD_intercal
 	CMD_veebar
 	CMD_barwedge
@@ -205,6 +206,7 @@ var latexCmds = [...]string{
 	CMD_colon:            "\\colon",
 	CMD_llcorner:         "\\llcorner",
 	CMD_dotplus:          "\\dotplus",
+	CMD_nmid:             "\\nmid",
 	CMD_intercal:         "\\intercal",
 	CMD_veebar:           "\\veebar",
 	CMD_barwedge:         "\\barwedge",
