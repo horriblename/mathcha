@@ -14,7 +14,7 @@ var _ = strings.Title
 // TODO maybe add Dimensions.Init
 
 type Renderer struct {
-	Buffer    [][]rune
+	Buffer    string
 	LatexTree parser.FlexContainer
 	Size      *Dimensions
 }
@@ -28,14 +28,7 @@ func (r *Renderer) Load(tree parser.FlexContainer) {
 	// step 1: create [][]rune buffer of appropriate size
 	r.LatexTree = tree
 	r.Size = calculateDim(r.LatexTree)
-	r.Buffer = make([][]rune, r.Size.Height)
-	for i := range r.Buffer {
-		r.Buffer[i] = make([]rune, r.Size.Width)
-		for j := range r.Buffer[i] { // TODO there should be better ways to do this
-			r.Buffer[i][j] = ' '
-		}
-	}
-	// step 2: write characters
+
 	println("w, h, b", r.Size.Width, r.Size.Height, r.Size.BaseLine)
 	r.DrawToBuffer(r.LatexTree, r.Size)
 }
@@ -50,28 +43,8 @@ func (r *Renderer) Sync() {
 
 }
 
-// fill a [][]rune buffer with whitespace. slices are passed by reference so
-// I shouldn't need to return it?
-func blankBuffer(buffer [][]rune, width int, height int) {
-	for i := range buffer {
-		buffer[i] = make([]rune, width)
-		for j := range buffer[i] { // TODO there should be better ways to do this
-			buffer[i][j] = ' '
-		}
-	}
-}
-
 func (r *Renderer) View() string {
-	builder := strings.Builder{}
-	for _, row := range r.Buffer {
-		builder.WriteString("│")
-		for _, ru := range row {
-			builder.WriteRune(ru)
-		}
-		builder.WriteString("│\n")
-	}
-
-	return builder.String()
+	return r.Buffer
 }
 
 func ProduceLatex(node parser.Expr) string {
