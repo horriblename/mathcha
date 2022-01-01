@@ -7,7 +7,6 @@
 package latex
 
 import (
-	"fmt"
 	re "regexp"
 	"strconv"
 )
@@ -126,7 +125,6 @@ func (tok Token) IsOperator() bool { return operator_beg < tok && tok < operator
 
 func (t *Tokenizer) Init(stream string) {
 	t.Stream = stream
-	println(stream)
 	t.Cursor = Pos(0)
 
 	// FIXME move to package Init() function
@@ -145,14 +143,14 @@ func (t *Tokenizer) Eat() string {
 	t.consumeWhitespaces()
 	// TODO consumeComments
 	if t.IsEOF() {
-		fmt.Println("\x1b[31mthrow error: Tokenizer.Eat() when at EOF\x1b[0m")
+		// fmt.Println("\x1b[31mthrow error: Tokenizer.Eat() when at EOF\x1b[0m")
 		// FIXME error handling
 		return t.curr
 	}
 	// don't move cursor anymore, just spit out the remaining token
-	fmt.Printf("stream '\x1b[31m%s\x1b[0m%s'\n", t.curr, t.Stream[t.Cursor:])
+	// fmt.Printf("stream '\x1b[31m%s\x1b[0m%s'\n", t.curr, t.Stream[t.Cursor:])
 	if int(t.Cursor) >= len(t.Stream) {
-		fmt.Printf("last token '\x1b[31m%s\x1b[0m%s'\n", t.curr, t.Stream[t.Cursor:])
+		// fmt.Printf("last token '\x1b[31m%s\x1b[0m%s'\n", t.curr, t.Stream[t.Cursor:])
 		curr := t.curr
 		t.tok = EOF
 		t.curr = ""

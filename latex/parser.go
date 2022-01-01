@@ -34,9 +34,9 @@ func (p *Parser) next() {
 	} else {
 		p.lit = p.tokenizer.curr // TODO add method to tokenizer instead of directly accessing curr?
 	}
-	println("next():p.tok:", p.tok.String(), " p.lit:", p.lit,
-		" t.IsEOF:", p.tokenizer.IsEOF(), " p.IsEOF:", p.IsEOF(),
-		" depth:", p.exprLev)
+	// println("next():p.tok:", p.tok.String(), " p.lit:", p.lit,
+	// 	" t.IsEOF:", p.tokenizer.IsEOF(), " p.IsEOF:", p.IsEOF(),
+	// 	" depth:", p.exprLev)
 }
 
 // the tokenizer is always one token ahead, we can use its tok value
@@ -80,14 +80,14 @@ func (p *Parser) parseTopLevel() *TopLevelExpr {
 	for !p.IsEOF() {
 		tree.AppendChild(p.parseGenericOnce())
 	}
-	println(tree.VisualizeTree())
+	// println(tree.VisualizeTree())
 	return tree
 }
 
 // parse one token
 func (p *Parser) parseGenericOnce() Expr {
-	println("--\nParser.parseGeneric(): p.lit is \"", p.lit,
-		"\", token ", p.tok.String(), " depth: ", p.exprLev)
+	// println("--\nParser.parseGeneric(): p.lit is \"", p.lit,
+	// 	"\", token ", p.tok.String(), " depth: ", p.exprLev)
 	switch p.tok {
 	case CMDSTR:
 		return p.parseStringCmd()
@@ -114,7 +114,7 @@ func (p *Parser) parseGenericOnce() Expr {
 		p.eh.AddErr(ERR_UNMATCHED_CLOSE, fmt.Sprintf("before cursor %d, at token %s of type %s",
 			p.tokenizer.Cursor, p.lit, p.tok.String()))
 	}
-	println("BadExpr!")
+	// println("BadExpr!")
 	p.next()
 	return &BadExpr{}
 }
@@ -186,7 +186,7 @@ func (p *Parser) parseCompositeExpr() Expr {
 	node := new(CompositeExpr)
 	for !p.IsEOF() && p.tok != RBRACE {
 		node.AppendChild(p.parseGenericOnce())
-		println("add child to node; depth: ", p.exprLev)
+		// println("add child to node; depth: ", p.exprLev)
 	}
 	if p.IsEOF() {
 		// FIXME error handling
