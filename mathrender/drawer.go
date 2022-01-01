@@ -50,7 +50,6 @@ func (r *Renderer) Prerender(node parser.Expr, dim *Dimensions, x int, y int) st
 		return r.PrerenderFlexContainer(n, dim, x, y)
 	case parser.CmdLiteral:
 		content := GetVanillaString(n.Command())
-		println("rendered CmdLiteral: ", content)
 		return content
 		// parser.Literal interface types
 	case parser.Literal:

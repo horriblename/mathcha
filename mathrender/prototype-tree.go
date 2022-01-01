@@ -29,7 +29,7 @@ func (r *Renderer) Load(tree parser.FlexContainer) {
 	r.LatexTree = tree
 	r.Size = calculateDim(r.LatexTree)
 
-	println("w, h, b", r.Size.Width, r.Size.Height, r.Size.BaseLine)
+	// println("w, h, b", r.Size.Width, r.Size.Height, r.Size.BaseLine)
 	r.DrawToBuffer(r.LatexTree, r.Size)
 }
 
