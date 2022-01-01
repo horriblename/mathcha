@@ -47,7 +47,7 @@ type Literal interface {
 // more interfaces...
 // these interfaces take after Container or Literal and includes some other
 // functions of their own. Each expression node struct defined later should
-// implement one of the following interfaces, or Literal TODO
+// implement one of the following interfaces, or Literal TODO poor desc.
 
 // Referring to containers that have indefinite amount of children
 type FlexContainer interface {
@@ -267,21 +267,23 @@ func (x *TopLevelExpr) DeleteChildren(from int, to int) {
 // FIXME do I really need to repeat these exact same functions for each struct??
 // Insert child at index; the new child has the index 'at'
 func (x *CompositeExpr) InsertChild(at int, child Expr) {
-	if at < 0 || at >= len(x.Children()) {
+	if at < 0 || at > len(x.Children()) {
 		panic("InsertChild(): invalid index for 'at'")
 	}
-	if len(x.Children()) == 0 && at == 0 {
+	if at == len(x.Children()) {
 		x.AppendChild(child)
+		return
 	}
 	x.Elts = append(x.Elts[:at+1], x.Elts[at:]...)
 	x.Elts[at] = child
 }
 func (x *TopLevelExpr) InsertChild(at int, child Expr) {
-	if at < 0 || at >= len(x.Children()) {
+	if at < 0 || at > len(x.Children()) {
 		panic("InsertChild(): invalid index for 'at'")
 	}
-	if len(x.Children()) == 0 && at == 0 {
+	if at == len(x.Children()) {
 		x.AppendChild(child)
+		return
 	}
 	x.Elts = append(x.Elts[:at+1], x.Elts[at:]...)
 	x.Elts[at] = child
