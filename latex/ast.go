@@ -65,6 +65,7 @@ type FlexContainer interface {
 type FixedContainer interface {
 	Container
 	Parameters() int // number of children
+	SetArg(int, Expr)
 }
 
 type CmdLiteral interface {
@@ -295,6 +296,24 @@ func (x *TopLevelExpr) Identifier() string  { return "" }
 // FixedContainer methods
 func (x *Cmd1ArgExpr) Parameters() int { return 1 }
 func (x *Cmd2ArgExpr) Parameters() int { return 2 }
+
+func (x *Cmd1ArgExpr) SetArg(index int, expr Expr) {
+	if index > 0 {
+		panic("SetArg(): index out of range")
+	}
+	x.Arg1 = expr
+}
+func (x *Cmd2ArgExpr) SetArg(index int, expr Expr) {
+	if index > 1 {
+		panic("SetArg(): index out of range")
+	}
+	switch index {
+	case 0:
+		x.Arg1 = expr
+	case 1:
+		x.Arg2 = expr
+	}
+}
 
 // Literal method definitions
 func (x *BadExpr) Content() string       { return x.source }
