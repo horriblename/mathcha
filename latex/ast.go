@@ -115,13 +115,13 @@ type (
 	// A NumberLit node represents a literal consisting of digits
 	NumberLit struct {
 		From, To Pos
-		source   string // literal string; e.g. 23x
+		Source   string // literal string; e.g. 23x
 	}
 
 	// A VarLit node represents a literal consisting of alphabets
 	VarLit struct {
 		From, To Pos
-		source   string
+		Source   string
 	}
 
 	// A Composite node represents a composite bracea surrounded { expression }
@@ -142,21 +142,30 @@ type (
 	// A SimpleOpLit node represents a simple operator literal
 	SimpleOpLit struct {
 		From, To Pos
-		source   string // e.g. + - =
+		Source   string // e.g. + - =
+	}
+
+	// IncompleteCmdLit node is a placeholder for an incomplete command
+	// It is treated as a SimpleCmdLit, without any special grammar
+	// TODO it should be treated as some kind of TextLit
+	IncompleteCmdLit struct {
+		Backslash Pos    // Position of "\"
+		Source    string // he command string including backslash
+		To        Pos    // position of the last character
 	}
 
 	// UnknownCmdLit node is a placeholder for an unrecognized command
 	// It is treated as a SimpleCmdLit, without any special grammar
 	UnknownCmdLit struct {
 		Backslash Pos    // Position of "\"
-		source    string // he command string including backslash
+		Source    string // he command string including backslash
 		To        Pos    // position of the last character
 	}
 
 	// A SimpleCmdLit node is a simple command that behaves like any other simple literal e.g. \times
 	SimpleCmdLit struct {
 		Backslash Pos    // Position of "\"
-		source    string // the command string including backslash
+		Source    string // the command string including backslash
 		Type      LatexCmd
 		To        Pos // position of last character
 	}
@@ -246,7 +255,7 @@ func (x *CompositeExpr) DeleteChildren(from int, to int) {
 	l := to - from + 1
 	copy(x.Elts[from:], x.Elts[to+1:])
 	for i := range x.Elts[len(x.Elts)-l:] {
-		x.Elts[i] = nil // garbage collection
+		x.Elts[len(x.Elts)-l+i] = nil // garbage collection
 	}
 	x.Elts = x.Elts[:len(x.Elts)-l]
 }
@@ -260,9 +269,12 @@ func (x *TopLevelExpr) DeleteChildren(from int, to int) {
 	l := to - from + 1
 	copy(x.Elts[from:], x.Elts[to+1:])
 	for i := range x.Elts[len(x.Elts)-l:] {
-		x.Elts[i] = nil // garbage collection
+		x.Elts[len(x.Elts)-l+i] = nil // garbage collection
 	}
 	x.Elts = x.Elts[:len(x.Elts)-l]
+	// copy(x.Elts[i:], x.Elts[i+1:])
+	// x.Elts[len(x.Elts)-1] = nil // or the zero value of T
+	// x.Elts = x.Elts[:len(x.Elts)-1]
 }
 
 // FIXME do I really need to repeat these exact same functions for each struct??
@@ -318,11 +330,11 @@ func (x *Cmd2ArgExpr) SetArg(index int, expr Expr) {
 // Literal method definitions
 func (x *BadExpr) Content() string       { return x.source }
 func (x *EmptyExpr) Content() string     { return "" }
-func (x *NumberLit) Content() string     { return x.source }
-func (x *VarLit) Content() string        { return x.source }
-func (x *SimpleOpLit) Content() string   { return x.source }
-func (x *UnknownCmdLit) Content() string { return x.source }
-func (x *SimpleCmdLit) Content() string  { return x.source }
+func (x *NumberLit) Content() string     { return x.Source }
+func (x *VarLit) Content() string        { return x.Source }
+func (x *SimpleOpLit) Content() string   { return x.Source }
+func (x *UnknownCmdLit) Content() string { return x.Source }
+func (x *SimpleCmdLit) Content() string  { return x.Source }
 
 // CmdLiteral, CmdContainer method definitions
 func (x *UnknownCmdLit) Command() LatexCmd { return CMD_UNKNOWN }
@@ -432,8 +444,8 @@ func (x *Cmd2ArgExpr) VisualizeTree() string {
 
 func (x *BadExpr) VisualizeTree() string       { return "BadExpr" }
 func (x *EmptyExpr) VisualizeTree() string     { return "EmptyExpr" }
-func (x *NumberLit) VisualizeTree() string     { return "NumberLit     " + x.source }
-func (x *VarLit) VisualizeTree() string        { return "VarLit        " + x.source }
-func (x *SimpleOpLit) VisualizeTree() string   { return "SimpleOpLit   " + x.source }
-func (x *SimpleCmdLit) VisualizeTree() string  { return "SimpleCmdLit  " + x.source }
-func (x *UnknownCmdLit) VisualizeTree() string { return "UnknownCmdLit " + x.source }
+func (x *NumberLit) VisualizeTree() string     { return "NumberLit     " + x.Source }
+func (x *VarLit) VisualizeTree() string        { return "VarLit        " + x.Source }
+func (x *SimpleOpLit) VisualizeTree() string   { return "SimpleOpLit   " + x.Source }
+func (x *SimpleCmdLit) VisualizeTree() string  { return "SimpleCmdLit  " + x.Source }
+func (x *UnknownCmdLit) VisualizeTree() string { return "UnknownCmdLit " + x.Source }

@@ -126,14 +126,14 @@ func (p *Parser) parseStringCmd() Expr {
 
 	switch {
 	case kind.IsVanillaSym():
-		leaf = &(SimpleCmdLit{source: p.lit, Type: kind})
+		leaf = &(SimpleCmdLit{Source: p.lit, Type: kind})
 		p.next()
 	case kind.TakesOneArg():
 		leaf = p.parseCmd1Arg(kind)
 	case kind.TakesTwoArg():
 		leaf = p.parseCmd2Arg(kind)
 	case kind == CMD_UNKNOWN:
-		leaf = &(UnknownCmdLit{source: p.lit})
+		leaf = &(UnknownCmdLit{Source: p.lit})
 		p.next()
 	default:
 		// this shouldn't be triggered
@@ -149,7 +149,7 @@ func (p *Parser) parseStringCmd() Expr {
 // FIXME merge into parseStringCmd?
 func (p *Parser) parseSymbolCmd() Expr {
 	leaf := SimpleCmdLit{
-		source: p.lit,
+		Source: p.lit,
 	}
 	p.next()
 	return &leaf
@@ -157,7 +157,7 @@ func (p *Parser) parseSymbolCmd() Expr {
 
 func (p *Parser) parseNumLit() Expr {
 	leaf := NumberLit{
-		source: p.lit,
+		Source: p.lit,
 	}
 	p.next()
 	return &leaf
@@ -165,7 +165,7 @@ func (p *Parser) parseNumLit() Expr {
 
 func (p *Parser) parseVarLit() Expr {
 	leaf := VarLit{
-		source: p.lit,
+		Source: p.lit,
 	}
 	p.next()
 	return &leaf
@@ -173,7 +173,7 @@ func (p *Parser) parseVarLit() Expr {
 
 func (p *Parser) parseSimpleOpLit() Expr {
 	leaf := SimpleOpLit{
-		source: p.lit,
+		Source: p.lit,
 	}
 	p.next()
 	return &leaf
