@@ -51,6 +51,17 @@ func (e *Editor) Read(latex string) {
 	e.renderer.Sync()
 }
 
+func (e *Editor) popStack() parser.Container {
+	if len(e.traceStack) <= 1 {
+		// TODO warn?
+		panic("Attempting to pop Editor.traceStack when only 1 or less element is remaining")
+	}
+	ret := e.traceStack[len(e.traceStack)-1]
+	e.traceStack[len(e.traceStack)-1] = nil
+	e.traceStack = e.traceStack[:len(e.traceStack)-1]
+	return ret
+}
+
 // ----------------------------------------------------------------------------
 // Navigation utils
 
@@ -62,7 +73,22 @@ func (e *Editor) NavigateLeft() {
 		panic("cursor not found in parent")
 	}
 	if idx == 0 {
-		// exit parent
+		if len(e.traceStack) <= 1 {
+			return
+		}
+		e.getParent().DeleteChildren(idx, idx)
+		var exitFrom parser.Container
+		exitFrom = e.popStack()
+		if _, ok := e.traceStack[len(e.traceStack)-1].(parser.FixedContainer); ok {
+			exitFrom = e.popStack()
+		}
+		for i, c := range e.getParent().Children() {
+			if c == exitFrom {
+				idx = i
+				break
+			}
+		}
+		e.getParent().InsertChild(idx, e.cursor)
 	} else if prev, ok := e.getParent().Children()[idx-1].(parser.Container); ok {
 		e.getParent().DeleteChildren(idx, idx)
 		e.EnterContainerFromRight(prev)
@@ -79,7 +105,22 @@ func (e *Editor) NavigateRight() {
 		panic("cursor not found in parent")
 	}
 	if idx+1 >= len(e.getParent().Children()) {
-		// exit parent
+		if len(e.traceStack) <= 1 {
+			return
+		}
+		e.getParent().DeleteChildren(idx, idx)
+		var exitFrom parser.Container
+		exitFrom = e.popStack()
+		if _, ok := e.traceStack[len(e.traceStack)-1].(parser.FixedContainer); ok {
+			exitFrom = e.popStack()
+		}
+		for i, c := range e.getParent().Children() {
+			if c == exitFrom {
+				idx = i
+				break
+			}
+		}
+		e.getParent().InsertChild(idx+1, e.cursor)
 	} else if next, ok := e.getParent().Children()[idx+1].(parser.Container); ok {
 		e.getParent().DeleteChildren(idx, idx)
 		e.EnterContainerFromLeft(next)
@@ -216,7 +257,7 @@ func (e *Editor) getParent() parser.FlexContainer {
 		// TODO
 		return n
 	}
-	panic("Parent is not a FlexContainer")
+	panic("Editor.getParent(): Parent is not a FlexContainer")
 }
 
 func (e Editor) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
