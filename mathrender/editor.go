@@ -55,6 +55,7 @@ func (e *Editor) Read(latex string) {
 // Navigation utils
 
 // Navigates cursor to the left, exits a parent container if there is no left sibling
+// Enters a Container if left sibling is one that allows entering
 func (e *Editor) NavigateLeft() {
 	idx := e.getCursorIdxInParent()
 	if idx < 0 {
@@ -62,12 +63,16 @@ func (e *Editor) NavigateLeft() {
 	}
 	if idx == 0 {
 		// exit parent
+	} else if prev, ok := e.getParent().Children()[idx-1].(parser.Container); ok {
+		e.getParent().DeleteChildren(idx, idx)
+		e.EnterContainerFromRight(prev)
 	} else {
 		e.stepOverPrevSibling()
 	}
 }
 
 // Navigates cursor to the right, exits a parent container if there is no right sibling
+// Enters a Container if right sibling is one that allows entering
 func (e *Editor) NavigateRight() {
 	idx := e.getCursorIdxInParent()
 	if idx < 0 {
@@ -75,6 +80,9 @@ func (e *Editor) NavigateRight() {
 	}
 	if idx+1 >= len(e.getParent().Children()) {
 		// exit parent
+	} else if next, ok := e.getParent().Children()[idx+1].(parser.Container); ok {
+		e.getParent().DeleteChildren(idx, idx)
+		e.EnterContainerFromLeft(next)
 	} else {
 		e.stepOverNextSibling()
 	}
@@ -110,6 +118,45 @@ func (e *Editor) stepOverNextSibling() {
 	} else {
 		panic("stepOverNextSibling(): cursor not in a FlexContainer")
 	}
+}
+
+func (e *Editor) EnterContainerFromRight(target parser.Container) {
+	var parent parser.FlexContainer
+	switch t := target.(type) {
+	case parser.FixedContainer:
+		e.traceStack = append(e.traceStack, t)
+		if m, ok := t.Children()[0].(parser.FlexContainer); ok { // TODO pick different 'children Container' based on command type?
+			parent = m
+		} else {
+			panic("Editor attempted to enter a FixedContainer type with a non FlexContainer as first Child")
+		}
+	case parser.FlexContainer:
+		parent = t
+	default:
+		panic("Editor attempted to enter a non Fixed- or FlexContainer")
+	}
+	parent.AppendChild(e.cursor)
+	e.traceStack = append(e.traceStack, parent)
+}
+
+func (e *Editor) EnterContainerFromLeft(target parser.Container) {
+	var parent parser.FlexContainer
+	switch t := target.(type) {
+	case parser.FixedContainer:
+		e.traceStack = append(e.traceStack, t)
+		if m, ok := t.Children()[0].(parser.FlexContainer); ok { // TODO pick different 'children Container' based on command type?
+			parent = m
+		} else {
+			panic("Editor attempted to enter a FixedContainer type with a non FlexContainer as first Child")
+		}
+	case parser.FlexContainer:
+		parent = t
+	default:
+		panic("Editor attempted to enter a non Fixed- or FlexContainer")
+	}
+
+	parent.InsertChild(0, e.cursor)
+	e.traceStack = append(e.traceStack, parent)
 }
 
 func (e *Editor) DeleteBack() {
@@ -217,7 +264,7 @@ func formatLatexTree(tree parser.Expr) {
 
 	if n, ok := tree.(parser.FixedContainer); ok {
 		for i, child := range n.Children() {
-			if _, ok := child.(parser.Container); !ok {
+			if _, ok := child.(parser.FlexContainer); !ok {
 				n.SetArg(i, &parser.CompositeExpr{Elts: []parser.Expr{child}})
 			}
 		}
