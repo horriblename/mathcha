@@ -19,28 +19,18 @@ type Renderer struct {
 	Size      *Dimensions
 }
 
-// Rendering is a 3 step process:
-// 1. build a separate tree with all the dimensions, then create a [][]rune buffer of appropriate size
-//    - in this step the rendered string for Literals are also computed and stored in Dimensions.Lit
-// 2. walk through the ast and dimensions tree in parallel and write the contents to the buffer
-// 3. combine the [][]rune buffer into a string
+// Rendering is a 2 step process: TODO merge the process?
+// 1. build a separate tree with all the dimensions
+// 2.
 func (r *Renderer) Load(tree parser.FlexContainer) {
-	// step 1: create [][]rune buffer of appropriate size
 	r.LatexTree = tree
-	r.Size = calculateDim(r.LatexTree)
-
-	// println("w, h, b", r.Size.Width, r.Size.Height, r.Size.BaseLine)
-	r.DrawToBuffer(r.LatexTree, r.Size)
+	r.Sync()
 }
 
 // rerender the latex tree
 func (r *Renderer) Sync() {
 	r.Size = calculateDim(r.LatexTree)
-	// TODO
-	// if r.Size.Width != len(r.Buffer[0]){
-	//      r.Buffer[0]
-	//   }
-
+	r.DrawToBuffer(r.LatexTree, r.Size)
 }
 
 func (r *Renderer) View() string {
@@ -52,6 +42,7 @@ func ProduceLatex(node parser.Expr) string {
 	suffix := ""
 	switch n := node.(type) {
 	case parser.FlexContainer:
+		// FIXME type switch for cases CompositeExpr and others
 		if n.Identifier() == "{" { // CompositeExpr
 			latex = "{"
 			suffix = "}"
@@ -66,9 +57,9 @@ func ProduceLatex(node parser.Expr) string {
 			latex += ProduceLatex(c)
 		}
 		return latex
-	case parser.Literal:
-		return n.Content()
 	case parser.CmdLiteral:
+		return n.Content() + " "
+	case parser.Literal:
 		return n.Content()
 	}
 
