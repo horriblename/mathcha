@@ -45,6 +45,8 @@ func (r *Renderer) Prerender(node parser.Expr, dim *Dimensions, x int, y int) st
 		switch n.Command() {
 		case parser.CMD_frac:
 			return r.PrerenderCmdFrac(n, dim, x, y)
+		default:
+			return "[unimplemented command]"
 		}
 	case parser.FlexContainer:
 		return r.PrerenderFlexContainer(n, dim, x, y)
@@ -56,11 +58,17 @@ func (r *Renderer) Prerender(node parser.Expr, dim *Dimensions, x int, y int) st
 		content := n.Content()
 		switch content {
 		case "+", "-", "=":
-			content = " " + n.Content() + " "
+			content = " " + content + " "
 		}
 		return content
+	case *Cursor:
+		return n.Content()
+	case nil:
+		return "[nil]"
+	default:
+		return "[unimplemented expression]"
 	}
-	panic("Unhandled case in Prerender()")
+	// panic("Unhandled case in Prerender()")
 }
 
 func (r *Renderer) PrerenderFlexContainer(node parser.FlexContainer, dim *Dimensions, x int, y int) string {
@@ -84,6 +92,7 @@ func (r *Renderer) PrerenderCmdContainer(node parser.CmdContainer, dim *Dimensio
 }
 
 func (r *Renderer) PrerenderCmdFrac(node parser.CmdContainer, dim *Dimensions, x int, y int) string {
+	// FIXME add proper horizontal line
 	arg1 := r.Prerender(node.Children()[0], dim.Children[0], x, y)
 	arg2 := fracNumerStyle.Render(r.Prerender(node.Children()[1], dim.Children[1], x, y))
 
