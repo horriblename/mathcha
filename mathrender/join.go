@@ -1,8 +1,9 @@
 package mathrender
 
 import (
-	"github.com/muesli/reflow/ansi"
 	"strings"
+
+	"github.com/muesli/reflow/ansi"
 )
 
 // A modified version of https://github.com/charmbracelet/lipgloss/blob/master/join.go
@@ -35,7 +36,7 @@ func JoinHorizontal(baseline []int, strs ...string) string {
 	}
 
 	if len(baseline) != len(strs) {
-		panic("JoinHorizontal found different numbers of alignAt and input strings")
+		panic("JoinHorizontal found different numbers of baseline and input strings")
 		// FIXME don't panic
 	}
 
@@ -57,9 +58,9 @@ func JoinHorizontal(baseline []int, strs ...string) string {
 
 	// Break text blocks into lines and get max widths for each text block
 	for i, str := range strs {
+		blocks[i], maxWidths[i] = getLines(str)
 		lo := baseline[i]
 		hi := len(blocks[i]) + lo
-		blocks[i], maxWidths[i] = getLines(str)
 		if hi > highest {
 			highest = hi
 		}
@@ -69,7 +70,7 @@ func JoinHorizontal(baseline []int, strs ...string) string {
 	}
 
 	combinedHeight = highest - lowest
-	alignAt = highest
+	alignAt = highest - 1
 	// Add extra lines to make each side the same height
 	for i := range blocks {
 		if len(blocks[i]) >= combinedHeight {
@@ -80,7 +81,7 @@ func JoinHorizontal(baseline []int, strs ...string) string {
 
 		n := len(extraLines)
 		// (combinedHeight + baseline[i])
-		split := alignAt - len(blocks[i]) + 2
+		split := alignAt //- len(blocks[i]) + 2
 		top := n - split
 		bottom := n - top
 
