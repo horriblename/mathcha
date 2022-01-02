@@ -7,6 +7,10 @@ import (
 	parser "github.com/horriblename/latex-parser/latex"
 )
 
+const (
+	CONF_RENDER_EMPTY_COMP_EXPR = true // config to enable rendering empty CompositeExpr "{}" as a space
+)
+
 // style definitions
 var (
 	subtle = lipgloss.AdaptiveColor{Light: "#D9DCCF", Dark: "#383838"}
@@ -67,6 +71,9 @@ func (r *Renderer) PrerenderFlexContainer(node parser.FlexContainer, dim *Dimens
 	for i, c := range node.Children() {
 		children = append(children, r.Prerender(c, dim.Children[i])) //TODO
 		baseLine = append(baseLine, dim.Children[i].BaseLine)
+	}
+	if len(children) == 0 && CONF_RENDER_EMPTY_COMP_EXPR {
+		return " "
 	}
 	// println(lipgloss.JoinHorizontal(lipgloss.Center, children...))
 	return JoinHorizontal(baseLine, children...)
