@@ -5,7 +5,6 @@ import (
 
 	"github.com/charmbracelet/lipgloss"
 	parser "github.com/horriblename/latex-parser/latex"
-	rw "github.com/mattn/go-runewidth"
 )
 
 // style definitions
@@ -15,15 +14,6 @@ var (
 
 	docStyle = lipgloss.NewStyle().Foreground(fg).Align(lipgloss.Center)
 
-	fracBorder = lipgloss.Border{
-		Top:    "─",
-		Bottom: "─",
-	}
-
-	fracNumerStyle = docStyle.
-			BorderTop(false).
-			BorderBottom(true).
-			BorderStyle(fracBorder)
 
 	fracDenomStyle = docStyle.
 			BorderTop(true).
@@ -34,22 +24,22 @@ var (
 // depth-first traverse of the latex tree and dim tree in parallel
 // to build the later rendered string
 func (r *Renderer) DrawToBuffer(tree parser.Expr, dim *Dimensions) {
-	r.Buffer = r.Prerender(tree, dim, 0, 0)
+	r.Buffer = r.Prerender(tree, dim)
 }
 
-// x is the position of leftmost rune allowed to be written by the node
-// y is the position of baseline=0 of the node
-func (r *Renderer) Prerender(node parser.Expr, dim *Dimensions, x int, y int) string {
+func (r *Renderer) Prerender(node parser.Expr, dim *Dimensions) string {
 	switch n := node.(type) {
 	case parser.CmdContainer:
 		switch n.Command() {
+		case parser.CMD_underline:
+			return r.PrerenderCmdUnderline(n, dim)
 		case parser.CMD_frac:
-			return r.PrerenderCmdFrac(n, dim, x, y)
+			return r.PrerenderCmdFrac(n, dim)
 		default:
 			return "[unimplemented command]"
 		}
 	case parser.FlexContainer:
-		return r.PrerenderFlexContainer(n, dim, x, y)
+		return r.PrerenderFlexContainer(n, dim)
 	case parser.CmdLiteral:
 		content := GetVanillaString(n.Command())
 		return content
@@ -71,11 +61,11 @@ func (r *Renderer) Prerender(node parser.Expr, dim *Dimensions, x int, y int) st
 	// panic("Unhandled case in Prerender()")
 }
 
-func (r *Renderer) PrerenderFlexContainer(node parser.FlexContainer, dim *Dimensions, x int, y int) string {
+func (r *Renderer) PrerenderFlexContainer(node parser.FlexContainer, dim *Dimensions) string {
 	var children = []string{}
 	var baseLine = []int{}
 	for i, c := range node.Children() {
-		children = append(children, r.Prerender(c, dim.Children[i], 0, 0)) //TODO
+		children = append(children, r.Prerender(c, dim.Children[i])) //TODO
 		baseLine = append(baseLine, dim.Children[i].BaseLine)
 	}
 	// println(lipgloss.JoinHorizontal(lipgloss.Center, children...))
@@ -85,7 +75,7 @@ func (r *Renderer) PrerenderFlexContainer(node parser.FlexContainer, dim *Dimens
 func (r *Renderer) PrerenderCmdContainer(node parser.CmdContainer, dim *Dimensions, x int, y int) string {
 	switch node.Command() {
 	case parser.CMD_frac:
-		return r.PrerenderCmdFrac(node, dim, x, y)
+		return r.PrerenderCmdFrac(node, dim)
 	}
 
 	return ""
@@ -93,13 +83,15 @@ func (r *Renderer) PrerenderCmdContainer(node parser.CmdContainer, dim *Dimensio
 
 func (r *Renderer) PrerenderCmdFrac(node parser.CmdContainer, dim *Dimensions, x int, y int) string {
 	// FIXME add proper horizontal line
-	arg1 := r.Prerender(node.Children()[0], dim.Children[0], x, y)
-	arg2 := fracNumerStyle.Render(r.Prerender(node.Children()[1], dim.Children[1], x, y))
+	arg1 := r.Prerender(node.Children()[0], dim.Children[0])
+	arg2 := r.Prerender(node.Children()[1], dim.Children[1])
+	width := max(blockWidth(arg1), blockWidth(arg2))
+	line := strings.Repeat("─", width)
 
-	return lipgloss.JoinVertical(lipgloss.Center, arg1, arg2)
+	return lipgloss.JoinVertical(lipgloss.Center, arg1, line, arg2)
 }
 
 func blockWidth(block string) int {
-	println(strings.SplitN(block, "\n", 1))
-	return rw.StringWidth(strings.Split(block, "\n")[0])
+	_, width := getLines(block)
+	return width
 }
