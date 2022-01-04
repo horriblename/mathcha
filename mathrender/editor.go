@@ -91,7 +91,7 @@ func (e *Editor) NavigateLeft() {
 		e.getParent().InsertChild(idx, e.cursor)
 	} else if prev, ok := e.getParent().Children()[idx-1].(parser.Container); ok {
 		e.getParent().DeleteChildren(idx, idx)
-		e.EnterContainerFromRight(prev)
+		e.enterContainerFromRight(prev)
 	} else {
 		e.stepOverPrevSibling()
 	}
@@ -123,7 +123,7 @@ func (e *Editor) NavigateRight() {
 		e.getParent().InsertChild(idx+1, e.cursor)
 	} else if next, ok := e.getParent().Children()[idx+1].(parser.Container); ok {
 		e.getParent().DeleteChildren(idx, idx)
-		e.EnterContainerFromLeft(next)
+		e.enterContainerFromLeft(next)
 	} else {
 		e.stepOverNextSibling()
 	}
@@ -161,7 +161,7 @@ func (e *Editor) stepOverNextSibling() {
 	}
 }
 
-func (e *Editor) EnterContainerFromRight(target parser.Container) {
+func (e *Editor) enterContainerFromRight(target parser.Container) {
 	var parent parser.FlexContainer
 	switch t := target.(type) {
 	case parser.FixedContainer:
@@ -180,7 +180,7 @@ func (e *Editor) EnterContainerFromRight(target parser.Container) {
 	e.traceStack = append(e.traceStack, parent)
 }
 
-func (e *Editor) EnterContainerFromLeft(target parser.Container) {
+func (e *Editor) enterContainerFromLeft(target parser.Container) {
 	var parent parser.FlexContainer
 	switch t := target.(type) {
 	case parser.FixedContainer:
