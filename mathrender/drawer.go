@@ -15,14 +15,15 @@ const (
 var (
 	subtle = lipgloss.AdaptiveColor{Light: "#D9DCCF", Dark: "#383838"}
 	fg     = lipgloss.AdaptiveColor{Light: "#383838", Dark: "#AFAFAF"}
+	invert = lipgloss.AdaptiveColor{Light: "#AFAFAF", Dark: "#383838"}
 
 	docStyle = lipgloss.NewStyle().Foreground(fg).Align(lipgloss.Center)
 
-
-	fracDenomStyle = docStyle.
-			BorderTop(true).
-			BorderBottom(false).
-			BorderStyle(fracBorder)
+	underlineStyle = lipgloss.NewStyle().Underline(true)
+	cursorStyle    = lipgloss.NewStyle().
+			Foreground(invert).
+			Background(lipgloss.Color("#FFFFFF"))
+	variableStyle = lipgloss.NewStyle().Italic(true)
 )
 
 // depth-first traverse of the latex tree and dim tree in parallel
@@ -48,6 +49,10 @@ func (r *Renderer) Prerender(node parser.Expr, dim *Dimensions) string {
 		content := GetVanillaString(n.Command())
 		return content
 		// parser.Literal interface types
+	case *parser.VarLit:
+		return variableStyle.Copy().Render(n.Content())
+	case *Cursor:
+		return cursorStyle.Copy().Render(" ")
 	case parser.Literal:
 		content := n.Content()
 		switch content {
@@ -55,9 +60,8 @@ func (r *Renderer) Prerender(node parser.Expr, dim *Dimensions) string {
 			content = " " + content + " "
 		}
 		return content
-	case *Cursor:
-		return n.Content()
 	case nil:
+		// TODO handle error?
 		return "[nil]"
 	default:
 		return "[unimplemented expression]"
@@ -88,17 +92,19 @@ func (r *Renderer) PrerenderCmdContainer(node parser.CmdContainer, dim *Dimensio
 	return ""
 }
 
-func (r *Renderer) PrerenderCmdFrac(node parser.CmdContainer, dim *Dimensions, x int, y int) string {
-	// FIXME add proper horizontal line
+func (r *Renderer) PrerenderCmdUnderline(node parser.CmdContainer, dim *Dimensions) string {
+	block := r.Prerender(node.Children()[0], dim.Children[0])
+	lines, _ := getLines(block)
+	lines[len(lines)-1] = underlineStyle.Copy().Render(lines[len(lines)-1])
+
+	return lipgloss.JoinVertical(lipgloss.Center, lines...)
+}
+
+func (r *Renderer) PrerenderCmdFrac(node parser.CmdContainer, dim *Dimensions) string {
 	arg1 := r.Prerender(node.Children()[0], dim.Children[0])
 	arg2 := r.Prerender(node.Children()[1], dim.Children[1])
-	width := max(blockWidth(arg1), blockWidth(arg2))
+	width := max(lipgloss.Width(arg1), lipgloss.Width(arg2))
 	line := strings.Repeat("─", width)
 
 	return lipgloss.JoinVertical(lipgloss.Center, arg1, line, arg2)
-}
-
-func blockWidth(block string) int {
-	_, width := getLines(block)
-	return width
 }
