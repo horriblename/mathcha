@@ -133,8 +133,8 @@ type (
 		Incomplete bool   // true if (source) expressions are missing in Elts
 	}
 
-	// A TopLevelExpr is basically the same as CompositeLit but without brackets "{}"
-	TopLevelExpr struct {
+	// A UnboundCompExpr is basically the same as CompositeLit but without brackets "{}"
+	UnboundCompExpr struct {
 		From, To Pos
 		Elts     []Expr // list of composite elements; or nil
 	}
@@ -205,44 +205,44 @@ type (
 	}
 )
 
-func (x *BadExpr) Pos() Pos       { return x.From }
-func (x *EmptyExpr) Pos() Pos     { return x.From }
-func (x *NumberLit) Pos() Pos     { return x.From }
-func (x *VarLit) Pos() Pos        { return x.From }
-func (x *CompositeExpr) Pos() Pos { return x.Lbrace }
-func (x *TopLevelExpr) Pos() Pos  { return x.From }
-func (x *SimpleOpLit) Pos() Pos   { return x.From }
-func (x *UnknownCmdLit) Pos() Pos { return x.Backslash }
-func (x *SimpleCmdLit) Pos() Pos  { return x.Backslash }
-func (x *SuperExpr) Pos() Pos     { return x.Symbol }
-func (x *SubExpr) Pos() Pos       { return x.Symbol }
-func (x *Cmd1ArgExpr) Pos() Pos   { return x.Backslash }
-func (x *Cmd2ArgExpr) Pos() Pos   { return x.Backslash }
+func (x *BadExpr) Pos() Pos         { return x.From }
+func (x *EmptyExpr) Pos() Pos       { return x.From }
+func (x *NumberLit) Pos() Pos       { return x.From }
+func (x *VarLit) Pos() Pos          { return x.From }
+func (x *CompositeExpr) Pos() Pos   { return x.Lbrace }
+func (x *UnboundCompExpr) Pos() Pos { return x.From }
+func (x *SimpleOpLit) Pos() Pos     { return x.From }
+func (x *UnknownCmdLit) Pos() Pos   { return x.Backslash }
+func (x *SimpleCmdLit) Pos() Pos    { return x.Backslash }
+func (x *SuperExpr) Pos() Pos       { return x.Symbol }
+func (x *SubExpr) Pos() Pos         { return x.Symbol }
+func (x *Cmd1ArgExpr) Pos() Pos     { return x.Backslash }
+func (x *Cmd2ArgExpr) Pos() Pos     { return x.Backslash }
 
-func (x *BadExpr) End() Pos       { return x.To }
-func (x *EmptyExpr) End() Pos     { return x.To }
-func (x *NumberLit) End() Pos     { return x.To }
-func (x *VarLit) End() Pos        { return x.To }
-func (x *CompositeExpr) End() Pos { return x.Lbrace }
-func (x *TopLevelExpr) End() Pos  { return x.To }
-func (x *SimpleOpLit) End() Pos   { return x.From }
-func (x *UnknownCmdLit) End() Pos { return x.To }
-func (x *SimpleCmdLit) End() Pos  { return x.To }
-func (x *SuperExpr) End() Pos     { return x.Close }
-func (x *SubExpr) End() Pos       { return x.Close }
-func (x *Cmd1ArgExpr) End() Pos   { return x.To }
-func (x *Cmd2ArgExpr) End() Pos   { return x.To }
+func (x *BadExpr) End() Pos         { return x.To }
+func (x *EmptyExpr) End() Pos       { return x.To }
+func (x *NumberLit) End() Pos       { return x.To }
+func (x *VarLit) End() Pos          { return x.To }
+func (x *CompositeExpr) End() Pos   { return x.Lbrace }
+func (x *UnboundCompExpr) End() Pos { return x.To }
+func (x *SimpleOpLit) End() Pos     { return x.From }
+func (x *UnknownCmdLit) End() Pos   { return x.To }
+func (x *SimpleCmdLit) End() Pos    { return x.To }
+func (x *SuperExpr) End() Pos       { return x.Close }
+func (x *SubExpr) End() Pos         { return x.Close }
+func (x *Cmd1ArgExpr) End() Pos     { return x.To }
+func (x *Cmd2ArgExpr) End() Pos     { return x.To }
 
 // Container method definitions
-func (x *CompositeExpr) Children() []Expr { return x.Elts }
-func (x *TopLevelExpr) Children() []Expr  { return x.Elts }
+func (x *CompositeExpr) Children() []Expr   { return x.Elts }
+func (x *UnboundCompExpr) Children() []Expr { return x.Elts }
 
 func (x *Cmd1ArgExpr) Children() []Expr { return []Expr{x.Arg1} }
 func (x *Cmd2ArgExpr) Children() []Expr { return []Expr{x.Arg1, x.Arg2} }
 
 // FlexContainer methods
-func (x *CompositeExpr) AppendChild(child Expr) { x.Elts = append(x.Elts, child) }
-func (x *TopLevelExpr) AppendChild(child Expr)  { x.Elts = append(x.Elts, child) }
+func (x *CompositeExpr) AppendChild(child Expr)   { x.Elts = append(x.Elts, child) }
+func (x *UnboundCompExpr) AppendChild(child Expr) { x.Elts = append(x.Elts, child) }
 
 // Deletes Children from index, to index, inclusive
 func (x *CompositeExpr) DeleteChildren(from int, to int) {
@@ -259,7 +259,7 @@ func (x *CompositeExpr) DeleteChildren(from int, to int) {
 	}
 	x.Elts = x.Elts[:len(x.Elts)-l]
 }
-func (x *TopLevelExpr) DeleteChildren(from int, to int) {
+func (x *UnboundCompExpr) DeleteChildren(from int, to int) {
 	if from < 0 || to >= len(x.Children()) {
 		panic("DeleteChildren(): index out of range!")
 	}
@@ -290,7 +290,7 @@ func (x *CompositeExpr) InsertChild(at int, child Expr) {
 	x.Elts = append(x.Elts[:at+1], x.Elts[at:]...)
 	x.Elts[at] = child
 }
-func (x *TopLevelExpr) InsertChild(at int, child Expr) {
+func (x *UnboundCompExpr) InsertChild(at int, child Expr) {
 	if at < 0 || at > len(x.Children()) {
 		panic("InsertChild(): invalid index for 'at'")
 	}
@@ -302,8 +302,8 @@ func (x *TopLevelExpr) InsertChild(at int, child Expr) {
 	x.Elts[at] = child
 }
 
-func (x *CompositeExpr) Identifier() string { return "{" }
-func (x *TopLevelExpr) Identifier() string  { return "" }
+func (x *CompositeExpr) Identifier() string   { return "{" }
+func (x *UnboundCompExpr) Identifier() string { return "" }
 
 // FixedContainer methods
 func (x *Cmd1ArgExpr) Parameters() int { return 1 }
@@ -346,7 +346,7 @@ func (x *Cmd2ArgExpr) Command() LatexCmd   { return x.Type }
 
 // ----------------------------------------------------------------------------
 // VisualizeTree, naive approach, only for debugging purposes
-func (x *TopLevelExpr) VisualizeTree() string {
+func (x *UnboundCompExpr) VisualizeTree() string {
 	tree := "$\n"
 	for _, el := range x.Children() {
 		branch := (el).VisualizeTree()

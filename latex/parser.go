@@ -15,7 +15,7 @@ type Parser struct {
 
 	// Non-syntactic parser control
 	exprLev  int // depth in tree of current position
-	treeRoot *TopLevelExpr
+	treeRoot *UnboundCompExpr
 }
 
 func (p *Parser) Init(src string) {
@@ -25,7 +25,7 @@ func (p *Parser) Init(src string) {
 	p.treeRoot = p.parseTopLevel()
 }
 
-func (p *Parser) GetTree() *TopLevelExpr { return p.treeRoot }
+func (p *Parser) GetTree() *UnboundCompExpr { return p.treeRoot }
 
 func (p *Parser) next() {
 	p.tok = p.tokenizer.Peek()
@@ -75,8 +75,8 @@ func (p *Parser) matchExpectation(lit string) bool {
 	return false
 }
 
-func (p *Parser) parseTopLevel() *TopLevelExpr {
-	tree := new(TopLevelExpr)
+func (p *Parser) parseTopLevel() *UnboundCompExpr {
+	tree := new(UnboundCompExpr)
 	for !p.IsEOF() {
 		tree.AppendChild(p.parseGenericOnce())
 	}

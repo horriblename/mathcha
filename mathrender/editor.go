@@ -41,7 +41,7 @@ func (e *Editor) Read(latex string) {
 		e.renderer = &Renderer{LatexTree: p.GetTree()}
 		// p (Parser object) can be discarded now
 	} else {
-		e.renderer.Load(&parser.TopLevelExpr{})
+		e.renderer.Load(&parser.UnboundCompExpr{})
 	}
 
 	formatLatexTree(e.renderer.LatexTree)
