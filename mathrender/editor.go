@@ -24,7 +24,7 @@ func (c *Cursor) Pos() parser.Pos { return parser.Pos(0) } // FIXME remove
 func (c *Cursor) End() parser.Pos { return parser.Pos(0) }
 
 func (c *Cursor) VisualizeTree() string { return "Cursor        " }
-func (c *Cursor) Content() string       { return "\x1b[47mI\x1b[40m" } // TODO implement zero-width cursor
+func (c *Cursor) Content() string       { return "" }
 
 // TODO remove?
 func (e Editor) Init() tea.Cmd {
@@ -79,7 +79,7 @@ func (e *Editor) NavigateLeft() {
 		e.getParent().DeleteChildren(idx, idx)
 		var exitFrom parser.Container
 		exitFrom = e.popStack()
-		if _, ok := e.traceStack[len(e.traceStack)-1].(parser.FixedContainer); ok {
+		if _, ok := e.getLastOnStack().(parser.FixedContainer); ok {
 			exitFrom = e.popStack()
 		}
 		for i, c := range e.getParent().Children() {
@@ -111,7 +111,7 @@ func (e *Editor) NavigateRight() {
 		e.getParent().DeleteChildren(idx, idx)
 		var exitFrom parser.Container
 		exitFrom = e.popStack()
-		if _, ok := e.traceStack[len(e.traceStack)-1].(parser.FixedContainer); ok {
+		if _, ok := e.getLastOnStack().(parser.FixedContainer); ok {
 			exitFrom = e.popStack()
 		}
 		for i, c := range e.getParent().Children() {
@@ -310,13 +310,10 @@ func (e Editor) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		switch msg.Type {
 		case tea.KeyLeft:
 			e.NavigateLeft()
-			e.renderer.Sync()
 		case tea.KeyRight:
 			e.NavigateRight()
-			e.renderer.Sync()
 		case tea.KeyBackspace:
 			e.DeleteBack()
-			e.renderer.Sync()
 		case tea.KeyCtrlC:
 			return e, tea.Quit
 		case tea.KeyRunes:
@@ -330,10 +327,12 @@ func (e Editor) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				default:
 					e.handleRest(msg.Runes[0])
 				}
-				e.renderer.Sync()
 			}
+		default:
+			return e, nil
 		}
 	}
+	e.renderer.Sync()
 	return e, nil
 }
 
