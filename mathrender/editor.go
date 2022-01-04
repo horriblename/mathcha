@@ -235,6 +235,10 @@ func (e *Editor) DeleteBack() {
 		// TODO exit container
 		return
 	}
+	if n, ok := e.getParent().Children()[idx-1].(parser.Container); ok {
+		e.enterContainerFromRight(n)
+		return
+	}
 	e.getParent().DeleteChildren(idx-1, idx-1)
 }
 
