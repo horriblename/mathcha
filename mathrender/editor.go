@@ -200,6 +200,35 @@ func (e *Editor) EnterContainerFromLeft(target parser.Container) {
 	e.traceStack = append(e.traceStack, parent)
 }
 
+func (e *Editor) InsertFrac(detectNumerator bool) {
+	arg1 := new(parser.CompositeExpr)
+	arg2 := new(parser.CompositeExpr)
+	frac := &parser.Cmd2ArgExpr{Type: parser.CMD_frac, Arg1: arg1, Arg2: arg2}
+
+	idx := e.getCursorIdxInParent()
+
+	if detectNumerator {
+		i := idx - 1
+		for ; i >= 0; i-- {
+			sibling := e.getParent().Children()[i]
+			switch sibling.(type) {
+			case *parser.VarLit, *parser.NumberLit:
+				arg1.InsertChild(0, sibling)
+				continue
+			default: // maybe use named loop and break from here
+			}
+			break
+		}
+
+		if i != idx-1 {
+			e.getParent().DeleteChildren(i+1, idx-1)
+			idx = i + 1
+		}
+	}
+
+	e.getParent().InsertChild(idx, frac)
+}
+
 func (e *Editor) DeleteBack() {
 	idx := e.getCursorIdxInParent()
 	if idx == 0 {
@@ -240,6 +269,17 @@ func (e *Editor) handleDigit(digit rune) {
 func (e *Editor) handleRest(char rune) {
 	// TODO handle special characters _, ^ etc
 	idx := e.getCursorIdxInParent()
+	switch char {
+	case '/':
+		e.InsertFrac(true)
+		e.NavigateLeft()
+		//e.NavigateDown()
+		return
+	case ' ':
+		e.getParent().InsertChild(idx, &parser.SimpleCmdLit{Type: parser.CMD_SPACE, Source: `\ `})
+		// case '\\':
+		//    e.getParent().InsertChild(idx, &parser.IncompleteCmdLit{})
+	}
 	switch parent := e.getParent().(type) {
 	case parser.FlexContainer:
 		parent.InsertChild(idx, &parser.SimpleOpLit{Source: string(char)})
@@ -260,6 +300,10 @@ func (e *Editor) getParent() parser.FlexContainer {
 	panic("Editor.getParent(): Parent is not a FlexContainer")
 }
 
+// Same as getParent() but returns a general Container type instead
+func (e *Editor) getLastOnStack() parser.Container {
+	return e.traceStack[len(e.traceStack)-1]
+}
 func (e Editor) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
