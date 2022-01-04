@@ -15,10 +15,34 @@ const (
 	CMD_UNKNOWN LatexCmd = iota
 
 	cmd_1arg_beg // commands that expect 1 arguement
+	// accents
+	CMD_underline
+	CMD_overline
+	CMD_subscript
+	CMD_superscript
+	// text formatting
+	CMD_text
+	// CMD_textnormal
+	// CMD_textrm
+	// CMD_textup
+	// CMD_textmd
+	// CMD_emph
+	// CMD_italic
+	// CMD_textit
+	// CMD_textbf
+	// CMD_textsf
+	// CMD_texttt
+	// CMD_textsc
+	// CMD_uppercase
+	// CMD_lowercase
+	CMD_left
+	CMD_right
+
 	CMD_sqrt
 	cmd_1arg_end
 
 	cmd_2arg_beg // commands that expect 2 arguements
+	CMD_binom
 	CMD_frac
 	cmd_2arg_end
 
@@ -142,6 +166,7 @@ const (
 	CMD_H
 
 	// spacing
+	CMD_SPACE
 	CMD_quad
 	CMD_emsp
 	CMD_qquad
@@ -455,8 +480,25 @@ const (
 
 var latexCmds = map[string]LatexCmd{
 	// functional commands
-	"\\sqrt": CMD_sqrt,
-	"\\frac": CMD_frac,
+	// accents
+	`\underline`:   CMD_underline,
+	`\overline`:    CMD_overline,
+	`\subscript`:   CMD_subscript,
+	`\superscript`: CMD_superscript,
+	// text formatting
+	`\text`: CMD_text,
+
+	`\left`:  CMD_left,
+	`\right`: CMD_right,
+
+	`\sqrt`: CMD_sqrt,
+
+	// 2 parameter commands
+	`\binom`:    CMD_binom,
+	`\frac`:     CMD_frac,
+	`\dfrac`:    CMD_frac,
+	`\cfrac`:    CMD_frac,
+	`\fraction`: CMD_frac,
 
 	"\\alpha":      CMD_alpha,
 	"\\beta":       CMD_beta,
@@ -639,6 +681,7 @@ var latexCmds = map[string]LatexCmd{
 	"\\Hamiltonian":        CMD_H,
 	"\\quaternions":        CMD_H,
 	"\\Quaternions":        CMD_H,
+	"\\ ":                  CMD_SPACE,
 	"\\quad":               CMD_quad,
 	"\\emsp":               CMD_emsp,
 	"\\qquad":              CMD_qquad,
@@ -997,6 +1040,7 @@ var latexCmds = map[string]LatexCmd{
 	"\\boxdot":           CMD_boxdot,
 }
 
+// BUG map variables are unordered, this returns a different string everytime if multiple commands are available
 func (cmd LatexCmd) GetCmd() string {
 	for k, v := range latexCmds {
 		if v == cmd {
@@ -1006,8 +1050,6 @@ func (cmd LatexCmd) GetCmd() string {
 	return "unmapped command"
 }
 
-// FIXME if we don't need to map from constant to string command, swap key-values
-// in the latexCmds map then change this function
 func MatchLatexCmd(cmd string) LatexCmd {
 	return latexCmds[cmd]
 }
