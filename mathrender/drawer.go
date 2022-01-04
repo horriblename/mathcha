@@ -70,11 +70,11 @@ func (r *Renderer) Prerender(node parser.Expr, dim *Dimensions) string {
 }
 
 func (r *Renderer) PrerenderFlexContainer(node parser.FlexContainer, dim *Dimensions) string {
-	var children = []string{}
-	var baseLine = []int{}
+	var children = make([]string, len(node.Children()))
+	var baseLine = make([]int, len(node.Children()))
 	for i, c := range node.Children() {
-		children = append(children, r.Prerender(c, dim.Children[i])) //TODO
-		baseLine = append(baseLine, dim.Children[i].BaseLine)
+		children[i] = r.Prerender(c, dim.Children[i])
+		baseLine[i] = dim.Children[i].BaseLine
 	}
 	if len(children) == 0 && CONF_RENDER_EMPTY_COMP_EXPR {
 		return " "
