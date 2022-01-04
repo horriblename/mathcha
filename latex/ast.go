@@ -407,7 +407,7 @@ func (x *SubExpr) VisualizeTree() string {
 }
 
 func (x *Cmd1ArgExpr) VisualizeTree() string {
-	tree := x.source + "\n"
+	tree := x.Command().GetCmd() + "\n"
 	branch := x.Arg1.VisualizeTree()
 	splits := strings.Split(branch, "\n")
 	tree += "├───" + splits[0] + "\n"
@@ -420,7 +420,7 @@ func (x *Cmd1ArgExpr) VisualizeTree() string {
 }
 
 func (x *Cmd2ArgExpr) VisualizeTree() string {
-	tree := "\\frac\n"
+	tree := x.Command().GetCmd() + "\n"
 	branch := x.Arg1.VisualizeTree()
 	splits := strings.Split(branch, "\n")
 	tree += "├───" + splits[0] + "\n"
