@@ -62,8 +62,25 @@ func (e *Editor) popStack() parser.Container {
 	return ret
 }
 
+// A convenienve function to move cursor to a new position and handle clean ups
+func (e *Editor) moveCursorTo(
+	newParent parser.FlexContainer, // new Parent to place cursor in
+	pos int, // position of the new cursor in the Parent
+	ancestors []parser.Container, // A slice of Containers to insert into Editor.traceStack, the first item must be the common ancestor found in both the old and new stack
+) {
+	idx := e.getCursorIdxInParent()
+	e.getParent().DeleteChildren(idx, idx)
+	newParent.InsertChild(pos, e.cursor)
+
+	for i := len(e.traceStack) - 1; i >= 0; i-- {
+		if e.traceStack[i] == ancestors[0] {
+			e.traceStack = append(e.traceStack[:i+1], ancestors[1:]...)
+		}
+	}
+}
+
 // ----------------------------------------------------------------------------
-// Navigation utils
+// Cursor Navigation
 
 // Navigates cursor to the left, exits a parent container if there is no left sibling
 // Enters a Container if left sibling is one that allows entering
@@ -137,12 +154,7 @@ func (e *Editor) stepOverPrevSibling() {
 		panic("stepOverPrevSibling(): No siblings before cursor!")
 	}
 
-	if n, ok := e.getParent().(parser.FlexContainer); ok {
-		n.DeleteChildren(idx, idx)
-		n.InsertChild(idx-1, e.cursor)
-	} else {
-		panic("stepOverPrevSibling(): cursor not in a FlexContainer")
-	}
+	e.moveCursorTo(e.getParent(), idx-1, []parser.Container{e.getParent()})
 }
 
 // Moves cursor to after the next sibling
@@ -153,14 +165,12 @@ func (e *Editor) stepOverNextSibling() {
 		panic("stepOverNextSibling(): No siblings after cursor!")
 	}
 
-	if n, ok := e.getParent().(parser.FlexContainer); ok {
-		n.DeleteChildren(idx, idx)
-		n.InsertChild(idx+1, e.cursor)
-	} else {
-		panic("stepOverNextSibling(): cursor not in a FlexContainer")
-	}
+	e.moveCursorTo(e.getParent(), idx+1, []parser.Container{e.getParent()})
 }
 
+// enter a Container from the right
+// The old cursor and traceStack MUST be handled before calling this
+// TODO rewrite using the moveCursorTo function?
 func (e *Editor) enterContainerFromRight(target parser.Container) {
 	var parent parser.FlexContainer
 	switch t := target.(type) {
@@ -176,10 +186,13 @@ func (e *Editor) enterContainerFromRight(target parser.Container) {
 	default:
 		panic("Editor attempted to enter a non Fixed- or FlexContainer")
 	}
-	parent.AppendChild(e.cursor)
+	parent.AppendChild(e.cursor) // TODO use e.moveCursorTo instead?
 	e.traceStack = append(e.traceStack, parent)
 }
 
+// enter a Container from the left
+// The old cursor and traceStack MUST be handled before calling this
+// TODO rewrite using the moveCursorTo function?
 func (e *Editor) enterContainerFromLeft(target parser.Container) {
 	var parent parser.FlexContainer
 	switch t := target.(type) {
