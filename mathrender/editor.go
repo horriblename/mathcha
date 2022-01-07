@@ -333,6 +333,7 @@ func (e *Editor) DeleteBack() {
 		return
 	}
 	if n, ok := e.getParent().Children()[idx-1].(parser.Container); ok {
+		e.getParent().DeleteChildren(idx, idx)
 		e.enterContainerFromRight(n)
 		return
 	}
