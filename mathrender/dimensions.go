@@ -81,6 +81,8 @@ func calculateDim(node parser.Expr) *Dimensions {
 
 func calculateDimCmdContainer(node parser.CmdContainer) *Dimensions {
 	switch node.Command() {
+	case parser.CMD_underline:
+		return calculateDimCmdUnderline(node)
 	case parser.CMD_frac:
 		return calculateDimCmdFrac(node)
 	}
@@ -91,6 +93,15 @@ func calculateDimCmdContainer(node parser.CmdContainer) *Dimensions {
 	dim.Height = 1
 	dim.BaseLine = 0
 	dim.Children = nil
+	return dim
+}
+
+func calculateDimCmdUnderline(node parser.CmdContainer) *Dimensions {
+	dim := new(Dimensions)
+	dim.Children = []*Dimensions{calculateDim(node.Children()[0])}
+	dim.Width = dim.Children[0].Width
+	dim.Height = dim.Children[0].Height
+	dim.BaseLine = dim.Children[0].BaseLine
 	return dim
 }
 
