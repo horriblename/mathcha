@@ -146,6 +146,90 @@ func (e *Editor) NavigateRight() {
 	}
 }
 
+// Navigate cursor downwards
+func (e *Editor) NavigateDown() {
+	//cursorLoc := e.getParent()
+	var targetContainer parser.Container
+	var cursorIdx int // index, in targetContainer.Children(), of the child containing the cursor
+	stackIdx := e.findEnclosingVerticallyNavigableCommand(len(e.traceStack) - 1)
+LookForContainerBelow:
+	for ; stackIdx > 0; stackIdx = e.findEnclosingVerticallyNavigableCommand(stackIdx - 1) {
+
+		targetContainer = e.traceStack[stackIdx]
+		cursorLoc := e.traceStack[stackIdx+1] // in current implementation all vertical navigable containers have FlexContainer as Children
+
+		for j := 0; j < len(targetContainer.Children())-1; j++ {
+			if targetContainer.Children()[j] == cursorLoc {
+				cursorIdx = j
+				break LookForContainerBelow
+			}
+		}
+	}
+
+	if stackIdx <= 0 {
+		return
+	}
+
+	if n, ok := targetContainer.Children()[cursorIdx+1].(parser.Container); ok {
+		idx := e.getCursorIdxInParent()
+		// Clean up traceStack
+		// move to dedicated function?
+		e.getParent().DeleteChildren(idx, idx)
+		for i := stackIdx + 1; i < len(e.traceStack); i++ {
+			e.traceStack[i] = nil
+		}
+		e.traceStack = e.traceStack[:stackIdx+1]
+
+		e.enterContainerFromLeft(n)
+	} else {
+		panic("NavigateDown: next row does not seem to be a Container type")
+	}
+}
+
+// Navigate cursor upwards
+func (e *Editor) NavigateUp() {
+	//cursorLoc := e.getParent()
+	var targetContainer parser.Container
+	var cursorIdx int // index, in targetContainer.Children(), of the child containing the cursor
+	stackIdx := e.findEnclosingVerticallyNavigableCommand(len(e.traceStack) - 1)
+LookForContainerAbove:
+	for ; stackIdx > 0; stackIdx = e.findEnclosingVerticallyNavigableCommand(stackIdx - 1) {
+
+		targetContainer = e.traceStack[stackIdx]
+		cursorLoc := e.traceStack[stackIdx+1] // in current implementation all vertical navigable containers have FlexContainer as Children
+
+		if targetContainer.Children()[0] == cursorLoc {
+			continue LookForContainerAbove
+		}
+
+		for j := 1; j < len(targetContainer.Children()); j++ {
+			if targetContainer.Children()[j] == cursorLoc {
+				cursorIdx = j
+				break LookForContainerAbove
+			}
+		}
+	}
+
+	if stackIdx <= 0 {
+		return
+	}
+
+	if n, ok := targetContainer.Children()[cursorIdx-1].(parser.Container); ok {
+		idx := e.getCursorIdxInParent()
+		// Clean up traceStack
+		// move to dedicated function?
+		e.getParent().DeleteChildren(idx, idx)
+		for i := stackIdx + 1; i < len(e.traceStack); i++ {
+			e.traceStack[i] = nil
+		}
+		e.traceStack = e.traceStack[:stackIdx+1]
+
+		e.enterContainerFromLeft(n)
+	} else {
+		panic("NavigateDown: next row does not seem to be a Container type")
+	}
+}
+
 // Moves cursor to before the previous sibling
 // Throws error if there is no previous Sibling
 func (e *Editor) stepOverPrevSibling() {
@@ -266,7 +350,7 @@ func (e *Editor) getCursorIdxInParent() int {
 }
 
 // ---
-// Key input handlers
+// Keyboard input handlers
 func (e *Editor) handleLetter(letter rune) {
 	idx := e.getCursorIdxInParent()
 	switch parent := e.getParent().(type) {
@@ -290,7 +374,7 @@ func (e *Editor) handleRest(char rune) {
 	case '/':
 		e.InsertFrac(true)
 		e.NavigateLeft()
-		//e.NavigateDown()
+		e.NavigateDown()
 		return
 	case ' ':
 		e.getParent().InsertChild(idx, &parser.SimpleCmdLit{Type: parser.CMD_SPACE, Source: `\ `})
@@ -321,6 +405,27 @@ func (e *Editor) getParent() parser.FlexContainer {
 func (e *Editor) getLastOnStack() parser.Container {
 	return e.traceStack[len(e.traceStack)-1]
 }
+
+// Find the closest enclosing FixedContainer that has vertical navigation controls and
+// returns its index within the traceStack
+func (e *Editor) findEnclosingVerticallyNavigableCommand(searchFrom int) (index int) {
+	if searchFrom >= len(e.traceStack) {
+		panic("findEnclosingVerticallyNavigableCommand(): searchFrom index >= len(traceStack)")
+	}
+	if searchFrom < 0 {
+		searchFrom = len(e.traceStack)
+	}
+	for ; searchFrom > 0; searchFrom-- {
+		if n, ok := e.traceStack[searchFrom].(*parser.Cmd2ArgExpr); ok {
+			switch n.Command() { // TODO
+			case parser.CMD_frac, parser.CMD_binom:
+				return searchFrom
+			}
+		}
+	}
+	return -1
+}
+
 func (e Editor) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
@@ -329,6 +434,10 @@ func (e Editor) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			e.NavigateLeft()
 		case tea.KeyRight:
 			e.NavigateRight()
+		case tea.KeyDown:
+			e.NavigateDown()
+		case tea.KeyUp:
+			e.NavigateUp()
 		case tea.KeyBackspace:
 			e.DeleteBack()
 		case tea.KeyCtrlC:
