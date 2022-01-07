@@ -132,6 +132,8 @@ func (p *Parser) parseStringCmd() Expr {
 		leaf = p.parseCmd1Arg(kind)
 	case kind.TakesTwoArg():
 		leaf = p.parseCmd2Arg(kind)
+	case kind.IsEnclosing():
+		leaf = p.parseCmdEnclosing(kind)
 	case kind == CMD_UNKNOWN:
 		leaf = &(UnknownCmdLit{Source: p.lit})
 		p.next()
@@ -210,7 +212,7 @@ func (p *Parser) parseSuperExpr() Expr {
 // this should be merged with parseSuperExpr(), and maybe even parseFuncCmd1
 func (p *Parser) parseSubExpr() Expr {
 	p.exprLev++
-	p.next() // skip "^"
+	p.next() // skip "_"
 	node := new(SubExpr)
 	node.X = p.parseGenericOnce()
 
@@ -237,6 +239,41 @@ func (p *Parser) parseCmd2Arg(kind LatexCmd) Expr {
 	node.Arg1 = p.parseGenericOnce()
 	node.Arg2 = p.parseGenericOnce()
 
+	p.exprLev--
+	return node
+}
+
+func (p *Parser) parseCmdEnclosing(kind LatexCmd) Expr {
+	p.exprLev++
+	p.expect("\\right")
+	p.next() // skip "\left"
+	node := new(ParenCompExpr)
+	switch p.lit {
+	case "(", "[", "\\{":
+	default:
+		panic("\\left expected '(', '[' or '\\{' but got " + p.lit)
+	}
+	node.Left = p.lit
+	p.next() // skip left parenthesis e.g. "("
+	for !p.IsEOF() && p.lit != "\\right" {
+		node.AppendChild(p.parseGenericOnce())
+	}
+	if p.IsEOF() {
+		// FIXME error handling
+		panic("expecting `\\right` got EOF")
+	}
+	p.next() // skip "\right"
+	switch {
+	case node.Left == "(" && p.lit != ")":
+		panic("\\right expected ')' but got " + p.lit)
+	case node.Left == "[" && p.lit != "]":
+		panic("\\right expected ']' but got " + p.lit)
+	case node.Left == "\\{" && p.lit != "\\}":
+		panic("\\right expected '\\}' but got " + p.lit)
+	}
+	node.Right = p.lit
+	p.next()
+	p.dropExpect("\\right")
 	p.exprLev--
 	return node
 }

@@ -43,6 +43,9 @@ func (r *Renderer) Prerender(node parser.Expr, dim *Dimensions) string {
 		default:
 			return "[unimplemented command]"
 		}
+	case *parser.ParenCompExpr:
+		content := r.PrerenderFlexContainer(n, dim)
+		return JoinHorizontal([]int{dim.BaseLine, dim.Children[0].BaseLine, dim.BaseLine}, n.Left, content, n.Right)
 	case parser.FlexContainer:
 		return r.PrerenderFlexContainer(n, dim)
 	case parser.CmdLiteral:

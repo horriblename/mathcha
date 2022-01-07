@@ -53,7 +53,7 @@ type Literal interface {
 type FlexContainer interface {
 	Container
 	AppendChild(Expr)
-	DeleteChildren(int, int)
+	DeleteChildren(from int, to int)
 	InsertChild(int, Expr)
 	// TODO
 	Identifier() string // temporary solution to identify the concrete type
@@ -124,7 +124,7 @@ type (
 		Source   string
 	}
 
-	// A Composite node represents a composite bracea surrounded { expression }
+	// A Composite node represents a composite braces surrounded { expression }
 	CompositeExpr struct {
 		Type       Expr   // literal type; or nil ?
 		Lbrace     Pos    // Position of "{"
@@ -136,6 +136,15 @@ type (
 	// A UnboundCompExpr is basically the same as CompositeLit but without brackets "{}"
 	UnboundCompExpr struct {
 		From, To Pos
+		Elts     []Expr // list of composite elements; or nil
+	}
+
+	// A ParenCompExpr is a parenthesized Composite Expression surrounded by \left\right commands
+	// e.g. \left( x-y \right)
+	ParenCompExpr struct {
+		From, To Pos
+		Left     string // the character on the left side of the expression
+		Right    string // the character on the right side of the expression
 		Elts     []Expr // list of composite elements; or nil
 	}
 
@@ -211,6 +220,7 @@ func (x *NumberLit) Pos() Pos       { return x.From }
 func (x *VarLit) Pos() Pos          { return x.From }
 func (x *CompositeExpr) Pos() Pos   { return x.Lbrace }
 func (x *UnboundCompExpr) Pos() Pos { return x.From }
+func (x *ParenCompExpr) Pos() Pos   { return x.From }
 func (x *SimpleOpLit) Pos() Pos     { return x.From }
 func (x *UnknownCmdLit) Pos() Pos   { return x.Backslash }
 func (x *SimpleCmdLit) Pos() Pos    { return x.Backslash }
@@ -225,6 +235,7 @@ func (x *NumberLit) End() Pos       { return x.To }
 func (x *VarLit) End() Pos          { return x.To }
 func (x *CompositeExpr) End() Pos   { return x.Lbrace }
 func (x *UnboundCompExpr) End() Pos { return x.To }
+func (x *ParenCompExpr) End() Pos   { return x.To }
 func (x *SimpleOpLit) End() Pos     { return x.From }
 func (x *UnknownCmdLit) End() Pos   { return x.To }
 func (x *SimpleCmdLit) End() Pos    { return x.To }
@@ -236,6 +247,7 @@ func (x *Cmd2ArgExpr) End() Pos     { return x.To }
 // Container method definitions
 func (x *CompositeExpr) Children() []Expr   { return x.Elts }
 func (x *UnboundCompExpr) Children() []Expr { return x.Elts }
+func (x *ParenCompExpr) Children() []Expr   { return x.Elts }
 
 func (x *Cmd1ArgExpr) Children() []Expr { return []Expr{x.Arg1} }
 func (x *Cmd2ArgExpr) Children() []Expr { return []Expr{x.Arg1, x.Arg2} }
@@ -243,6 +255,7 @@ func (x *Cmd2ArgExpr) Children() []Expr { return []Expr{x.Arg1, x.Arg2} }
 // FlexContainer methods
 func (x *CompositeExpr) AppendChild(child Expr)   { x.Elts = append(x.Elts, child) }
 func (x *UnboundCompExpr) AppendChild(child Expr) { x.Elts = append(x.Elts, child) }
+func (x *ParenCompExpr) AppendChild(child Expr)   { x.Elts = append(x.Elts, child) }
 
 // Deletes Children from index, to index, inclusive
 func (x *CompositeExpr) DeleteChildren(from int, to int) {
@@ -272,9 +285,20 @@ func (x *UnboundCompExpr) DeleteChildren(from int, to int) {
 		x.Elts[len(x.Elts)-l+i] = nil // garbage collection
 	}
 	x.Elts = x.Elts[:len(x.Elts)-l]
-	// copy(x.Elts[i:], x.Elts[i+1:])
-	// x.Elts[len(x.Elts)-1] = nil // or the zero value of T
-	// x.Elts = x.Elts[:len(x.Elts)-1]
+}
+func (x *ParenCompExpr) DeleteChildren(from int, to int) {
+	if from < 0 || to >= len(x.Children()) {
+		panic("DeleteChildren(): index out of range!")
+	}
+	if from > to {
+		panic("DeleteChildren(): 'from' cannot be larger than 'to'")
+	}
+	l := to - from + 1
+	copy(x.Elts[from:], x.Elts[to+1:])
+	for i := range x.Elts[len(x.Elts)-l:] {
+		x.Elts[len(x.Elts)-l+i] = nil // garbage collection
+	}
+	x.Elts = x.Elts[:len(x.Elts)-l]
 }
 
 // FIXME do I really need to repeat these exact same functions for each struct??
@@ -301,9 +325,21 @@ func (x *UnboundCompExpr) InsertChild(at int, child Expr) {
 	x.Elts = append(x.Elts[:at+1], x.Elts[at:]...)
 	x.Elts[at] = child
 }
+func (x *ParenCompExpr) InsertChild(at int, child Expr) {
+	if at < 0 || at > len(x.Children()) {
+		panic("InsertChild(): invalid index for 'at'")
+	}
+	if at == len(x.Children()) {
+		x.AppendChild(child)
+		return
+	}
+	x.Elts = append(x.Elts[:at+1], x.Elts[at:]...)
+	x.Elts[at] = child
+}
 
 func (x *CompositeExpr) Identifier() string   { return "{" }
 func (x *UnboundCompExpr) Identifier() string { return "" }
+func (x *ParenCompExpr) Identifier() string   { return "" }
 
 // FixedContainer methods
 func (x *Cmd1ArgExpr) Parameters() int { return 1 }
@@ -377,6 +413,23 @@ func (x *CompositeExpr) VisualizeTree() string {
 		}
 	}
 	tree += "└───}\n"
+	return tree
+}
+
+func (x *ParenCompExpr) VisualizeTree() string {
+	tree := x.Left + "\n"
+	for _, el := range x.Children() {
+		branch := (el).VisualizeTree()
+		splits := strings.Split(branch, "\n")
+		tree += "├───" + splits[0] + "\n"
+		if len(splits) == 1 {
+			continue
+		}
+		for _, line := range splits[1:] {
+			tree += "|   " + line + "\n"
+		}
+	}
+	tree += "└───" + x.Right + "\n"
 	return tree
 }
 

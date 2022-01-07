@@ -35,9 +35,6 @@ const (
 	// CMD_textsc
 	// CMD_uppercase
 	// CMD_lowercase
-	CMD_left
-	CMD_right
-
 	CMD_sqrt
 	cmd_1arg_end
 
@@ -45,6 +42,11 @@ const (
 	CMD_binom
 	CMD_frac
 	cmd_2arg_end
+
+	cmd_enclosing_beg
+	CMD_left
+	CMD_right
+	cmd_enclosing_end
 
 	vanilla_sym_beg
 	CMD_alpha
@@ -1064,4 +1066,8 @@ func (cmd LatexCmd) TakesOneArg() bool {
 
 func (cmd LatexCmd) TakesTwoArg() bool {
 	return cmd_2arg_beg < cmd && cmd < cmd_2arg_end
+}
+
+func (cmd LatexCmd) IsEnclosing() bool {
+	return cmd_enclosing_beg < cmd && cmd < cmd_enclosing_end
 }
