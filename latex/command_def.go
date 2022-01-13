@@ -30,6 +30,12 @@ const (
 	// CMD_uppercase
 	cmd_text_end
 
+	cmd_1arg_beg // commands that expect 1 arguement
+	// accents
+	CMD_underline
+	CMD_overline
+	CMD_subscript
+	CMD_superscript
 	// CMD_lowercase
 	CMD_sqrt
 	cmd_1arg_end
