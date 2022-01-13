@@ -257,85 +257,15 @@ func (x *CompositeExpr) AppendChild(child Expr)   { x.Elts = append(x.Elts, chil
 func (x *UnboundCompExpr) AppendChild(child Expr) { x.Elts = append(x.Elts, child) }
 func (x *ParenCompExpr) AppendChild(child Expr)   { x.Elts = append(x.Elts, child) }
 
-// Deletes Children from index, to index, inclusive
-func (x *CompositeExpr) DeleteChildren(from int, to int) {
-	if from < 0 || to >= len(x.Children()) {
-		panic("DeleteChildren(): index out of range!")
-	}
-	if from > to {
-		panic("DeleteChildren(): 'from' cannot be larger than 'to'")
-	}
-	l := to - from + 1
-	copy(x.Elts[from:], x.Elts[to+1:])
-	for i := range x.Elts[len(x.Elts)-l:] {
-		x.Elts[len(x.Elts)-l+i] = nil // garbage collection
-	}
-	x.Elts = x.Elts[:len(x.Elts)-l]
-}
-func (x *UnboundCompExpr) DeleteChildren(from int, to int) {
-	if from < 0 || to >= len(x.Children()) {
-		panic("DeleteChildren(): index out of range!")
-	}
-	if from > to {
-		panic("DeleteChildren(): 'from' cannot be larger than 'to'")
-	}
-	l := to - from + 1
-	copy(x.Elts[from:], x.Elts[to+1:])
-	for i := range x.Elts[len(x.Elts)-l:] {
-		x.Elts[len(x.Elts)-l+i] = nil // garbage collection
-	}
-	x.Elts = x.Elts[:len(x.Elts)-l]
-}
-func (x *ParenCompExpr) DeleteChildren(from int, to int) {
-	if from < 0 || to >= len(x.Children()) {
-		panic("DeleteChildren(): index out of range!")
-	}
-	if from > to {
-		panic("DeleteChildren(): 'from' cannot be larger than 'to'")
-	}
-	l := to - from + 1
-	copy(x.Elts[from:], x.Elts[to+1:])
-	for i := range x.Elts[len(x.Elts)-l:] {
-		x.Elts[len(x.Elts)-l+i] = nil // garbage collection
-	}
-	x.Elts = x.Elts[:len(x.Elts)-l]
-}
+// Deletes Children from the first index to the second index, inclusive
+func (x *CompositeExpr) DeleteChildren(from int, to int)   { deleteChildren(&x.Elts, from, to) }
+func (x *UnboundCompExpr) DeleteChildren(from int, to int) { deleteChildren(&x.Elts, from, to) }
+func (x *ParenCompExpr) DeleteChildren(from int, to int)   { deleteChildren(&x.Elts, from, to) }
 
-// FIXME do I really need to repeat these exact same functions for each struct??
 // Insert child at index; the new child has the index 'at'
-func (x *CompositeExpr) InsertChild(at int, child Expr) {
-	if at < 0 || at > len(x.Children()) {
-		panic("InsertChild(): invalid index for 'at'")
-	}
-	if at == len(x.Children()) {
-		x.AppendChild(child)
-		return
-	}
-	x.Elts = append(x.Elts[:at+1], x.Elts[at:]...)
-	x.Elts[at] = child
-}
-func (x *UnboundCompExpr) InsertChild(at int, child Expr) {
-	if at < 0 || at > len(x.Children()) {
-		panic("InsertChild(): invalid index for 'at'")
-	}
-	if at == len(x.Children()) {
-		x.AppendChild(child)
-		return
-	}
-	x.Elts = append(x.Elts[:at+1], x.Elts[at:]...)
-	x.Elts[at] = child
-}
-func (x *ParenCompExpr) InsertChild(at int, child Expr) {
-	if at < 0 || at > len(x.Children()) {
-		panic("InsertChild(): invalid index for 'at'")
-	}
-	if at == len(x.Children()) {
-		x.AppendChild(child)
-		return
-	}
-	x.Elts = append(x.Elts[:at+1], x.Elts[at:]...)
-	x.Elts[at] = child
-}
+func (x *CompositeExpr) InsertChild(at int, child Expr)   { insertChild(&x.Elts, at, child) }
+func (x *UnboundCompExpr) InsertChild(at int, child Expr) { insertChild(&x.Elts, at, child) }
+func (x *ParenCompExpr) InsertChild(at int, child Expr)   { insertChild(&x.Elts, at, child) }
 
 func (x *CompositeExpr) Identifier() string   { return "{" }
 func (x *UnboundCompExpr) Identifier() string { return "" }
@@ -502,3 +432,33 @@ func (x *VarLit) VisualizeTree() string        { return "VarLit        " + x.Sou
 func (x *SimpleOpLit) VisualizeTree() string   { return "SimpleOpLit   " + x.Source }
 func (x *SimpleCmdLit) VisualizeTree() string  { return "SimpleCmdLit  " + x.Source }
 func (x *UnknownCmdLit) VisualizeTree() string { return "UnknownCmdLit " + x.Source }
+
+// utils
+// Slice manipulation utilities
+func deleteChildren(slice *[]Expr, from int, to int) {
+	if from < 0 || to >= len(*slice) {
+		panic("deleteChildren(): index out of range!")
+	}
+	if from > to {
+		panic("deleteChildren(): 'from' cannot be larger than 'to'")
+	}
+	l := to - from + 1
+	copy((*slice)[from:], (*slice)[to+1:])
+	for i := range (*slice)[len(*slice)-l:] {
+		(*slice)[len(*slice)-l+i] = nil // garbage collection
+	}
+	(*slice) = (*slice)[:len(*slice)-l]
+}
+
+func insertChild(slice *[]Expr, at int, child Expr) {
+
+	if at < 0 || at > len(*slice) {
+		panic("InsertChild(): invalid index for 'at'")
+	}
+	if at == len(*slice) {
+		*slice = append(*slice, child)
+		return
+	}
+	*slice = append((*slice)[:at+1], (*slice)[at:]...)
+	(*slice)[at] = child
+}
