@@ -9,6 +9,7 @@ package latex
 import (
 	re "regexp"
 	"strconv"
+	"strings"
 )
 
 type Pos int // TODO remove
@@ -211,6 +212,21 @@ func (t *Tokenizer) Eat() string {
 	}
 
 	return curr
+}
+
+// skips to the delimiter and return the skipped string
+func (t *Tokenizer) SkipToDelimiter(delimiter string) string {
+	// FIXME this will skip a whitespace if the second character is one
+	// TODO maybe add support for escape characters
+	stream := t.curr + t.Stream[t.Cursor:]
+	i := Pos(strings.Index(stream, delimiter))
+	if i == -1 {
+		panic("Tokenizer.SkipToDelimiter could not find '" + delimiter + "'")
+	}
+	t.Cursor += Pos(i)
+	t.Eat()
+
+	return stream[:i]
 }
 
 func (t *Tokenizer) IsEOF() bool { return t.tok == EOF }

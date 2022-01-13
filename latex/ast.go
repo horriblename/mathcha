@@ -5,9 +5,8 @@ import "strings"
 /* ----------------------------------------------------------------------------
    Interface
 
-   There are 3 main classes of nodes: Expression nodes, ...?
-   nodes, and declaration nodes. The node names usually match the corresponding
-   latex command. The node fields correspond to the individual parts of the
+   There are 2 main classes of nodes: Container nodes and Literal nodes
+   The node fields correspond to the individual parts of the
    respective commmands
 
    All nodes contain position information marking the beginning of the
@@ -87,10 +86,10 @@ type Comment struct {
 func (c *Comment) Pos() Pos { return c.Percent }
 func (c *Comment) End() Pos { return Pos(int(c.Percent) + len(c.Text)) }
 
-type TextLit struct {
-	CmdText  Pos    // position of "\text"
-	From, To Pos    // position of "{" / "}" or position of single-character
-	Content  string // contained
+type TextContainer struct {
+	CmdText  Pos // position of "\text"
+	From, To Pos // position of "{" / "}" or position of single-character
+	Text     *RawStringLit
 }
 
 /* ----------------------------------------------------------------------------
@@ -171,6 +170,13 @@ type (
 		To        Pos    // position of the last character
 	}
 
+	// RawStringLit node is a raw string, used by \text-like commands to wrap
+	// a string in a Expr node
+	RawStringLit struct {
+		From, To Pos
+		Text     string
+	}
+
 	// A SimpleCmdLit node is a simple command that behaves like any other simple literal e.g. \times
 	SimpleCmdLit struct {
 		Backslash Pos    // Position of "\"
@@ -218,9 +224,11 @@ func (x *BadExpr) Pos() Pos         { return x.From }
 func (x *EmptyExpr) Pos() Pos       { return x.From }
 func (x *NumberLit) Pos() Pos       { return x.From }
 func (x *VarLit) Pos() Pos          { return x.From }
+func (x *TextContainer) Pos() Pos   { return x.CmdText }
 func (x *CompositeExpr) Pos() Pos   { return x.Lbrace }
 func (x *UnboundCompExpr) Pos() Pos { return x.From }
 func (x *ParenCompExpr) Pos() Pos   { return x.From }
+func (x *RawStringLit) Pos() Pos    { return x.From }
 func (x *SimpleOpLit) Pos() Pos     { return x.From }
 func (x *UnknownCmdLit) Pos() Pos   { return x.Backslash }
 func (x *SimpleCmdLit) Pos() Pos    { return x.Backslash }
@@ -233,10 +241,12 @@ func (x *BadExpr) End() Pos         { return x.To }
 func (x *EmptyExpr) End() Pos       { return x.To }
 func (x *NumberLit) End() Pos       { return x.To }
 func (x *VarLit) End() Pos          { return x.To }
+func (x *TextContainer) End() Pos   { return x.To }
 func (x *CompositeExpr) End() Pos   { return x.Lbrace }
 func (x *UnboundCompExpr) End() Pos { return x.To }
 func (x *ParenCompExpr) End() Pos   { return x.To }
-func (x *SimpleOpLit) End() Pos     { return x.From }
+func (x *RawStringLit) End() Pos    { return x.To }
+func (x *SimpleOpLit) End() Pos     { return x.To }
 func (x *UnknownCmdLit) End() Pos   { return x.To }
 func (x *SimpleCmdLit) End() Pos    { return x.To }
 func (x *SuperExpr) End() Pos       { return x.Close }
@@ -245,6 +255,7 @@ func (x *Cmd1ArgExpr) End() Pos     { return x.To }
 func (x *Cmd2ArgExpr) End() Pos     { return x.To }
 
 // Container method definitions
+func (x *TextContainer) Children() []Expr   { return []Expr{x.Text} }
 func (x *CompositeExpr) Children() []Expr   { return x.Elts }
 func (x *UnboundCompExpr) Children() []Expr { return x.Elts }
 func (x *ParenCompExpr) Children() []Expr   { return x.Elts }
@@ -272,9 +283,20 @@ func (x *UnboundCompExpr) Identifier() string { return "" }
 func (x *ParenCompExpr) Identifier() string   { return "" }
 
 // FixedContainer methods
-func (x *Cmd1ArgExpr) Parameters() int { return 1 }
-func (x *Cmd2ArgExpr) Parameters() int { return 2 }
+func (x *TextContainer) Parameters() int { return 1 }
+func (x *Cmd1ArgExpr) Parameters() int   { return 1 }
+func (x *Cmd2ArgExpr) Parameters() int   { return 2 }
 
+func (x *TextContainer) SetArg(index int, expr Expr) {
+	if index > 0 {
+		panic("SetArg(): index out of range")
+	}
+	if n, ok := expr.(*RawStringLit); ok {
+		x.Text = n
+	} else {
+		panic("")
+	}
+}
 func (x *Cmd1ArgExpr) SetArg(index int, expr Expr) {
 	if index > 0 {
 		panic("SetArg(): index out of range")
@@ -296,6 +318,7 @@ func (x *Cmd2ArgExpr) SetArg(index int, expr Expr) {
 // Literal method definitions
 func (x *BadExpr) Content() string       { return x.source }
 func (x *EmptyExpr) Content() string     { return "" }
+func (x *RawStringLit) Content() string  { return x.Text }
 func (x *NumberLit) Content() string     { return x.Source }
 func (x *VarLit) Content() string        { return x.Source }
 func (x *SimpleOpLit) Content() string   { return x.Source }
@@ -425,8 +448,10 @@ func (x *Cmd2ArgExpr) VisualizeTree() string {
 	return tree
 }
 
+func (x *TextContainer) VisualizeTree() string { return "Text: " + x.Text.VisualizeTree() }
 func (x *BadExpr) VisualizeTree() string       { return "BadExpr" }
 func (x *EmptyExpr) VisualizeTree() string     { return "EmptyExpr" }
+func (x *RawStringLit) VisualizeTree() string  { return "'" + x.Text + "'" }
 func (x *NumberLit) VisualizeTree() string     { return "NumberLit     " + x.Source }
 func (x *VarLit) VisualizeTree() string        { return "VarLit        " + x.Source }
 func (x *SimpleOpLit) VisualizeTree() string   { return "SimpleOpLit   " + x.Source }

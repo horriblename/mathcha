@@ -12,14 +12,8 @@ package latex
 type LatexCmd int
 
 const (
-	CMD_UNKNOWN LatexCmd = iota
-
-	cmd_1arg_beg // commands that expect 1 arguement
-	// accents
-	CMD_underline
-	CMD_overline
-	CMD_subscript
-	CMD_superscript
+	CMD_UNKNOWN  LatexCmd = iota
+	cmd_text_beg          // temporary group name for commands that take a 'raw' string as parameter
 	// text formatting
 	CMD_text
 	// CMD_textnormal
@@ -34,6 +28,8 @@ const (
 	// CMD_texttt
 	// CMD_textsc
 	// CMD_uppercase
+	cmd_text_end
+
 	// CMD_lowercase
 	CMD_sqrt
 	cmd_1arg_end
@@ -482,13 +478,13 @@ const (
 
 var latexCmds = map[string]LatexCmd{
 	// functional commands
+	`\text`: CMD_text,
 	// accents
 	`\underline`:   CMD_underline,
 	`\overline`:    CMD_overline,
 	`\subscript`:   CMD_subscript,
 	`\superscript`: CMD_superscript,
 	// text formatting
-	`\text`: CMD_text,
 
 	`\left`:  CMD_left,
 	`\right`: CMD_right,
@@ -1054,6 +1050,10 @@ func (cmd LatexCmd) GetCmd() string {
 
 func MatchLatexCmd(cmd string) LatexCmd {
 	return latexCmds[cmd]
+}
+
+func (cmd LatexCmd) TakesRawStrArg() bool {
+	return cmd_text_beg < cmd && cmd < cmd_text_end
 }
 
 func (cmd LatexCmd) IsVanillaSym() bool {

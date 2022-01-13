@@ -125,6 +125,8 @@ func (p *Parser) parseStringCmd() Expr {
 	var leaf Expr
 
 	switch {
+	case kind.TakesRawStrArg():
+		leaf = p.parseTextCommand(kind)
 	case kind.IsVanillaSym():
 		leaf = &(SimpleCmdLit{Source: p.lit, Type: kind})
 		p.next()
@@ -216,6 +218,23 @@ func (p *Parser) parseSubExpr() Expr {
 	node := new(SubExpr)
 	node.X = p.parseGenericOnce()
 
+	p.exprLev--
+	return node
+}
+
+func (p *Parser) parseTextCommand(kind LatexCmd) Expr {
+	p.exprLev++
+	p.next() // skip command
+	node := &TextContainer{Text: new(RawStringLit)}
+	if p.tok != LBRACE {
+		node.Text.Text = p.lit
+		p.next()
+		return node
+	}
+
+	node.Text.Text = p.tokenizer.SkipToDelimiter("}")
+
+	p.next() // skip }
 	p.exprLev--
 	return node
 }
