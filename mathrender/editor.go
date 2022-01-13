@@ -45,7 +45,7 @@ func (e *Editor) Read(latex string) {
 	}
 
 	formatLatexTree(e.renderer.LatexTree)
-	e.renderer.LatexTree.AppendChild(e.cursor)
+	e.renderer.LatexTree.AppendChildren(e.cursor)
 	e.traceStack = []parser.Container{e.renderer.LatexTree}
 
 	e.renderer.Sync()
@@ -70,7 +70,7 @@ func (e *Editor) moveCursorTo(
 ) {
 	idx := e.getCursorIdxInParent()
 	e.getParent().DeleteChildren(idx, idx)
-	newParent.InsertChild(pos, e.cursor)
+	newParent.InsertChildren(pos, e.cursor)
 
 	for i := len(e.traceStack) - 1; i >= 0; i-- {
 		if e.traceStack[i] == ancestors[0] {
@@ -105,7 +105,7 @@ func (e *Editor) NavigateLeft() {
 				break
 			}
 		}
-		e.getParent().InsertChild(idx, e.cursor)
+		e.getParent().InsertChildren(idx, e.cursor)
 	} else if prev, ok := e.getParent().Children()[idx-1].(parser.Container); ok {
 		e.getParent().DeleteChildren(idx, idx)
 		e.enterContainerFromRight(prev)
@@ -137,7 +137,7 @@ func (e *Editor) NavigateRight() {
 				break
 			}
 		}
-		e.getParent().InsertChild(idx+1, e.cursor)
+		e.getParent().InsertChildren(idx+1, e.cursor)
 	} else if next, ok := e.getParent().Children()[idx+1].(parser.Container); ok {
 		e.getParent().DeleteChildren(idx, idx)
 		e.enterContainerFromLeft(next)
@@ -270,7 +270,7 @@ func (e *Editor) enterContainerFromRight(target parser.Container) {
 	default:
 		panic("Editor attempted to enter a non Fixed- or FlexContainer")
 	}
-	parent.AppendChild(e.cursor) // TODO use e.moveCursorTo instead?
+	parent.AppendChildren(e.cursor) // TODO use e.moveCursorTo instead?
 	e.traceStack = append(e.traceStack, parent)
 }
 
@@ -293,7 +293,7 @@ func (e *Editor) enterContainerFromLeft(target parser.Container) {
 		panic("Editor attempted to enter a non Fixed- or FlexContainer")
 	}
 
-	parent.InsertChild(0, e.cursor)
+	parent.InsertChildren(0, e.cursor)
 	e.traceStack = append(e.traceStack, parent)
 }
 
@@ -310,7 +310,7 @@ func (e *Editor) InsertFrac(detectNumerator bool) {
 			sibling := e.getParent().Children()[i]
 			switch sibling.(type) {
 			case *parser.VarLit, *parser.NumberLit:
-				arg1.InsertChild(0, sibling)
+				arg1.InsertChildren(0, sibling)
 				continue
 			default: // maybe use named loop and break from here
 			}
@@ -323,7 +323,7 @@ func (e *Editor) InsertFrac(detectNumerator bool) {
 		}
 	}
 
-	e.getParent().InsertChild(idx, frac)
+	e.getParent().InsertChildren(idx, frac)
 }
 
 func (e *Editor) DeleteBack() {
@@ -356,7 +356,7 @@ func (e *Editor) handleLetter(letter rune) {
 	idx := e.getCursorIdxInParent()
 	switch parent := e.getParent().(type) {
 	case parser.FlexContainer:
-		parent.InsertChild(idx, &parser.VarLit{Source: string(letter)})
+		parent.InsertChildren(idx, &parser.VarLit{Source: string(letter)})
 	}
 }
 
@@ -364,7 +364,7 @@ func (e *Editor) handleDigit(digit rune) {
 	idx := e.getCursorIdxInParent()
 	switch parent := e.getParent().(type) {
 	case parser.FlexContainer:
-		parent.InsertChild(idx, &parser.NumberLit{Source: string(digit)})
+		parent.InsertChildren(idx, &parser.NumberLit{Source: string(digit)})
 	}
 }
 
@@ -378,13 +378,13 @@ func (e *Editor) handleRest(char rune) {
 		e.NavigateDown()
 		return
 	case ' ':
-		e.getParent().InsertChild(idx, &parser.SimpleCmdLit{Type: parser.CMD_SPACE, Source: `\ `})
+		e.getParent().InsertChildren(idx, &parser.SimpleCmdLit{Type: parser.CMD_SPACE, Source: `\ `})
 		// case '\\':
 		//    e.getParent().InsertChild(idx, &parser.IncompleteCmdLit{})
 	}
 	switch parent := e.getParent().(type) {
 	case parser.FlexContainer:
-		parent.InsertChild(idx, &parser.SimpleOpLit{Source: string(char)})
+		parent.InsertChildren(idx, &parser.SimpleOpLit{Source: string(char)})
 	}
 }
 

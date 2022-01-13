@@ -78,7 +78,7 @@ func (p *Parser) matchExpectation(lit string) bool {
 func (p *Parser) parseTopLevel() *UnboundCompExpr {
 	tree := new(UnboundCompExpr)
 	for !p.IsEOF() {
-		tree.AppendChild(p.parseGenericOnce())
+		tree.AppendChildren(p.parseGenericOnce())
 	}
 	// println(tree.VisualizeTree())
 	return tree
@@ -189,7 +189,7 @@ func (p *Parser) parseCompositeExpr() Expr {
 	p.next() // skip "{"
 	node := new(CompositeExpr)
 	for !p.IsEOF() && p.tok != RBRACE {
-		node.AppendChild(p.parseGenericOnce())
+		node.AppendChildren(p.parseGenericOnce())
 		// println("add child to node; depth: ", p.exprLev)
 	}
 	if p.IsEOF() {
@@ -275,7 +275,7 @@ func (p *Parser) parseCmdEnclosing(kind LatexCmd) Expr {
 	node.Left = p.lit
 	p.next() // skip left parenthesis e.g. "("
 	for !p.IsEOF() && p.lit != "\\right" {
-		node.AppendChild(p.parseGenericOnce())
+		node.AppendChildren(p.parseGenericOnce())
 	}
 	if p.IsEOF() {
 		// FIXME error handling

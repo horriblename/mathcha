@@ -1,6 +1,8 @@
 package latex
 
-import "strings"
+import (
+	"strings"
+)
 
 /* ----------------------------------------------------------------------------
    Interface
@@ -51,9 +53,9 @@ type Literal interface {
 // Referring to containers that have indefinite amount of children
 type FlexContainer interface {
 	Container
-	AppendChild(Expr)
+	AppendChildren(...Expr)
 	DeleteChildren(from int, to int)
-	InsertChild(int, Expr)
+	InsertChildren(int, ...Expr)
 	// TODO
 	Identifier() string // temporary solution to identify the concrete type
 }
@@ -264,9 +266,9 @@ func (x *Cmd1ArgExpr) Children() []Expr { return []Expr{x.Arg1} }
 func (x *Cmd2ArgExpr) Children() []Expr { return []Expr{x.Arg1, x.Arg2} }
 
 // FlexContainer methods
-func (x *CompositeExpr) AppendChild(child Expr)   { x.Elts = append(x.Elts, child) }
-func (x *UnboundCompExpr) AppendChild(child Expr) { x.Elts = append(x.Elts, child) }
-func (x *ParenCompExpr) AppendChild(child Expr)   { x.Elts = append(x.Elts, child) }
+func (x *CompositeExpr) AppendChildren(children ...Expr)   { x.Elts = append(x.Elts, children...) }
+func (x *UnboundCompExpr) AppendChildren(children ...Expr) { x.Elts = append(x.Elts, children...) }
+func (x *ParenCompExpr) AppendChildren(children ...Expr)   { x.Elts = append(x.Elts, children...) }
 
 // Deletes Children from the first index to the second index, inclusive
 func (x *CompositeExpr) DeleteChildren(from int, to int)   { deleteChildren(&x.Elts, from, to) }
@@ -274,9 +276,15 @@ func (x *UnboundCompExpr) DeleteChildren(from int, to int) { deleteChildren(&x.E
 func (x *ParenCompExpr) DeleteChildren(from int, to int)   { deleteChildren(&x.Elts, from, to) }
 
 // Insert child at index; the new child has the index 'at'
-func (x *CompositeExpr) InsertChild(at int, child Expr)   { insertChild(&x.Elts, at, child) }
-func (x *UnboundCompExpr) InsertChild(at int, child Expr) { insertChild(&x.Elts, at, child) }
-func (x *ParenCompExpr) InsertChild(at int, child Expr)   { insertChild(&x.Elts, at, child) }
+func (x *CompositeExpr) InsertChildren(at int, children ...Expr) {
+	insertChildren(&x.Elts, at, children...)
+}
+func (x *UnboundCompExpr) InsertChildren(at int, children ...Expr) {
+	insertChildren(&x.Elts, at, children...)
+}
+func (x *ParenCompExpr) InsertChildren(at int, children ...Expr) {
+	insertChildren(&x.Elts, at, children...)
+}
 
 func (x *CompositeExpr) Identifier() string   { return "{" }
 func (x *UnboundCompExpr) Identifier() string { return "" }
@@ -475,15 +483,14 @@ func deleteChildren(slice *[]Expr, from int, to int) {
 	(*slice) = (*slice)[:len(*slice)-l]
 }
 
-func insertChild(slice *[]Expr, at int, child Expr) {
+func insertChildren(slice *[]Expr, at int, children ...Expr) {
 
 	if at < 0 || at > len(*slice) {
-		panic("InsertChild(): invalid index for 'at'")
+		panic("insertChildren(): invalid index for 'at'")
 	}
 	if at == len(*slice) {
-		*slice = append(*slice, child)
+		*slice = append(*slice, children...)
 		return
 	}
-	*slice = append((*slice)[:at+1], (*slice)[at:]...)
-	(*slice)[at] = child
+	*slice = append((*slice)[:at], append(children, (*slice)[at:]...)...)
 }
