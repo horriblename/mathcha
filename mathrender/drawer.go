@@ -34,6 +34,8 @@ func (r *Renderer) DrawToBuffer(tree parser.Expr, dim *Dimensions) {
 
 func (r *Renderer) Prerender(node parser.Expr, dim *Dimensions) string {
 	switch n := node.(type) {
+	case *parser.TextContainer:
+		return n.Text.Content()
 	case parser.CmdContainer:
 		switch n.Command() {
 		case parser.CMD_underline:
