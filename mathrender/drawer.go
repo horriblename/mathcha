@@ -55,9 +55,9 @@ func (r *Renderer) Prerender(node parser.Expr, dim *Dimensions) string {
 		return content
 		// parser.Literal interface types
 	case *parser.VarLit:
-		return variableStyle.Copy().Render(n.Content())
+		return "\x1b[3m" + n.Content() + "\x1b[23m" // apply italic(3) then unset italic(23)
 	case *Cursor:
-		return cursorStyle.Copy().Render(" ")
+		return "\x1b[47m \x1b[49m" // set bg color as white(47) then set bg color to default(49)
 	case parser.Literal:
 		content := n.Content()
 		switch content {
@@ -100,7 +100,10 @@ func (r *Renderer) PrerenderCmdContainer(node parser.CmdContainer, dim *Dimensio
 func (r *Renderer) PrerenderCmdUnderline(node parser.CmdContainer, dim *Dimensions) string {
 	block := r.Prerender(node.Children()[0], dim.Children[0])
 	lines, _ := getLines(block)
-	lines[len(lines)-1] = underlineStyle.Copy().Render(lines[len(lines)-1])
+	// lines[len(lines)-1] = underlineStyle.Copy().Render(lines[len(lines)-1])
+	// lines[len(lines)-1] = termenv.String(lines[len(lines)-1]).Underline().String()
+	// \x1b[4m sets underline, \x1b[24m unsets it
+	lines[len(lines)-1] = "\x1b[4m" + lines[len(lines)-1] + "\x1b[24m"
 
 	return lipgloss.JoinVertical(lipgloss.Center, lines...)
 }
