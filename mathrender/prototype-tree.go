@@ -51,6 +51,8 @@ func ProduceLatex(node parser.Expr) string {
 			latex += ProduceLatex(c)
 		}
 		return latex + suffix
+	case *parser.TextContainer: // TODO CmdContainer subtype
+		latex = "\\text {" + n.Text.Content() + "}"
 	case parser.CmdContainer:
 		latex = n.Command().GetCmd() + " "
 		for _, c := range n.Children() {
