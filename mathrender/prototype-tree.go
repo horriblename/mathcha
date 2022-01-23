@@ -16,7 +16,7 @@ var _ = strings.Title
 type Renderer struct {
 	Buffer    string
 	LatexTree parser.FlexContainer
-	FocusOn   parser.Container
+	FocusOn   parser.Container // the container in which the cursor is, a better implementation would be letting Render functions return a 'focused' flag when cursor is found
 	Size      *Dimensions
 }
 
