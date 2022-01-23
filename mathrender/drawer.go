@@ -42,6 +42,19 @@ func (r *Renderer) Prerender(node parser.Expr, dim *Dimensions) (out string) {
 	}()
 	switch n := node.(type) {
 	case *parser.TextContainer:
+		if CONF_RENDER_EMPTY_COMP_EXPR {
+			var builder strings.Builder
+			for _, i := range n.Text.Runes {
+				switch r := i.(type) {
+				case parser.RawRuneLit:
+					builder.WriteRune(rune(r))
+				case *Cursor:
+					builder.WriteString("\x1b[47m \x1b[49m")
+				default: // panic?
+				}
+			}
+			return builder.String()
+		}
 		return n.Text.BuildString()
 	case parser.CmdContainer:
 		switch n.Command() {
