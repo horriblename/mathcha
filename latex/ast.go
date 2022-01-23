@@ -322,13 +322,13 @@ func (x *TextContainer) SetArg(index int, expr Expr) {
 	}
 }
 func (x *Cmd1ArgExpr) SetArg(index int, expr Expr) {
-	if index > 0 {
+	if index != 0 {
 		panic("SetArg(): index out of range")
 	}
 	x.Arg1 = expr
 }
 func (x *Cmd2ArgExpr) SetArg(index int, expr Expr) {
-	if index > 1 {
+	if index > 1 || index < 0 {
 		panic("SetArg(): index out of range")
 	}
 	switch index {
