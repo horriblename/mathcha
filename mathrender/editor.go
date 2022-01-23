@@ -473,15 +473,16 @@ func (e Editor) View() string {
 func formatLatexTree(tree parser.Expr) {
 	// TODO also convert (), [], \{\} to \left...\right
 
-	if n, ok := tree.(parser.FixedContainer); ok {
+	switch n := tree.(type) {
+	case *parser.TextContainer:
+	case parser.FixedContainer:
 		for i, child := range n.Children() {
 			if _, ok := child.(parser.FlexContainer); !ok {
 				n.SetArg(i, &parser.CompositeExpr{Elts: []parser.Expr{child}})
 			}
 		}
-	}
 
-	if n, ok := tree.(parser.Container); ok {
+	case parser.FlexContainer:
 		for _, child := range n.Children() {
 			formatLatexTree(child)
 		}
