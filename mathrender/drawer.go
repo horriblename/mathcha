@@ -42,7 +42,7 @@ func (r *Renderer) Prerender(node parser.Expr, dim *Dimensions) (out string) {
 	}()
 	switch n := node.(type) {
 	case *parser.TextContainer:
-		return n.Text.Content()
+		return n.Text.BuildString()
 	case parser.CmdContainer:
 		switch n.Command() {
 		case parser.CMD_underline:
