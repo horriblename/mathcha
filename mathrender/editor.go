@@ -8,6 +8,13 @@ import (
 	"unicode"
 )
 
+type Direction int
+
+const (
+	DIR_LEFT Direction = iota
+	DIR_RIGHT
+)
+
 // the Cursor object implements a zero-width parser.Literal TODO rn its still a normal character
 type Cursor struct {
 	offsetX int // offset the position of the cursor
@@ -62,7 +69,8 @@ func (e *Editor) popStack() parser.Container {
 	return ret
 }
 
-// A convenienve function to move cursor to a new position and handle clean ups
+// A convenience function to move cursor to a new position and handle clean ups
+// TODO remove if only stepOver*Sibling uses this
 func (e *Editor) moveCursorTo(
 	newParent parser.FlexContainer, // new Parent to place cursor in
 	pos int, // position of the new cursor in the Parent
@@ -93,19 +101,7 @@ func (e *Editor) NavigateLeft() {
 		if len(e.traceStack) <= 1 {
 			return
 		}
-		e.getParent().DeleteChildren(idx, idx)
-		var exitFrom parser.Container
-		exitFrom = e.popStack()
-		if _, ok := e.getLastOnStack().(parser.FixedContainer); ok {
-			exitFrom = e.popStack()
-		}
-		for i, c := range e.getParent().Children() {
-			if c == exitFrom {
-				idx = i
-				break
-			}
-		}
-		e.getParent().InsertChildren(idx, e.cursor)
+		e.exitParent(DIR_LEFT)
 	} else if prev, ok := e.getParent().Children()[idx-1].(parser.Container); ok {
 		e.getParent().DeleteChildren(idx, idx)
 		e.enterContainerFromRight(prev)
@@ -125,25 +121,41 @@ func (e *Editor) NavigateRight() {
 		if len(e.traceStack) <= 1 {
 			return
 		}
-		e.getParent().DeleteChildren(idx, idx)
-		var exitFrom parser.Container
-		exitFrom = e.popStack()
-		if _, ok := e.getLastOnStack().(parser.FixedContainer); ok {
-			exitFrom = e.popStack()
-		}
-		for i, c := range e.getParent().Children() {
-			if c == exitFrom {
-				idx = i
-				break
-			}
-		}
-		e.getParent().InsertChildren(idx+1, e.cursor)
+		e.exitParent(DIR_RIGHT)
 	} else if next, ok := e.getParent().Children()[idx+1].(parser.Container); ok {
 		e.getParent().DeleteChildren(idx, idx)
 		e.enterContainerFromLeft(next)
 	} else {
 		e.stepOverNextSibling()
 	}
+}
+
+// Convenience function for exiting a Container to the left or right
+// Exits a FlexContainer plus a lingering FixedContainer, if any.
+// Cursor cleanup is taken care of
+// Make sure we're not exiting from the root node, no error handling for this
+func (e *Editor) exitParent(direction Direction) {
+	if direction != DIR_LEFT && direction != DIR_RIGHT {
+		panic("exitParent got non left/right arguement")
+	}
+	idx := e.getCursorIdxInParent() // for loop here, might be better to pass as arguement?
+	e.getParent().DeleteChildren(idx, idx)
+	var exitFrom parser.Container
+	exitFrom = e.popStack()
+	if _, ok := e.getLastOnStack().(parser.FixedContainer); ok {
+		exitFrom = e.popStack()
+	}
+	for i, c := range e.getParent().Children() {
+		if c == exitFrom {
+			idx = i
+			break
+		}
+	}
+
+	if direction == DIR_RIGHT {
+		idx++
+	}
+	e.getParent().InsertChildren(idx, e.cursor)
 }
 
 // Navigate cursor downwards
