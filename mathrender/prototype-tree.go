@@ -16,6 +16,7 @@ var _ = strings.Title
 type Renderer struct {
 	Buffer    string
 	LatexTree parser.FlexContainer
+	FocusOn   parser.Container
 	Size      *Dimensions
 }
 
@@ -24,12 +25,13 @@ type Renderer struct {
 // 2.
 func (r *Renderer) Load(tree parser.FlexContainer) {
 	r.LatexTree = tree
-	r.Sync()
+	r.Sync(nil)
 }
 
 // rerender the latex tree
-func (r *Renderer) Sync() {
+func (r *Renderer) Sync(focus parser.Container) {
 	r.Size = calculateDim(r.LatexTree)
+	r.FocusOn = focus
 	r.DrawToBuffer(r.LatexTree, r.Size)
 }
 

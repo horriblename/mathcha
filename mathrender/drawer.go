@@ -16,8 +16,10 @@ var (
 	subtle = lipgloss.AdaptiveColor{Light: "#D9DCCF", Dark: "#383838"}
 	fg     = lipgloss.AdaptiveColor{Light: "#383838", Dark: "#AFAFAF"}
 	invert = lipgloss.AdaptiveColor{Light: "#AFAFAF", Dark: "#383838"}
+	accent = lipgloss.AdaptiveColor{Light: "#579AD1", Dark: "#579AD1"}
 
-	docStyle = lipgloss.NewStyle().Foreground(fg).Align(lipgloss.Center)
+	docStyle   = lipgloss.NewStyle().Foreground(fg)
+	focusStyle = lipgloss.NewStyle().Foreground(accent)
 
 	underlineStyle = lipgloss.NewStyle().Underline(true)
 	cursorStyle    = lipgloss.NewStyle().
@@ -32,7 +34,12 @@ func (r *Renderer) DrawToBuffer(tree parser.Expr, dim *Dimensions) {
 	r.Buffer = r.Prerender(tree, dim)
 }
 
-func (r *Renderer) Prerender(node parser.Expr, dim *Dimensions) string {
+func (r *Renderer) Prerender(node parser.Expr, dim *Dimensions) (out string) {
+	defer func() {
+		if node == r.FocusOn {
+			out = focusStyle.Render(out)
+		}
+	}()
 	switch n := node.(type) {
 	case *parser.TextContainer:
 		return n.Text.Content()

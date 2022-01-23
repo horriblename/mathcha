@@ -48,7 +48,7 @@ func (e *Editor) Read(latex string) {
 	e.renderer.LatexTree.AppendChildren(e.cursor)
 	e.traceStack = []parser.Container{e.renderer.LatexTree}
 
-	e.renderer.Sync()
+	e.renderer.Sync(e.getLastOnStack())
 }
 
 func (e *Editor) popStack() parser.Container {
@@ -459,7 +459,7 @@ func (e Editor) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return e, nil
 		}
 	}
-	e.renderer.Sync()
+	e.renderer.Sync(e.getLastOnStack())
 	return e, nil
 }
 
