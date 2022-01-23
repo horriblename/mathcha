@@ -13,13 +13,14 @@ const (
 
 // style definitions
 var (
-	subtle = lipgloss.AdaptiveColor{Light: "#D9DCCF", Dark: "#383838"}
-	fg     = lipgloss.AdaptiveColor{Light: "#383838", Dark: "#AFAFAF"}
-	invert = lipgloss.AdaptiveColor{Light: "#AFAFAF", Dark: "#383838"}
-	accent = lipgloss.AdaptiveColor{Light: "#579AD1", Dark: "#579AD1"}
+	subtle   = lipgloss.AdaptiveColor{Light: "#D9DCCF", Dark: "#383838"}
+	fg       = lipgloss.AdaptiveColor{Light: "#383838", Dark: "#AFAFAF"}
+	invert   = lipgloss.AdaptiveColor{Light: "#AFAFAF", Dark: "#383838"}
+	accent   = lipgloss.AdaptiveColor{Light: "#579AD1", Dark: "#A1BAEA"}
+	accentBg = lipgloss.Color("#708090")
 
 	docStyle   = lipgloss.NewStyle().Foreground(fg)
-	focusStyle = lipgloss.NewStyle().Foreground(accent)
+	focusStyle = lipgloss.NewStyle().Foreground(accent).Background(accentBg)
 
 	underlineStyle = lipgloss.NewStyle().Underline(true)
 	cursorStyle    = lipgloss.NewStyle().
@@ -49,7 +50,7 @@ func (r *Renderer) Prerender(node parser.Expr, dim *Dimensions) (out string) {
 				case parser.RawRuneLit:
 					builder.WriteRune(rune(r))
 				case *Cursor:
-					builder.WriteString("\x1b[47m \x1b[49m")
+					builder.WriteString("\x1b[7m \x1b[27m")
 				default: // panic?
 				}
 			}
@@ -77,7 +78,7 @@ func (r *Renderer) Prerender(node parser.Expr, dim *Dimensions) (out string) {
 	case *parser.VarLit:
 		return "\x1b[3m" + n.Content() + "\x1b[23m" // apply italic(3) then unset italic(23)
 	case *Cursor:
-		return "\x1b[47m \x1b[49m" // set bg color as white(47) then set bg color to default(49)
+		return "\x1b[7m \x1b[27m" // set bg color as white(47) then set bg color to default(49)
 	case parser.Literal:
 		content := n.Content()
 		switch content {
