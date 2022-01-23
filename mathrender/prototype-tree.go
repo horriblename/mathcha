@@ -43,6 +43,8 @@ func ProduceLatex(node parser.Expr) string {
 	latex := ""
 	suffix := ""
 	switch n := node.(type) {
+	case *parser.TextContainer: // TODO CmdContainer subtype
+		latex = "\\text {" + n.Text.BuildString() + "}"
 	case parser.FlexContainer:
 		// FIXME type switch for cases CompositeExpr and others
 		if n.Identifier() == "{" { // CompositeExpr
@@ -53,8 +55,6 @@ func ProduceLatex(node parser.Expr) string {
 			latex += ProduceLatex(c)
 		}
 		return latex + suffix
-	case *parser.TextContainer: // TODO CmdContainer subtype
-		latex = "\\text {" + n.Text.Content() + "}"
 	case parser.CmdContainer:
 		latex = n.Command().GetCmd() + " "
 		for _, c := range n.Children() {
