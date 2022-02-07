@@ -103,9 +103,9 @@ func (p *Parser) parseGenericOnce() Expr {
 	case LBRACE:
 		return p.parseCompositeExpr()
 	case CARET:
-		return p.parseSuperExpr()
+		return p.parseCmd1Arg(CMD_superscript)
 	case UNDERSCORE:
-		return p.parseSubExpr()
+		return p.parseCmd2Arg(CMD_subscript)
 	case RBRACE:
 		if p.matchExpectation(p.lit) {
 			return &EmptyExpr{}
@@ -203,6 +203,7 @@ func (p *Parser) parseCompositeExpr() Expr {
 	return node
 }
 
+// TODO remove
 func (p *Parser) parseSuperExpr() Expr {
 	p.exprLev++
 	p.next() // skip "^"
