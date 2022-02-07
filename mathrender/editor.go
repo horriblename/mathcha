@@ -3,9 +3,10 @@
 package mathrender
 
 import (
+	"unicode"
+
 	tea "github.com/charmbracelet/bubbletea"
 	parser "github.com/horriblename/latex-parser/latex"
-	"unicode"
 )
 
 type Direction int
@@ -20,6 +21,10 @@ type Cursor struct {
 	offsetX int // offset the position of the cursor
 }
 
+type LatexCmdInput struct {
+	Text *parser.TextStringWrapper
+}
+
 //
 type Editor struct {
 	renderer   *Renderer
@@ -32,6 +37,23 @@ func (c *Cursor) End() parser.Pos { return parser.Pos(0) }
 
 func (c *Cursor) VisualizeTree() string { return "Cursor        " }
 func (c *Cursor) Content() string       { return "" }
+
+func (x *LatexCmdInput) Pos() parser.Pos         { return 0 }
+func (x *LatexCmdInput) End() parser.Pos         { return 0 }
+func (x *LatexCmdInput) Children() []parser.Expr { return []parser.Expr{x.Text} }
+func (x *LatexCmdInput) Parameters() int         { return 1 }
+func (x *LatexCmdInput) SetArg(index int, expr parser.Expr) {
+	if index > 0 {
+		panic("SetArg(): index out of range")
+	}
+	// FIXME this is awful
+	if n, ok := expr.(*parser.TextStringWrapper); ok {
+		x.Text = n
+	} else {
+		panic("TextContainer.SetArg: expected TextStringWrapper")
+	}
+}
+func (x *LatexCmdInput) VisualizeTree() string { return "TextContainer " + x.Text.VisualizeTree() }
 
 // TODO remove?
 func (e Editor) Init() tea.Cmd {
@@ -309,6 +331,28 @@ func (e *Editor) enterContainerFromLeft(target parser.Container) {
 	e.traceStack = append(e.traceStack, parent)
 }
 
+func (e *Editor) InsertCmd(cmd string) {
+	kind := parser.MatchLatexCmd(cmd)
+	idx := e.getCursorIdxInParent()
+	switch {
+	case kind.TakesOneArg():
+		node := &parser.Cmd1ArgExpr{Type: kind, Arg1: new(parser.CompositeExpr)}
+		e.getParent().InsertChildren(idx, node)
+	case kind.TakesTwoArg():
+		node := &parser.Cmd2ArgExpr{Type: kind, Arg1: new(parser.CompositeExpr), Arg2: new(parser.CompositeExpr)}
+		e.getParent().InsertChildren(idx, node)
+	case kind.TakesRawStrArg():
+	case kind.IsVanillaSym():
+		node := &parser.SimpleCmdLit{Type: kind, Source: cmd}
+		e.getParent().InsertChildren(idx, node)
+
+	case kind.IsEnclosing():
+	default:
+		node := &parser.UnknownCmdLit{Source: cmd}
+		e.getParent().InsertChildren(idx, node)
+	}
+}
+
 func (e *Editor) InsertFrac(detectNumerator bool) {
 	arg1 := new(parser.CompositeExpr)
 	arg2 := new(parser.CompositeExpr)
@@ -367,6 +411,8 @@ func (e *Editor) getCursorIdxInParent() int {
 func (e *Editor) handleLetter(letter rune) {
 	idx := e.getCursorIdxInParent()
 	switch parent := e.getParent().(type) {
+	case *parser.TextStringWrapper:
+		parent.InsertChildren(idx, parser.RawRuneLit(letter))
 	case parser.FlexContainer:
 		parent.InsertChildren(idx, &parser.VarLit{Source: string(letter)})
 	}
@@ -375,6 +421,9 @@ func (e *Editor) handleLetter(letter rune) {
 func (e *Editor) handleDigit(digit rune) {
 	idx := e.getCursorIdxInParent()
 	switch parent := e.getParent().(type) {
+	case *parser.TextStringWrapper:
+		// TODO handle case where LatexCmdInput is second on stack
+		parent.InsertChildren(idx, parser.RawRuneLit(digit))
 	case parser.FlexContainer:
 		parent.InsertChildren(idx, &parser.NumberLit{Source: string(digit)})
 	}
@@ -383,7 +432,36 @@ func (e *Editor) handleDigit(digit rune) {
 func (e *Editor) handleRest(char rune) {
 	// TODO handle special characters _, ^ etc
 	idx := e.getCursorIdxInParent()
+	if len(e.traceStack) > 1 {
+		if n, ok := e.traceStack[len(e.traceStack)-2].(*LatexCmdInput); ok {
+			switch {
+			case unicode.IsSpace(char), char == ' ': // IsSpace not working!
+				cmd := "\\" + n.Text.BuildString()
+				e.exitParent(DIR_RIGHT)
+				idx := e.getCursorIdxInParent() // TODO error handling for idx == 0?
+				e.getParent().DeleteChildren(idx-1, idx-1)
+				e.InsertCmd(cmd)
+
+			default:
+				// TODO pass the key event back into Update?
+				n.Text.InsertChildren(idx, parser.RawRuneLit(char))
+			}
+		}
+	}
+
 	switch char {
+		e.traceStack = append(e.traceStack, block, brace)
+		e.enterContainerFromLeft(block)
+
+	case '\\':
+		// idx := e.getCursorIdxInParent()
+		field := &LatexCmdInput{Text: new(parser.TextStringWrapper)}
+		e.getParent().DeleteChildren(idx, idx)
+		e.getParent().InsertChildren(idx, field)
+
+		e.traceStack = append(e.traceStack, field, field.Text)
+		e.getParent().AppendChildren(e.cursor)
+
 	case '/':
 		e.InsertFrac(true)
 		e.NavigateLeft()
@@ -440,37 +518,45 @@ func (e *Editor) findEnclosingVerticallyNavigableCommand(searchFrom int) (index 
 }
 
 func (e Editor) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
-	if n, ok := e.getParent().(*parser.TextStringWrapper); ok {
-		// handle key events while in a TextStringWrapper, move somewhere else
-		switch msg := msg.(type) {
-		case tea.KeyMsg:
-			switch msg.Type {
-			case tea.KeyLeft:
-				e.NavigateLeft()
-			case tea.KeyRight:
-				e.NavigateRight()
-			case tea.KeyDown:
-				e.NavigateDown()
-			case tea.KeyUp:
-				e.NavigateUp()
-			case tea.KeyBackspace:
-				e.DeleteBack()
-			case tea.KeyTab:
-				e.exitParent(DIR_RIGHT)
+	// if n, ok := e.getParent().(*parser.TextStringWrapper); ok {
+	// 	// handle key events while in a TextStringWrapper,FIXME move somewhere else
+	// 	switch msg := msg.(type) {
+	// 	case tea.KeyMsg:
+	// 		switch msg.Type {
+	// 		case tea.KeyLeft:
+	// 			e.NavigateLeft()
+	// 		case tea.KeyRight:
+	// 			e.NavigateRight()
+	// 		case tea.KeyDown:
+	// 			e.NavigateDown()
+	// 		case tea.KeyUp:
+	// 			e.NavigateUp()
+	// 		case tea.KeyBackspace:
+	// 			e.DeleteBack()
 
-			case tea.KeyCtrlC:
-				return e, tea.Quit
-			case tea.KeyRunes:
-				switch {
-				case unicode.IsLetter(msg.Runes[0]), unicode.IsDigit(msg.Runes[0]):
-					idx := e.getCursorIdxInParent()
-					n.InsertChildren(idx, parser.RawRuneLit(msg.Runes[0]))
-				}
-			}
-		}
-		e.renderer.Sync(e.getLastOnStack())
-		return e, nil
-	}
+	// 		case tea.KeyCtrlC:
+	// 			return e, tea.Quit
+	// 		case tea.KeyRunes:
+	// 			switch {
+	// 			case msg.Runes[0] == ' ', unicode.IsSpace(msg.Runes[0]):
+	// 				if m, ok := e.traceStack[len(e.traceStack)-2].(*LatexCmdInput); ok {
+	// 					//FIXME case for LatexCmdInput, move somewhere else, also handle all non-letter and tab
+	// 					cmd := "\\" + m.Text.BuildString()
+	// 					e.InsertCmd(cmd)
+	// 				} else {
+	// 					fmt.Printf("%T\n", m)
+	// 					idx := e.getCursorIdxInParent()
+	// 					n.InsertChildren(idx, parser.RawRuneLit(msg.Runes[0]))
+	// 				}
+	// 			default:
+	// 				idx := e.getCursorIdxInParent()
+	// 				n.InsertChildren(idx, parser.RawRuneLit(msg.Runes[0]))
+	// 			}
+	// 		}
+	// 	}
+	// 	e.renderer.Sync(e.getLastOnStack())
+	// 	return e, nil
+	// }
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
 		switch msg.Type {
@@ -484,6 +570,8 @@ func (e Editor) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			e.NavigateUp()
 		case tea.KeyBackspace:
 			e.DeleteBack()
+		case tea.KeyTab: // TODO complete command when in a LatexCmdInput
+			e.exitParent(DIR_RIGHT)
 		case tea.KeyCtrlC:
 			return e, tea.Quit
 		case tea.KeyRunes:
