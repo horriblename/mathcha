@@ -490,6 +490,8 @@ var latexCmds = map[string]LatexCmd{
 	`\overline`:    CMD_overline,
 	`\subscript`:   CMD_subscript,
 	`\superscript`: CMD_superscript,
+	`_`:            CMD_subscript,
+	`^`:            CMD_superscript,
 	// text formatting
 
 	`\left`:  CMD_left,
