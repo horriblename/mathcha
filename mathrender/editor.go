@@ -466,15 +466,12 @@ func (e *Editor) handleRest(char rune) {
 		e.InsertFrac(true)
 		e.NavigateLeft()
 		e.NavigateDown()
-		return
 	case ' ':
 		e.getParent().InsertChildren(idx, &parser.SimpleCmdLit{Type: parser.CMD_SPACE, Source: `\ `})
 		// case '\\':
 		//    e.getParent().InsertChild(idx, &parser.IncompleteCmdLit{})
-	}
-	switch parent := e.getParent().(type) {
-	case parser.FlexContainer:
-		parent.InsertChildren(idx, &parser.SimpleOpLit{Source: string(char)})
+	default:
+		e.getParent().InsertChildren(idx, &parser.SimpleOpLit{Source: string(char)})
 	}
 }
 
