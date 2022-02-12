@@ -458,6 +458,9 @@ func (e *Editor) handleRest(char rune) {
 
 		e.traceStack = append(e.traceStack, block, brace)
 		e.enterContainerFromLeft(block)
+	case '*':
+		dot := &parser.SimpleCmdLit{Source: string(char), Type: parser.CMD_cdot}
+		e.getParent().InsertChildren(idx, dot)
 
 	case '\\':
 		// idx := e.getCursorIdxInParent()

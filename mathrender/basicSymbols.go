@@ -75,6 +75,7 @@ var VanillaToUnicode = map[parser.LatexCmd]string{
 	parser.CMD_Psi:    `Ψ`,
 	parser.CMD_Omega:  `Ω`,
 
+	parser.CMD_cdot:     `·`,
 	parser.CMD_sim:      `∼`,
 	parser.CMD_cong:     `≅`,
 	parser.CMD_equiv:    `≡`,
