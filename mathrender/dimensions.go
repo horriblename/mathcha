@@ -125,3 +125,19 @@ func max(a int, b int) int {
 	}
 	return b
 }
+
+func min(numbers ...int) int {
+	if len(numbers) == 0 {
+		panic("min was passed 0 parameters")
+	} else if len(numbers) == 1 {
+		return numbers[0]
+	}
+
+	m := numbers[0]
+	for _, n := range numbers {
+		if n < m {
+			n = m
+		}
+	}
+	return m
+}

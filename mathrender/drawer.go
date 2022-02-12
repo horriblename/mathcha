@@ -32,10 +32,10 @@ var (
 // depth-first traverse of the latex tree and dim tree in parallel
 // to build the later rendered string
 func (r *Renderer) DrawToBuffer(tree parser.Expr, dim *Dimensions) {
-	r.Buffer = r.Prerender(tree, dim)
+	r.Buffer, _ = r.Prerender(tree, dim)
 }
 
-func (r *Renderer) Prerender(node parser.Expr, dim *Dimensions) (out string) {
+func (r *Renderer) Prerender(node parser.Expr, dim *Dimensions) (out string, baseLevel int) {
 	defer func() {
 		if node == r.FocusOn {
 			out = focusStyle.Render(out)
@@ -45,7 +45,8 @@ func (r *Renderer) Prerender(node parser.Expr, dim *Dimensions) (out string) {
 	case *parser.TextContainer:
 		return r.Prerender(n.Text, dim)
 	case *LatexCmdInput:
-		return "\\" + r.Prerender(n.Text, dim)
+		str, baseLevel := r.Prerender(n.Text, dim)
+		return "\\" + str, baseLevel
 	case *parser.TextStringWrapper:
 		if CONF_RENDER_EMPTY_COMP_EXPR {
 			var builder strings.Builder
@@ -58,9 +59,9 @@ func (r *Renderer) Prerender(node parser.Expr, dim *Dimensions) (out string) {
 				default: // panic?
 				}
 			}
-			return builder.String()
+			return builder.String(), 0
 		}
-		return n.BuildString()
+		return n.BuildString(), 0
 	case parser.CmdContainer:
 		switch n.Command() {
 		case parser.CMD_underline:
@@ -68,76 +69,75 @@ func (r *Renderer) Prerender(node parser.Expr, dim *Dimensions) (out string) {
 		case parser.CMD_frac:
 			return r.PrerenderCmdFrac(n, dim)
 		default:
-			return "[unimplemented command]"
+			return "[unimplemented command]", 0
 		}
 	case *parser.ParenCompExpr:
-		content := r.PrerenderFlexContainer(n, dim)
-		return JoinHorizontal([]int{dim.BaseLine, dim.Children[0].BaseLine, dim.BaseLine}, n.Left, content, n.Right)
+		content, baseLine := r.PrerenderFlexContainer(n, dim)
+		return JoinHorizontal([]int{dim.BaseLine, dim.Children[0].BaseLine, dim.BaseLine}, n.Left, content, n.Right), baseLine
 	case parser.FlexContainer:
 		return r.PrerenderFlexContainer(n, dim)
 	case parser.CmdLiteral:
 		content := GetVanillaString(n.Command())
-		return content
+		return content, 0
 		// parser.Literal interface types
 	case *parser.VarLit:
-		return "\x1b[3m" + n.Content() + "\x1b[23m" // apply italic(3) then unset italic(23)
+		return "\x1b[3m" + n.Content() + "\x1b[23m", 0 // apply italic(3) then unset italic(23)
 	case *Cursor:
-		return "\x1b[7m \x1b[27m" // set bg color as white(47) then set bg color to default(49)
+		return "\x1b[7m \x1b[27m", 0 // set bg color as white(47) then set bg color to default(49)
 	case parser.Literal:
 		content := n.Content()
 		switch content {
 		case "+", "-", "=":
 			content = " " + content + " "
 		}
-		return content
+		return content, 0
 	case nil:
 		// TODO handle error?
-		return "[nil]"
+		return "[nil]", 0
 	default:
-		return "[unimplemented expression]"
+		return "[unimplemented expression]", 0
 	}
 	// panic("Unhandled case in Prerender()")
 }
 
-func (r *Renderer) PrerenderFlexContainer(node parser.FlexContainer, dim *Dimensions) string {
+func (r *Renderer) PrerenderFlexContainer(node parser.FlexContainer, dim *Dimensions) (output string, baseLine int) {
 	var children = make([]string, len(node.Children()))
-	var baseLine = make([]int, len(node.Children()))
+	var baseLines = make([]int, len(node.Children()))
 	for i, c := range node.Children() {
-		children[i] = r.Prerender(c, dim.Children[i])
-		baseLine[i] = dim.Children[i].BaseLine
+		children[i], baseLines[i] = r.Prerender(c, dim.Children[i])
 	}
 	if len(children) == 0 && CONF_RENDER_EMPTY_COMP_EXPR {
-		return " "
+		return " ", 0
 	}
-	// println(lipgloss.JoinHorizontal(lipgloss.Center, children...))
-	return JoinHorizontal(baseLine, children...)
+	return JoinHorizontal(baseLines, children...), min(baseLines...)
 }
 
-func (r *Renderer) PrerenderCmdContainer(node parser.CmdContainer, dim *Dimensions, x int, y int) string {
+func (r *Renderer) PrerenderCmdContainer(node parser.CmdContainer, dim *Dimensions, x int, y int) (output string, baseLine int) {
 	switch node.Command() {
 	case parser.CMD_frac:
 		return r.PrerenderCmdFrac(node, dim)
 	}
 
-	return ""
+	return "[unimplemented cmd container]", 0
 }
 
-func (r *Renderer) PrerenderCmdUnderline(node parser.CmdContainer, dim *Dimensions) string {
-	block := r.Prerender(node.Children()[0], dim.Children[0])
+func (r *Renderer) PrerenderCmdUnderline(node parser.CmdContainer, dim *Dimensions) (output string, baseLevel int) {
+	block, baseLevel := r.Prerender(node.Children()[0], dim.Children[0])
 	lines, _ := getLines(block)
 	// lines[len(lines)-1] = underlineStyle.Copy().Render(lines[len(lines)-1])
 	// lines[len(lines)-1] = termenv.String(lines[len(lines)-1]).Underline().String()
 	// \x1b[4m sets underline, \x1b[24m unsets it
 	lines[len(lines)-1] = "\x1b[4m" + lines[len(lines)-1] + "\x1b[24m"
 
-	return lipgloss.JoinVertical(lipgloss.Center, lines...)
+	return lipgloss.JoinVertical(lipgloss.Center, lines...), baseLevel
 }
 
-func (r *Renderer) PrerenderCmdFrac(node parser.CmdContainer, dim *Dimensions) string {
-	arg1 := r.Prerender(node.Children()[0], dim.Children[0])
-	arg2 := r.Prerender(node.Children()[1], dim.Children[1])
+func (r *Renderer) PrerenderCmdFrac(node parser.CmdContainer, dim *Dimensions) (output string, newBaseLevel int) {
+	arg1, _ := r.Prerender(node.Children()[0], dim.Children[0])
+	arg2, _ := r.Prerender(node.Children()[1], dim.Children[1])
 	width := max(lipgloss.Width(arg1), lipgloss.Width(arg2))
+	newBaseLevel = -lipgloss.Height(arg2)
 	line := strings.Repeat("─", width)
 
-	return lipgloss.JoinVertical(lipgloss.Center, arg1, line, arg2)
+	return lipgloss.JoinVertical(lipgloss.Center, arg1, line, arg2), newBaseLevel
 }
