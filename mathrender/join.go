@@ -27,6 +27,18 @@ import (
 //     // Join on the top edge
 //     str := lipgloss.JoinHorizontal(lipgloss.Top, blockA, blockB)
 //
+
+// for the sake of clarity, level is an integer that represents how much lower/higher a block should
+// be drawn compared to normal/default blocks (level 0). Blocks usually align at level 0, superscripts
+// align at level 1, subscripts and fractions align at level -1 or below (depending on the block height)
+//    index    level    block
+//    0        1             y      1
+//    1        0        3 + x  = ───────
+//    2        -1                1     2
+//    3        -2                ─ + xy
+//    4        -3                2
+type level int
+
 func JoinHorizontal(baseline []int, strs ...string) string {
 	if len(strs) == 0 {
 		return ""
@@ -49,18 +61,17 @@ func JoinHorizontal(baseline []int, strs ...string) string {
 
 		// Height of the combined block
 		combinedHeight int
-		alignAt        int
 
-		// The vertical level of which the blocks should be aligned at
-		highest int
-		lowest  int
+		// highest and lowest point (level) among all blocks
+		highest level
+		lowest  level
 	)
 
 	// Break text blocks into lines and get max widths for each text block
 	for i, str := range strs {
 		blocks[i], maxWidths[i] = getLines(str)
-		lo := baseline[i]
-		hi := len(blocks[i]) + lo
+		lo := level(baseline[i])
+		hi := level(len(blocks[i])) + lo - 1
 		if hi > highest {
 			highest = hi
 		}
@@ -69,8 +80,21 @@ func JoinHorizontal(baseline []int, strs ...string) string {
 		}
 	}
 
-	combinedHeight = highest - lowest
-	alignAt = highest - 1
+	// debug
+	// const filename = "log"
+	// f, err := os.OpenFile(filename, os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0600)
+	// if err != nil {
+	// 	panic(err)
+	// }
+
+	// defer f.Close()
+
+	// if _, err = fmt.Fprintf(f, "Horizontal Join lowest: %d, highest: %d\n", int(lowest), highest); err != nil {
+	// 	panic(err)
+	// }
+	// debug end
+
+	combinedHeight = int(highest-lowest) + 1
 	// Add extra lines to make each side the same height
 	for i := range blocks {
 		if len(blocks[i]) >= combinedHeight {
@@ -79,14 +103,13 @@ func JoinHorizontal(baseline []int, strs ...string) string {
 
 		extraLines := make([]string, combinedHeight-len(blocks[i]))
 
-		n := len(extraLines)
+		// n := len(extraLines)
 		// (combinedHeight + baseline[i])
-		split := alignAt //- len(blocks[i]) + 2
-		top := n - split
-		bottom := n - top
+		bottom := baseline[i] - int(lowest)
+		// top := n - bottom
 
-		blocks[i] = append(extraLines[top:], blocks[i]...)
-		blocks[i] = append(blocks[i], extraLines[bottom:]...)
+		blocks[i] = append(extraLines[bottom:], blocks[i]...)
+		blocks[i] = append(blocks[i], extraLines[:bottom]...)
 	}
 
 	// Merge lines
