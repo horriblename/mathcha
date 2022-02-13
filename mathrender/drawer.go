@@ -17,7 +17,7 @@ var (
 	fg       = lipgloss.AdaptiveColor{Light: "#383838", Dark: "#AFAFAF"}
 	invert   = lipgloss.AdaptiveColor{Light: "#AFAFAF", Dark: "#383838"}
 	accent   = lipgloss.AdaptiveColor{Light: "#579AD1", Dark: "#A1BAEA"}
-	accentBg = lipgloss.Color("#708090")
+	accentBg = lipgloss.Color("#505570")
 
 	docStyle   = lipgloss.NewStyle().Foreground(fg)
 	focusStyle = lipgloss.NewStyle().Foreground(accent).Background(accentBg)
@@ -62,15 +62,25 @@ func (r *Renderer) Prerender(node parser.Expr, dim *Dimensions) (out string, bas
 			return builder.String(), 0
 		}
 		return n.BuildString(), 0
+
 	case parser.CmdContainer:
 		switch n.Command() {
 		case parser.CMD_underline:
 			return r.PrerenderCmdUnderline(n, dim)
 		case parser.CMD_frac:
 			return r.PrerenderCmdFrac(n, dim)
+		case parser.CMD_superscript:
+			str, _ := r.Prerender(n.Children()[0], dim)
+			return str, 1
+		case parser.CMD_subscript:
+			str, _ := r.Prerender(n.Children()[0], dim)
+			return str, -lipgloss.Height(str)
+		case parser.CMD_sqrt:
+			return r.PrerenderCmdSqrt(n, dim)
 		default:
-			return "[unimplemented command]", 0
+			return "[unimplemented command container]", 0
 		}
+
 	case *parser.ParenCompExpr:
 		content, baseLine := r.PrerenderFlexContainer(n, dim)
 		return JoinHorizontal([]int{dim.BaseLine, dim.Children[0].BaseLine, dim.BaseLine}, n.Left, content, n.Right), baseLine
@@ -112,6 +122,7 @@ func (r *Renderer) PrerenderFlexContainer(node parser.FlexContainer, dim *Dimens
 	return JoinHorizontal(baseLines, children...), min(baseLines...)
 }
 
+// TODO remove
 func (r *Renderer) PrerenderCmdContainer(node parser.CmdContainer, dim *Dimensions, x int, y int) (output string, baseLine int) {
 	switch node.Command() {
 	case parser.CMD_frac:
@@ -133,11 +144,23 @@ func (r *Renderer) PrerenderCmdUnderline(node parser.CmdContainer, dim *Dimensio
 }
 
 func (r *Renderer) PrerenderCmdFrac(node parser.CmdContainer, dim *Dimensions) (output string, newBaseLevel int) {
-	arg1, _ := r.Prerender(node.Children()[0], dim.Children[0])
-	arg2, _ := r.Prerender(node.Children()[1], dim.Children[1])
+	arg1, _ := r.Prerender(node.Children()[0], dim)
+	arg2, _ := r.Prerender(node.Children()[1], dim)
 	width := max(lipgloss.Width(arg1), lipgloss.Width(arg2))
 	newBaseLevel = -lipgloss.Height(arg2)
 	line := strings.Repeat("─", width)
 
 	return lipgloss.JoinVertical(lipgloss.Center, arg1, line, arg2), newBaseLevel
+}
+
+func (r *Renderer) PrerenderCmdSqrt(node parser.CmdContainer, dim *Dimensions) (output string, baseLevel int) {
+	// TODO simplify adding overline escape chars
+	block, baseLevel := r.Prerender(node.Children()[0], dim)
+	lines, _ := getLines(block)
+	lines[0] = "\x1b[53m" + lines[0] + "\x1b[55m"
+	block = lipgloss.JoinVertical(lipgloss.Center, lines...)
+	height := lipgloss.Height(block)
+	root := strings.Repeat("│\n", height-1) + `√`
+
+	return JoinHorizontal([]int{baseLevel, baseLevel}, root, block), baseLevel
 }

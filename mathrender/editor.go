@@ -451,12 +451,11 @@ func (e *Editor) handleRest(char rune) {
 
 	switch char {
 	case '^', '_':
-		brace := &parser.CompositeExpr{}
+		brace := new(parser.CompositeExpr)
 		block := &parser.Cmd1ArgExpr{Type: parser.MatchLatexCmd(string(char)), Arg1: brace}
-		e.getParent().DeleteChildren(idx, idx)
 		e.getParent().InsertChildren(idx, block)
+		e.getParent().DeleteChildren(idx+1, idx+1)
 
-		e.traceStack = append(e.traceStack, block, brace)
 		e.enterContainerFromLeft(block)
 	case '*':
 		dot := &parser.SimpleCmdLit{Source: string(char), Type: parser.CMD_cdot}
