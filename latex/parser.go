@@ -105,7 +105,7 @@ func (p *Parser) parseGenericOnce() Expr {
 	case CARET:
 		return p.parseCmd1Arg(CMD_superscript)
 	case UNDERSCORE:
-		return p.parseCmd2Arg(CMD_subscript)
+		return p.parseCmd1Arg(CMD_subscript)
 	case RBRACE:
 		if p.matchExpectation(p.lit) {
 			return &EmptyExpr{}
