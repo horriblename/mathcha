@@ -136,7 +136,7 @@ func min(numbers ...int) int {
 	m := numbers[0]
 	for _, n := range numbers {
 		if n < m {
-			n = m
+			m = n
 		}
 	}
 	return m
