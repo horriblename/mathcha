@@ -117,15 +117,19 @@ func (r *Renderer) Prerender(node parser.Expr, dim *Dimensions) (out string, bas
 }
 
 func (r *Renderer) PrerenderFlexContainer(node parser.FlexContainer, dim *Dimensions) (output string, baseLine int) {
-	var children = make([]string, len(node.Children()))
+	if len(node.Children()) <= 0 {
+		if CONF_RENDER_EMPTY_COMP_EXPR {
+			return " ", 0
+		} else {
+			return "", 0
+		}
+	}
+	var renderedChildren = make([]string, len(node.Children()))
 	var baseLines = make([]int, len(node.Children()))
 	for i, c := range node.Children() {
-		children[i], baseLines[i] = r.Prerender(c, dim.Children[i])
+		renderedChildren[i], baseLines[i] = r.Prerender(c, dim)
 	}
-	if len(children) == 0 && CONF_RENDER_EMPTY_COMP_EXPR {
-		return " ", 0
-	}
-	return JoinHorizontal(baseLines, children...), min(baseLines...)
+	return JoinHorizontal(baseLines, renderedChildren...), min(baseLines...)
 }
 
 // TODO remove
