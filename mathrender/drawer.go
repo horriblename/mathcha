@@ -83,7 +83,13 @@ func (r *Renderer) Prerender(node parser.Expr, dim *Dimensions) (out string, bas
 
 	case *parser.ParenCompExpr:
 		content, baseLine := r.PrerenderFlexContainer(n, dim)
-		return JoinHorizontal([]int{dim.BaseLine, dim.Children[0].BaseLine, dim.BaseLine}, n.Left, content, n.Right), baseLine
+		if n.Left == "(" && n.Right == ")" && lipgloss.Height(content) >= 2 {
+			height := lipgloss.Height(content)
+			left := "╭\n" + strings.Repeat("│\n", height-2) + "╰"
+			right := "╮\n" + strings.Repeat("│\n", height-2) + "╯"
+			return JoinHorizontal([]int{baseLine, baseLine, baseLine}, left, content, right), baseLine
+		}
+		return JoinHorizontal([]int{0, baseLine, 0}, n.Left, content, n.Right), baseLine
 	case parser.FlexContainer:
 		return r.PrerenderFlexContainer(n, dim)
 	case parser.CmdLiteral:
