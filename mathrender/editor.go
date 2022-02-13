@@ -446,6 +446,7 @@ func (e *Editor) handleRest(char rune) {
 				// TODO pass the key event back into Update?
 				n.Text.InsertChildren(idx, parser.RawRuneLit(char))
 			}
+			return
 		}
 	}
 
