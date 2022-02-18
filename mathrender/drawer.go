@@ -92,6 +92,8 @@ func (r *Renderer) Prerender(node parser.Expr, dim *Dimensions) (out string, bas
 		return JoinHorizontal([]int{0, baseLine, 0}, n.Left, content, n.Right), baseLine
 	case parser.FlexContainer:
 		return r.PrerenderFlexContainer(n, dim)
+	case *parser.UnknownCmdLit: // FIXME subcase of CmdLiteral, what to do with UnknownCmdLit?
+		return "\x1b[4m?\x1b[24m", 0
 	case parser.CmdLiteral:
 		content := GetVanillaString(n.Command())
 		return content, 0
