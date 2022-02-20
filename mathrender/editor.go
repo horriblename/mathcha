@@ -465,6 +465,11 @@ func (e *Editor) handleRest(char rune) {
 	case '*':
 		dot := &parser.SimpleCmdLit{Source: string(char), Type: parser.CMD_cdot}
 		e.getParent().InsertChildren(idx, dot)
+	case '(':
+		block := &parser.ParenCompExpr{Left: "(", Right: ")"}
+		e.getParent().DeleteChildren(idx, idx)
+		e.getParent().InsertChildren(idx, block)
+		e.enterContainerFromRight(block)
 
 	case '\\':
 		// idx := e.getCursorIdxInParent()
