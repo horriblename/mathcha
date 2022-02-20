@@ -370,10 +370,12 @@ func (e *Editor) InsertCmd(cmd string) {
 	case kind.TakesOneArg():
 		node := &parser.Cmd1ArgExpr{Type: kind, Arg1: new(parser.CompositeExpr)}
 		e.getParent().InsertChildren(idx, node)
+		e.getParent().DeleteChildren(idx, idx)
 		e.enterContainerFromRight(node)
 	case kind.TakesTwoArg():
 		node := &parser.Cmd2ArgExpr{Type: kind, Arg1: new(parser.CompositeExpr), Arg2: new(parser.CompositeExpr)}
 		e.getParent().InsertChildren(idx, node)
+		e.getParent().DeleteChildren(idx, idx)
 		e.enterContainerFromRight(node)
 	case kind.TakesRawStrArg():
 	case kind.IsVanillaSym():
@@ -626,45 +628,6 @@ func (e *Editor) findEnclosingVerticallyNavigableCommand(searchFrom int) (index 
 }
 
 func (e Editor) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
-	// if n, ok := e.getParent().(*parser.TextStringWrapper); ok {
-	// 	// handle key events while in a TextStringWrapper,FIXME move somewhere else
-	// 	switch msg := msg.(type) {
-	// 	case tea.KeyMsg:
-	// 		switch msg.Type {
-	// 		case tea.KeyLeft:
-	// 			e.NavigateLeft()
-	// 		case tea.KeyRight:
-	// 			e.NavigateRight()
-	// 		case tea.KeyDown:
-	// 			e.NavigateDown()
-	// 		case tea.KeyUp:
-	// 			e.NavigateUp()
-	// 		case tea.KeyBackspace:
-	// 			e.DeleteBack()
-
-	// 		case tea.KeyCtrlC:
-	// 			return e, tea.Quit
-	// 		case tea.KeyRunes:
-	// 			switch {
-	// 			case msg.Runes[0] == ' ', unicode.IsSpace(msg.Runes[0]):
-	// 				if m, ok := e.traceStack[len(e.traceStack)-2].(*LatexCmdInput); ok {
-	// 					//FIXME case for LatexCmdInput, move somewhere else, also handle all non-letter and tab
-	// 					cmd := "\\" + m.Text.BuildString()
-	// 					e.InsertCmd(cmd)
-	// 				} else {
-	// 					fmt.Printf("%T\n", m)
-	// 					idx := e.getCursorIdxInParent()
-	// 					n.InsertChildren(idx, parser.RawRuneLit(msg.Runes[0]))
-	// 				}
-	// 			default:
-	// 				idx := e.getCursorIdxInParent()
-	// 				n.InsertChildren(idx, parser.RawRuneLit(msg.Runes[0]))
-	// 			}
-	// 		}
-	// 	}
-	// 	e.renderer.Sync(e.getLastOnStack())
-	// 	return e, nil
-	// }
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
 		switch msg.Type {
