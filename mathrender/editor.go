@@ -12,10 +12,15 @@ import (
 )
 
 type Direction int
+type editorStates int // store the editor state/mode types
+type editorState int
 
 const (
 	DIR_LEFT Direction = iota
 	DIR_RIGHT
+
+	EDIT_EQUATION  editorStates = iota // equation editing mode (normal)
+	EDIT_SELECTION                     // something is in selection
 )
 
 // the Cursor object implements a zero-width parser.Literal TODO rn its still a normal character
@@ -32,6 +37,7 @@ type Editor struct {
 	renderer   *Renderer
 	traceStack []parser.Container // trace our position on the tree
 	cursor     *Cursor
+	markSelect *Cursor
 }
 
 func (c *Cursor) Pos() parser.Pos { return parser.Pos(0) } // FIXME remove
@@ -91,6 +97,30 @@ func (e *Editor) popStack() parser.Container {
 	e.traceStack[len(e.traceStack)-1] = nil
 	e.traceStack = e.traceStack[:len(e.traceStack)-1]
 	return ret
+}
+
+// gets the 'state' of the editor,
+// isEquation means that the cursor is not in a raw text field
+// hasSelection means that we are in selection mode
+func (e *Editor) getState() (isEquation bool, hasSelection bool) {
+	switch e.getParent().(type) {
+	case *parser.TextStringWrapper:
+		isEquation = false
+	case parser.FlexContainer:
+		isEquation = true
+	default:
+		// TODO
+		panic("getState could not match parent to an expected type")
+	}
+
+	hasSelection = e.markSelect != nil
+	return isEquation, hasSelection
+}
+
+func (e *Editor) cancelSelection() {
+	markIdx := e.getSelectionIdxInParent()
+	e.getParent().DeleteChildren(markIdx, markIdx)
+	e.markSelect = nil
 }
 
 // A convenience function to move cursor to a new position and handle clean ups
@@ -410,33 +440,97 @@ func (e *Editor) getCursorIdxInParent() int {
 	return -1
 }
 
+func (e *Editor) getSelectionIdxInParent() int {
+	for i, n := range e.getParent().Children() {
+		if n == e.markSelect {
+			return i
+		}
+	}
+	return -1
+}
+
 // ---
 // Keyboard input handlers
 func (e *Editor) handleLetter(letter rune) {
+	eq, sel := e.getState()
 	idx := e.getCursorIdxInParent()
-	switch parent := e.getParent().(type) {
-	case *parser.TextStringWrapper:
-		parent.InsertChildren(idx, parser.RawRuneLit(letter))
-	case parser.FlexContainer:
-		parent.InsertChildren(idx, &parser.VarLit{Source: string(letter)})
+
+	if sel {
+		mark := e.getSelectionIdxInParent()
+		if mark < idx {
+			mark, idx = idx, mark
+		}
+		e.getParent().DeleteChildren(idx, mark-1)
+		e.markSelect = nil
+	}
+
+	if eq {
+		e.getParent().InsertChildren(idx, &parser.VarLit{Source: string(letter)})
+	} else {
+		e.getParent().InsertChildren(idx, parser.RawRuneLit(letter))
 	}
 }
 
 func (e *Editor) handleDigit(digit rune) {
+	eq, sel := e.getState()
 	idx := e.getCursorIdxInParent()
-	switch parent := e.getParent().(type) {
-	case *parser.TextStringWrapper:
+	if sel {
+		mark := e.getSelectionIdxInParent()
+		if mark < idx {
+			mark, idx = idx, mark
+		}
+		e.getParent().DeleteChildren(idx, mark-1)
+		e.markSelect = nil
+	}
+
+	if eq {
+		e.getParent().InsertChildren(idx, &parser.NumberLit{Source: string(digit)})
+	} else {
 		// TODO handle case where LatexCmdInput is second on stack
-		parent.InsertChildren(idx, parser.RawRuneLit(digit))
-	case parser.FlexContainer:
-		parent.InsertChildren(idx, &parser.NumberLit{Source: string(digit)})
+		e.getParent().InsertChildren(idx, parser.RawRuneLit(digit))
 	}
 }
 
 func (e *Editor) handleRest(char rune) {
 	// TODO handle special characters _, ^ etc
+	eq, sel := e.getState()
 	idx := e.getCursorIdxInParent()
-	if len(e.traceStack) > 1 {
+	if sel {
+		switch char {
+		case '/':
+			e.InsertFrac(false)
+		case '(', ')':
+			mark := e.getSelectionIdxInParent()
+			block := parser.ParenCompExpr{Left: "(", Right: ")"}
+			idxAt := DIR_LEFT
+			if mark < idx {
+				mark, idx = idx, mark
+				idxAt = DIR_RIGHT
+			}
+			block.AppendChildren(e.getParent().Children()[idx+1 : mark]...)
+			e.getParent().DeleteChildren(idx, mark)
+			e.getParent().InsertChildren(idx, &block)
+
+			if idxAt == DIR_LEFT {
+				e.enterContainerFromLeft(&block)
+			} else {
+				e.enterContainerFromRight(&block)
+			}
+
+			e.markSelect = nil
+			return
+
+		default:
+			mark := e.getSelectionIdxInParent()
+			if mark < idx {
+				mark, idx = idx, mark
+			}
+			e.getParent().DeleteChildren(idx, mark-1)
+			e.markSelect = nil
+		}
+	}
+
+	if !eq {
 		if n, ok := e.traceStack[len(e.traceStack)-2].(*LatexCmdInput); ok {
 			switch {
 			case unicode.IsSpace(char), char == ' ': // IsSpace not working!
@@ -575,12 +669,54 @@ func (e Editor) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.KeyMsg:
 		switch msg.Type {
 		case tea.KeyLeft:
+			if msg.Alt {
+				idx := e.getCursorIdxInParent()
+				if idx == 0 {
+					// TODO exit 1 level
+					return e, nil
+				}
+
+				if e.markSelect == nil {
+					e.markSelect = new(Cursor)
+					e.getParent().InsertChildren(idx+1, e.markSelect)
+				}
+				e.stepOverPrevSibling()
+				e.renderer.Sync(e.getLastOnStack())
+				return e, nil
+			} else if e.markSelect != nil {
+				e.cancelSelection()
+			}
 			e.NavigateLeft()
 		case tea.KeyRight:
+			if msg.Alt {
+				idx := e.getCursorIdxInParent()
+				if idx >= len(e.getLastOnStack().Children())-1 {
+					// TODO exit 1 level
+					return e, nil
+				}
+
+				if e.markSelect == nil {
+					e.markSelect = new(Cursor)
+					e.getParent().InsertChildren(idx, e.markSelect)
+				}
+
+				e.getParent().DeleteChildren(idx+1, idx+1)
+				e.getParent().InsertChildren(idx+2, e.cursor)
+				e.renderer.Sync(e.getLastOnStack())
+				return e, nil
+			} else if e.markSelect != nil {
+				e.cancelSelection()
+			}
 			e.NavigateRight()
 		case tea.KeyDown:
+			if e.markSelect != nil {
+				e.cancelSelection()
+			}
 			e.NavigateDown()
 		case tea.KeyUp:
+			if e.markSelect != nil {
+				e.cancelSelection()
+			}
 			e.NavigateUp()
 		case tea.KeyBackspace:
 			e.DeleteBack()
@@ -596,7 +732,6 @@ func (e Editor) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 		case tea.KeyRunes:
 			if len(msg.Runes) == 1 {
-				// TODO add if in text block add to text
 				switch {
 				case unicode.IsLetter(msg.Runes[0]):
 					e.handleLetter(msg.Runes[0])
