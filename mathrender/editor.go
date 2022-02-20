@@ -340,10 +340,12 @@ func (e *Editor) InsertCmd(cmd string) {
 	case kind.TakesOneArg():
 		node := &parser.Cmd1ArgExpr{Type: kind, Arg1: new(parser.CompositeExpr)}
 		e.getParent().InsertChildren(idx, node)
+		e.getParent().DeleteChildren(idx, idx)
 		e.enterContainerFromRight(node)
 	case kind.TakesTwoArg():
 		node := &parser.Cmd2ArgExpr{Type: kind, Arg1: new(parser.CompositeExpr), Arg2: new(parser.CompositeExpr)}
 		e.getParent().InsertChildren(idx, node)
+		e.getParent().DeleteChildren(idx, idx)
 		e.enterContainerFromRight(node)
 	case kind.TakesRawStrArg():
 	case kind.IsVanillaSym():
