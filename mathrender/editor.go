@@ -3,6 +3,8 @@
 package mathrender
 
 import (
+	"os/exec"
+	"strings"
 	"unicode"
 
 	tea "github.com/charmbracelet/bubbletea"
@@ -582,6 +584,12 @@ func (e Editor) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			e.exitParent(DIR_RIGHT)
 		case tea.KeyCtrlC:
 			return e, tea.Quit
+		case tea.KeyEnter:
+			// TODO see github.com/charmbracelet/bubbles/input.go for clipboard operation examples
+			cmd := exec.Command("xclip", "-selection", "c")
+			cmd.Stdin = strings.NewReader(ProduceLatex(e.renderer.LatexTree))
+			cmd.Run()
+
 		case tea.KeyRunes:
 			if len(msg.Runes) == 1 {
 				// TODO add if in text block add to text
