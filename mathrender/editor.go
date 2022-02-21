@@ -672,10 +672,11 @@ func (e Editor) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				if e.markSelect == nil {
 					e.markSelect = new(Cursor)
 					e.getParent().InsertChildren(idx, e.markSelect)
+					idx++
 				}
 
-				e.getParent().DeleteChildren(idx+1, idx+1)
-				e.getParent().InsertChildren(idx+2, e.cursor)
+				e.getParent().DeleteChildren(idx, idx)
+				e.getParent().InsertChildren(idx+1, e.cursor)
 				e.renderer.Sync(e.getLastOnStack())
 				return e, nil
 			} else if e.markSelect != nil {
