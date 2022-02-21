@@ -1068,6 +1068,10 @@ func (cmd LatexCmd) IsVanillaSym() bool {
 	return vanilla_sym_beg < cmd && cmd < vanilla_sym_end
 }
 
+func (cmd LatexCmd) IsTextCmd() bool {
+	return cmd_text_beg < cmd && cmd < cmd_text_end
+}
+
 func (cmd LatexCmd) TakesOneArg() bool {
 	return cmd_1arg_beg < cmd && cmd < cmd_1arg_end
 }

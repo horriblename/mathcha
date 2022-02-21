@@ -383,6 +383,11 @@ func (e *Editor) InsertCmd(cmd string) {
 	kind := parser.MatchLatexCmd(cmd)
 	idx := e.getCursorIdxInParent()
 	switch {
+	case kind.IsTextCmd():
+		node := &parser.TextContainer{Text: &parser.TextStringWrapper{}}
+		e.getParent().DeleteChildren(idx, idx)
+		e.getParent().InsertChildren(idx, node)
+		e.enterContainerFromRight(node)
 	case kind.TakesOneArg():
 		node := &parser.Cmd1ArgExpr{Type: kind, Arg1: new(parser.CompositeExpr)}
 		e.getParent().DeleteChildren(idx, idx)
