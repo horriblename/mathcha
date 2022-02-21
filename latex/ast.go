@@ -344,10 +344,10 @@ func (x *TextStringWrapper) BuildString() string {
 	var builder strings.Builder
 	for _, i := range x.Runes {
 		switch r := i.(type) {
-		case *RawRuneLit:
-			builder.WriteRune(rune(*r))
-		case Literal:
-			builder.WriteString(r.Content())
+		case RawRuneLit:
+			builder.WriteRune(rune(r))
+		// case Literal:
+		// 	builder.WriteString(r.Content())
 		default: // panic?
 		}
 	}
