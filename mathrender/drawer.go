@@ -65,6 +65,8 @@ func (r *Renderer) Prerender(node parser.Expr, dim *Dimensions) (out string, bas
 
 	case parser.CmdContainer:
 		switch n.Command() {
+		case parser.CMD_overline:
+			return r.PrerenderCmdOverline(n, dim)
 		case parser.CMD_underline:
 			return r.PrerenderCmdUnderline(n, dim)
 		case parser.CMD_frac:
@@ -144,8 +146,16 @@ func (r *Renderer) PrerenderCmdContainer(node parser.CmdContainer, dim *Dimensio
 	return "[unimplemented cmd container]", 0
 }
 
+func (r *Renderer) PrerenderCmdOverline(node parser.CmdContainer, dim *Dimensions) (output string, baseLevel int) {
+	block, baseLevel := r.Prerender(node.Children()[0], dim)
+	lines, _ := getLines(block)
+	lines[0] = "\x1b[53m" + lines[0] + "\x1b[55m"
+
+	return lipgloss.JoinVertical(lipgloss.Center, lines...), baseLevel
+}
+
 func (r *Renderer) PrerenderCmdUnderline(node parser.CmdContainer, dim *Dimensions) (output string, baseLevel int) {
-	block, baseLevel := r.Prerender(node.Children()[0], dim.Children[0])
+	block, baseLevel := r.Prerender(node.Children()[0], dim)
 	lines, _ := getLines(block)
 	// lines[len(lines)-1] = underlineStyle.Copy().Render(lines[len(lines)-1])
 	// lines[len(lines)-1] = termenv.String(lines[len(lines)-1]).Underline().String()
