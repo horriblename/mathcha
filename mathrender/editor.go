@@ -65,13 +65,12 @@ func (x *LatexCmdInput) VisualizeTree() string { return "TextContainer " + x.Tex
 
 func InitialModel() *Editor {
 	return &Editor{
-		cursor: &Cursor{},
+		cursor: &Cursor{Symbol: "\x1b[7m \x1b[27m"},
 	}
 }
 
 // TODO remove?
 func (e Editor) Init() tea.Cmd {
-	e.cursor = new(Cursor)
 	return nil
 }
 
