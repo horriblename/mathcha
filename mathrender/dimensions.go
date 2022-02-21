@@ -5,6 +5,7 @@ import (
 	rw "github.com/mattn/go-runewidth"
 )
 
+// TODO remove everything from this file
 type Dimensions struct {
 	Width    int
 	Height   int
