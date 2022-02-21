@@ -13,20 +13,19 @@ const (
 
 // style definitions
 var (
-	subtle   = lipgloss.AdaptiveColor{Light: "#D9DCCF", Dark: "#383838"}
-	fg       = lipgloss.AdaptiveColor{Light: "#383838", Dark: "#AFAFAF"}
-	invert   = lipgloss.AdaptiveColor{Light: "#AFAFAF", Dark: "#383838"}
-	accent   = lipgloss.AdaptiveColor{Light: "#579AD1", Dark: "#A1BAEA"}
-	accentBg = lipgloss.Color("#505570")
+	subtle    = lipgloss.AdaptiveColor{Light: "#D9DCCF", Dark: "#383838"}
+	fg        = lipgloss.AdaptiveColor{Light: "#383838", Dark: "#AFAFAF"}
+	invert    = lipgloss.AdaptiveColor{Light: "#AFAFAF", Dark: "#383838"}
+	accent    = lipgloss.AdaptiveColor{Light: "#579AD1", Dark: "#A1BAEA"}
+	accentBg  = lipgloss.Color("#505570")
+	highlight = lipgloss.Color("#FFA8B5")
 
-	docStyle   = lipgloss.NewStyle().Foreground(fg)
-	focusStyle = lipgloss.NewStyle().Foreground(accent).Background(accentBg)
+	docStyle       = lipgloss.NewStyle().Foreground(fg)
+	focusStyle     = lipgloss.NewStyle().Foreground(accent).Background(accentBg)
+	highlightStyle = focusStyle.Copy().Background(highlight).Foreground(lipgloss.Color("#000000"))
 
 	underlineStyle = lipgloss.NewStyle().Underline(true)
-	cursorStyle    = lipgloss.NewStyle().
-			Foreground(invert).
-			Background(lipgloss.Color("#FFFFFF"))
-	variableStyle = lipgloss.NewStyle().Italic(true)
+	variableStyle  = lipgloss.NewStyle().Italic(true)
 )
 
 // depth-first traverse of the latex tree and dim tree in parallel
@@ -130,8 +129,29 @@ func (r *Renderer) PrerenderFlexContainer(node parser.FlexContainer, dim *Dimens
 	}
 	var renderedChildren = make([]string, len(node.Children()))
 	var baseLines = make([]int, len(node.Children()))
+
+	// init only when r.FocusOn == node?
+	var selStart, selEnd = -1, -1 // [start, end] of the selection
 	for i, c := range node.Children() {
+		if r.HasSelection && r.FocusOn == node {
+			if _, ok := c.(*Cursor); ok {
+				if selStart > -1 {
+					selEnd = i
+				} else {
+					selStart = i
+				}
+			}
+			if selStart > -1 && selEnd == -1 {
+				continue
+			}
+		}
 		renderedChildren[i], baseLines[i] = r.Prerender(c, dim)
+	}
+
+	if 0 <= selStart && selStart < selEnd {
+		str, base := r.Prerender(&parser.UnboundCompExpr{Elts: node.Children()[selStart:selEnd]}, dim)
+		renderedChildren[selStart] = highlightStyle.Render(str)
+		baseLines[selStart] = base
 	}
 	return JoinHorizontal(baseLines, renderedChildren...), min(baseLines...)
 }
