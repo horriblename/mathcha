@@ -90,7 +90,7 @@ func (e *Editor) Read(latex string) {
 	e.renderer.LatexTree.AppendChildren(e.cursor)
 	e.traceStack = []parser.Container{e.renderer.LatexTree}
 
-	e.renderer.Sync(e.getLastOnStack())
+	e.renderer.Sync(e.getLastOnStack(), false)
 }
 
 func (e *Editor) popStack() parser.Container {
@@ -655,7 +655,7 @@ func (e Editor) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					e.getParent().InsertChildren(idx+1, e.markSelect)
 				}
 				e.stepOverPrevSibling()
-				e.renderer.Sync(e.getLastOnStack())
+				e.renderer.Sync(e.getLastOnStack(), true)
 				return e, nil
 			} else if e.markSelect != nil {
 				e.cancelSelection()
@@ -677,7 +677,7 @@ func (e Editor) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 				e.getParent().DeleteChildren(idx, idx)
 				e.getParent().InsertChildren(idx+1, e.cursor)
-				e.renderer.Sync(e.getLastOnStack())
+				e.renderer.Sync(e.getLastOnStack(), true)
 				return e, nil
 			} else if e.markSelect != nil {
 				e.cancelSelection()
@@ -720,7 +720,7 @@ func (e Editor) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return e, nil
 		}
 	}
-	e.renderer.Sync(e.getLastOnStack())
+	e.renderer.Sync(e.getLastOnStack(), e.markSelect != nil)
 	return e, nil
 }
 

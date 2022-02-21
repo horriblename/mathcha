@@ -14,10 +14,11 @@ var _ = strings.Title
 // TODO maybe add Dimensions.Init
 
 type Renderer struct {
-	Buffer    string
-	LatexTree parser.FlexContainer
-	FocusOn   parser.Container // the container in which the cursor is, a better implementation would be letting Render functions return a 'focused' flag when cursor is found
-	Size      *Dimensions
+	Buffer       string
+	LatexTree    parser.FlexContainer
+	FocusOn      parser.Container // the container in which the cursor is, a better implementation would be letting Render functions return a 'focused' flag when cursor is found
+	HasSelection bool             // whether there is a selection in FocusOn
+	Size         *Dimensions
 }
 
 // Rendering is a 2 step process: TODO merge the process?
@@ -25,13 +26,14 @@ type Renderer struct {
 // 2.
 func (r *Renderer) Load(tree parser.FlexContainer) {
 	r.LatexTree = tree
-	r.Sync(nil)
+	r.Sync(nil, false)
 }
 
 // rerender the latex tree
-func (r *Renderer) Sync(focus parser.Container) {
+func (r *Renderer) Sync(focus parser.Container, selected bool /*whether there is a selection*/) {
 	r.Size = calculateDim(r.LatexTree)
 	r.FocusOn = focus
+	r.HasSelection = selected
 	r.DrawToBuffer(r.LatexTree, r.Size)
 }
 
