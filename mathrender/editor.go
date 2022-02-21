@@ -128,6 +128,17 @@ func (e *Editor) cancelSelection() {
 	e.markSelect = nil
 }
 
+func (e *Editor) deleteSelection() {
+	idx := e.getCursorIdxInParent()
+	mark := e.getSelectionIdxInParent()
+	if mark < idx {
+		e.getParent().DeleteChildren(mark, idx-1)
+	} else {
+		e.getParent().DeleteChildren(idx+1, mark)
+	}
+	e.markSelect = nil
+}
+
 // A convenience function to move cursor to a new position and handle clean ups
 // TODO remove if only stepOver*Sibling uses this
 func (e *Editor) moveCursorTo(
@@ -424,6 +435,11 @@ func (e *Editor) InsertFrac(detectNumerator bool) {
 }
 
 func (e *Editor) DeleteBack() {
+	if e.markSelect != nil {
+		e.deleteSelection()
+		return
+	}
+
 	idx := e.getCursorIdxInParent()
 	if idx == 0 {
 		// TODO exit container
@@ -460,17 +476,12 @@ func (e *Editor) getSelectionIdxInParent() int {
 // Keyboard input handlers
 func (e *Editor) handleLetter(letter rune) {
 	eq, sel := e.getState()
-	idx := e.getCursorIdxInParent()
 
 	if sel {
-		mark := e.getSelectionIdxInParent()
-		if mark < idx {
-			mark, idx = idx, mark
-		}
-		e.getParent().DeleteChildren(idx, mark-1)
-		e.markSelect = nil
+		e.deleteSelection()
 	}
 
+	idx := e.getCursorIdxInParent()
 	if eq {
 		e.getParent().InsertChildren(idx, &parser.VarLit{Source: string(letter)})
 	} else {
@@ -480,16 +491,11 @@ func (e *Editor) handleLetter(letter rune) {
 
 func (e *Editor) handleDigit(digit rune) {
 	eq, sel := e.getState()
-	idx := e.getCursorIdxInParent()
 	if sel {
-		mark := e.getSelectionIdxInParent()
-		if mark < idx {
-			mark, idx = idx, mark
-		}
-		e.getParent().DeleteChildren(idx, mark-1)
-		e.markSelect = nil
+		e.deleteSelection()
 	}
 
+	idx := e.getCursorIdxInParent()
 	if eq {
 		e.getParent().InsertChildren(idx, &parser.NumberLit{Source: string(digit)})
 	} else {
