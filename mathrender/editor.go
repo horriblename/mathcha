@@ -25,7 +25,7 @@ const (
 
 // the Cursor object implements a zero-width parser.Literal TODO rn its still a normal character
 type Cursor struct {
-	offsetX int // offset the position of the cursor
+	Symbol string // appearance of the cursor
 }
 
 type LatexCmdInput struct {
@@ -44,7 +44,7 @@ func (c *Cursor) Pos() parser.Pos { return parser.Pos(0) } // FIXME remove
 func (c *Cursor) End() parser.Pos { return parser.Pos(0) }
 
 func (c *Cursor) VisualizeTree() string { return "Cursor        " }
-func (c *Cursor) Content() string       { return "" }
+func (c *Cursor) Content() string       { return c.Symbol }
 
 func (x *LatexCmdInput) Pos() parser.Pos         { return 0 }
 func (x *LatexCmdInput) End() parser.Pos         { return 0 }
@@ -62,6 +62,12 @@ func (x *LatexCmdInput) SetArg(index int, expr parser.Expr) {
 	}
 }
 func (x *LatexCmdInput) VisualizeTree() string { return "TextContainer " + x.Text.VisualizeTree() }
+
+func InitialModel() *Editor {
+	return &Editor{
+		cursor: &Cursor{},
+	}
+}
 
 // TODO remove?
 func (e Editor) Init() tea.Cmd {

@@ -55,7 +55,7 @@ func (r *Renderer) Prerender(node parser.Expr, dim *Dimensions) (out string, bas
 				case parser.RawRuneLit:
 					builder.WriteRune(rune(r))
 				case *Cursor:
-					builder.WriteString("\x1b[7m \x1b[27m")
+					builder.WriteString(r.Content())
 				default: // panic?
 				}
 			}
@@ -100,8 +100,8 @@ func (r *Renderer) Prerender(node parser.Expr, dim *Dimensions) (out string, bas
 		// parser.Literal interface types
 	case *parser.VarLit:
 		return "\x1b[3m" + n.Content() + "\x1b[23m", 0 // apply italic(3) then unset italic(23)
-	case *Cursor:
-		return "\x1b[7m \x1b[27m", 0 // set bg color as white(47) then set bg color to default(49)
+	// case *Cursor:
+	// 	return "\x1b[7m \x1b[27m", 0 // set bg color as white(47) then set bg color to default(49)
 	case parser.Literal:
 		content := n.Content()
 		switch content {
