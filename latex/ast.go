@@ -122,6 +122,7 @@ type (
 	}
 
 	// A EmptyExpr node is a placeholder to mark the termination of a previous expression
+	// TODO remove?
 	EmptyExpr struct {
 		From, To Pos
 		Type     Token
@@ -171,7 +172,7 @@ type (
 
 	// IncompleteCmdLit node is a placeholder for an incomplete command
 	// It is treated as a SimpleCmdLit, without any special grammar
-	// TODO it should be treated as some kind of TextLit
+	// TODO remove?
 	IncompleteCmdLit struct {
 		Backslash Pos    // Position of "\"
 		Source    string // he command string including backslash
@@ -180,6 +181,7 @@ type (
 
 	// UnknownCmdLit node is a placeholder for an unrecognized command
 	// It is treated as a SimpleCmdLit, without any special grammar
+	// TODO remove?
 	UnknownCmdLit struct {
 		Backslash Pos    // Position of "\"
 		Source    string // he command string including backslash
