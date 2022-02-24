@@ -74,14 +74,18 @@ type RunesContainer interface {
 	BuildString() string
 }
 
+type CmdExpr interface {
+	Command() LatexCmd
+}
+
 type CmdLiteral interface {
 	Literal // the only reason this is here is to identify UnknownCmdLit via Content()
-	Command() LatexCmd
+	CmdExpr
 }
 
 type CmdContainer interface {
 	FixedContainer
-	Command() LatexCmd
+	CmdExpr
 }
 
 // ---
