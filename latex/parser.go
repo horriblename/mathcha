@@ -227,7 +227,7 @@ func (p *Parser) parseSubExpr() Expr {
 func (p *Parser) parseTextCommand(kind LatexCmd) Expr {
 	p.exprLev++
 	p.next() // skip command
-	node := &TextContainer{Text: &TextStringWrapper{}}
+	node := &TextContainer{Text: &TextStringWrapper{}, Type: kind}
 	if p.tok != LBRACE {
 		runes := make([]Expr, 1)
 		runes[0] = RawRuneLit(p.lit[0])

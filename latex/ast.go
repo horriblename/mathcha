@@ -99,6 +99,7 @@ func (c *Comment) End() Pos { return Pos(int(c.Percent) + len(c.Text)) }
 
 type TextContainer struct {
 	CmdText  Pos // position of "\text"
+	Type     LatexCmd
 	From, To Pos // position of "{" / "}" or position of single-character
 	Text     *TextStringWrapper
 }
@@ -370,6 +371,7 @@ func (x *SimpleCmdLit) Content() string  { return x.Source }
 
 // CmdLiteral, CmdContainer method definitions
 func (x *UnknownCmdLit) Command() LatexCmd { return CMD_UNKNOWN }
+func (x *TextContainer) Command() LatexCmd { return x.Type }
 func (x *SimpleCmdLit) Command() LatexCmd  { return x.Type }
 func (x *Cmd1ArgExpr) Command() LatexCmd   { return x.Type }
 func (x *Cmd2ArgExpr) Command() LatexCmd   { return x.Type }
