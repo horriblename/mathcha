@@ -740,7 +740,6 @@ func formatLatexTree(tree parser.Expr) {
 	// TODO also convert (), [], \{\} to \left...\right
 
 	switch n := tree.(type) {
-	case *parser.TextContainer:
 	case parser.FixedContainer:
 		for i, child := range n.Children() {
 			if _, ok := child.(parser.FlexContainer); !ok {

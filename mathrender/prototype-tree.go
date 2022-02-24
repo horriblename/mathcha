@@ -46,7 +46,7 @@ func ProduceLatex(node parser.Expr) string {
 	suffix := ""
 	switch n := node.(type) {
 	case *parser.TextContainer: // TODO CmdContainer subtype
-		latex = "\\text {" + n.Text.BuildString() + "}"
+		return "\\text {" + n.Text.BuildString() + "}"
 	case *parser.ParenCompExpr: // TODO FlexContainer subtype
 		builder := strings.Builder{}
 		builder.WriteString("\\left" + n.Left)
@@ -77,7 +77,7 @@ func ProduceLatex(node parser.Expr) string {
 		return n.Content() + " "
 	case parser.Literal:
 		return n.Content()
+	default:
+		return "[unknown node encountered]"
 	}
-
-	return "[unknown node encountered]"
 }
