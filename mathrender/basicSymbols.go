@@ -84,6 +84,8 @@ var VanillaToUnicode = map[parser.LatexCmd]string{
 	parser.CMD_times:    `×`,
 	parser.CMD_div:      `÷`,
 	parser.CMD_ne:       `≠`,
+	parser.CMD_pm:       `±`, // added temporarily, reorder later?
+	parser.CMD_mp:       `∓`, // added temporarily, reorder later?
 	parser.CMD_ast:      `∗`,
 	parser.CMD_therefor: `∴`,
 	parser.CMD_cuz:      `∵`,

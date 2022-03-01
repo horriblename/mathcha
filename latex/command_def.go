@@ -129,6 +129,8 @@ const (
 	CMD_times
 	CMD_div
 	CMD_ne
+	CMD_pm
+	CMD_mp
 	CMD_ast
 	CMD_therefor
 	CMD_cuz
@@ -576,6 +578,8 @@ var latexCmds = map[string]LatexCmd{
 	"\\divides":            CMD_div,
 	"\\ne":                 CMD_ne,
 	"\\neq":                CMD_ne,
+	"\\pm":                 CMD_pm,
+	"\\mp":                 CMD_mp,
 	"\\ast":                CMD_ast,
 	"\\star":               CMD_ast,
 	"\\loast":              CMD_ast,
