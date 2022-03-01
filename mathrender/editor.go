@@ -43,7 +43,7 @@ type Editor struct {
 func (c *Cursor) Pos() parser.Pos { return parser.Pos(0) } // FIXME remove
 func (c *Cursor) End() parser.Pos { return parser.Pos(0) }
 
-func (c *Cursor) VisualizeTree() string { return "Cursor        " }
+func (c *Cursor) VisualizeTree() string { return "Cursor" + c.Symbol }
 func (c *Cursor) Content() string       { return c.Symbol }
 
 func (x *LatexCmdInput) Pos() parser.Pos         { return 0 }
@@ -515,8 +515,22 @@ func (e *Editor) handleRest(char rune) {
 	idx := e.getCursorIdxInParent()
 	if sel {
 		switch char {
-		case '/':
-			e.InsertFrac(false)
+		case '/': // similar to case '(', ')', merge?
+			mark := e.getSelectionIdxInParent()
+			numerator := new(parser.CompositeExpr)
+			block := parser.Cmd2ArgExpr{Type: parser.CMD_frac, Arg1: numerator, Arg2: new(parser.CompositeExpr)}
+			if mark < idx {
+				mark, idx = idx, mark
+			}
+			numerator.AppendChildren(e.getParent().Children()[idx+1 : mark]...)
+			e.getParent().DeleteChildren(idx, mark)
+			e.getParent().InsertChildren(idx, &block)
+
+			e.enterContainerFromRight(&block)
+			e.NavigateDown()
+
+			e.markSelect = nil
+			return
 		case '(', ')':
 			mark := e.getSelectionIdxInParent()
 			block := parser.ParenCompExpr{Left: "(", Right: ")"}
