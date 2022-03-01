@@ -41,6 +41,9 @@ func (r *Renderer) View() string {
 	return r.Buffer
 }
 
+// possible optimisation: pass the strings.Builder object by reference into the recursive
+// function to avoid multiple Builder instances. Then returning string is no longer needed,
+// we just use the original Builder to get the string instead
 func ProduceLatex(node parser.Expr) string {
 	latex := ""
 	suffix := ""
@@ -75,6 +78,8 @@ func ProduceLatex(node parser.Expr) string {
 		return latex
 	case parser.CmdLiteral:
 		return n.Content() + " "
+	case *Cursor:
+		return ""
 	case parser.Literal:
 		return n.Content()
 	default:
