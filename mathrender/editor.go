@@ -379,6 +379,21 @@ func (e *Editor) enterContainerFromLeft(target parser.Container) {
 	e.traceStack = append(e.traceStack, parent)
 }
 
+//
+func (e *Editor) NavigateToBeginning() {
+	idx := e.getCursorIdxInParent()
+	parent := e.getParent()
+	parent.DeleteChildren(idx, idx)
+	parent.InsertChildren(0, e.cursor)
+}
+
+func (e *Editor) NavigateToEnd() {
+	idx := e.getCursorIdxInParent()
+	parent := e.getParent()
+	parent.DeleteChildren(idx, idx)
+	parent.AppendChildren(e.cursor)
+}
+
 func (e *Editor) InsertCmd(cmd string) {
 	kind := parser.MatchLatexCmd(cmd)
 	idx := e.getCursorIdxInParent()
@@ -455,7 +470,6 @@ func (e *Editor) DeleteBack() {
 		e.enterContainerFromRight(n)
 		return
 	}
-	e.getParent().DeleteChildren(idx-1, idx-1)
 }
 
 // returns the cursor position relative to the parent
@@ -712,6 +726,10 @@ func (e Editor) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				e.cancelSelection()
 			}
 			e.NavigateUp()
+		case tea.KeyHome:
+			e.NavigateToBeginning()
+		case tea.KeyEnd:
+			e.NavigateToEnd()
 		case tea.KeyBackspace:
 			e.DeleteBack()
 		case tea.KeyTab: // TODO complete command when in a LatexCmdInput
