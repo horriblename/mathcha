@@ -5,6 +5,8 @@ import (
 )
 
 var VanillaToUnicode = map[parser.LatexCmd]string{
+	// escaped symbols
+	parser.CMD_SPACE: ` `,
 	// vanilla symbols
 	parser.CMD_alpha: `α`,
 	parser.CMD_beta:  `β`,
