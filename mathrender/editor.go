@@ -715,6 +715,9 @@ func (e Editor) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case tea.KeyBackspace:
 			e.DeleteBack()
 		case tea.KeyTab: // TODO complete command when in a LatexCmdInput
+			if len(e.traceStack) <= 1 {
+				return e, nil
+			}
 			e.exitParent(DIR_RIGHT)
 		case tea.KeyCtrlC:
 			return e, tea.Quit
