@@ -157,6 +157,7 @@ type (
 
 	// A ParenCompExpr is a parenthesized Composite Expression surrounded by \left\right commands
 	// e.g. \left( x-y \right)
+	// Implements FlexContainer
 	ParenCompExpr struct {
 		From, To Pos
 		Left     string // the character on the left side of the expression
@@ -369,7 +370,7 @@ func (x *NumberLit) Content() string     { return x.Source }
 func (x *VarLit) Content() string        { return x.Source }
 func (x *SimpleOpLit) Content() string   { return x.Source }
 func (x *UnknownCmdLit) Content() string { return x.Source }
-func (x *SimpleCmdLit) Content() string  { return x.Source }
+func (x *SimpleCmdLit) Content() string  { return x.Type.GetCmd() }
 
 // CmdLiteral, CmdContainer method definitions
 func (x *UnknownCmdLit) Command() LatexCmd { return CMD_UNKNOWN }
