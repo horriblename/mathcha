@@ -86,8 +86,8 @@ func (r *Renderer) Prerender(node parser.Expr, dim *Dimensions) (out string, bas
 		content, baseLine := r.PrerenderFlexContainer(n, dim)
 		if n.Left == "(" && n.Right == ")" && lipgloss.Height(content) >= 2 {
 			height := lipgloss.Height(content)
-			left := "╭\n" + strings.Repeat("│\n", height-2) + "╰"
-			right := "╮\n" + strings.Repeat("│\n", height-2) + "╯"
+			left := "⎛\n" + strings.Repeat("⎜\n", height-2) + "⎝"
+			right := "⎞\n" + strings.Repeat("⎟\n", height-2) + "⎠"
 			return JoinHorizontal([]int{baseLine, baseLine, baseLine}, left, content, right), baseLine
 		}
 		return JoinHorizontal([]int{0, baseLine, 0}, n.Left, content, n.Right), baseLine
@@ -245,7 +245,7 @@ func (r *Renderer) PrerenderCmdSqrt(node parser.CmdContainer, dim *Dimensions) (
 	lines[0] = "\x1b[53m" + lines[0] + "\x1b[55m"
 	block = lipgloss.JoinVertical(lipgloss.Center, lines...)
 	height := lipgloss.Height(block)
-	root := strings.Repeat("│\n", height-1) + `√`
+	root := strings.Repeat("⎟\n", height-1) + `⎷`
 
 	return JoinHorizontal([]int{baseLevel, baseLevel}, root, block), baseLevel
 }
