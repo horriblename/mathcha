@@ -129,23 +129,66 @@ func (r *Renderer) PrerenderFlexContainer(node parser.FlexContainer, dim *Dimens
 	}
 	var renderedChildren = make([]string, len(node.Children()))
 	var baseLines = make([]int, len(node.Children()))
+	var vertJoinQueue *parser.Cmd1ArgExpr // for elements that need to be rendered on top of one another superscrpit & subscript
 
 	// init only when r.FocusOn == node?
 	var selStart, selEnd = -1, -1 // [start, end] of the selection
-	for i, c := range node.Children() {
+	for index, child := range node.Children() {
 		if r.HasSelection && r.FocusOn == node {
-			if _, ok := c.(*Cursor); ok {
+			if _, ok := child.(*Cursor); ok {
 				if selStart > -1 {
-					selEnd = i
+					selEnd = index
 				} else {
-					selStart = i
+					selStart = index
 				}
 			}
 			if selStart > -1 && selEnd == -1 {
 				continue
 			}
 		}
-		renderedChildren[i], baseLines[i] = r.Prerender(c, dim)
+
+		// deal with elements that render on top of eaech other
+		if c, ok := child.(*parser.Cmd1ArgExpr); ok {
+			switch c.Command() {
+			case parser.CMD_subscript:
+				var sup, sub string
+				if vertJoinQueue != nil {
+					// if vertJoinQueue.Command() == c.Command() {
+					// } else
+					if vertJoinQueue.Command() == parser.CMD_superscript {
+						sup = renderedChildren[index-1]
+						sub, baseLines[index] = r.Prerender(c, dim)
+						renderedChildren[index] = lipgloss.JoinVertical(lipgloss.Left, sup, " ", sub)
+						println(renderedChildren[index])
+						renderedChildren[index-1] = ""
+						continue
+					}
+				}
+
+				vertJoinQueue = c
+			case parser.CMD_superscript: // TODO merge above
+				var sup, sub string
+				if vertJoinQueue != nil {
+					// if vertJoinQueue.Command() == c.Command() {
+					// } else
+					if vertJoinQueue.Command() == parser.CMD_subscript {
+						sub = renderedChildren[index-1]
+						sup, _ = r.Prerender(c, dim)
+						baseLines[index] = baseLines[index-1]
+						renderedChildren[index] = lipgloss.JoinVertical(lipgloss.Left, sup, " ", sub)
+						renderedChildren[index-1] = ""
+						continue
+					}
+				}
+
+				vertJoinQueue = c
+			default:
+				vertJoinQueue = nil
+			}
+		} else {
+			vertJoinQueue = nil
+		}
+		renderedChildren[index], baseLines[index] = r.Prerender(child, dim)
 	}
 
 	if 0 <= selStart && selStart < selEnd {
