@@ -418,6 +418,33 @@ func (e *Editor) InsertFrac(detectNumerator bool) {
 	e.getParent().InsertChildren(idx, frac)
 }
 
+// delete the parent container and possibly the parent's FixedContainer
+// and insert the parent's children to the node one level above
+// x + \frac{2y}{3} --[flatten '\frac']-> x + 2y3
+func (e *Editor) flattenDeleteParent() {
+	idx := e.getCursorIdxInParent()
+	if forest, ok := e.traceStack[len(e.traceStack)-2].(parser.FixedContainer); ok {
+		e.exitParent(DIR_LEFT)
+		idx = e.getCursorIdxInParent()
+		e.getParent().DeleteChildren(idx+1, idx+1)
+
+		for i := len(forest.Children()) - 1; i >= 0; i-- {
+			if c, ok := forest.Children()[i].(parser.FlexContainer); ok {
+				e.getParent().InsertChildren(idx+1, c.Children()...)
+			} else {
+				e.getParent().InsertChildren(idx+1, c)
+			}
+		}
+	} else {
+		deleting := e.getParent()
+		e.exitParent(DIR_LEFT)
+		idx = e.getCursorIdxInParent()
+		e.getParent().DeleteChildren(idx+1, idx+1)
+
+		e.getParent().InsertChildren(idx+1, deleting.Children()...)
+	}
+}
+
 func (e *Editor) DeleteBack() {
 	if e.markSelect != nil {
 		e.deleteSelection()
@@ -426,13 +453,21 @@ func (e *Editor) DeleteBack() {
 
 	idx := e.getCursorIdxInParent()
 	if idx == 0 {
-		// TODO exit container
+		if len(e.traceStack) <= 1 {
+			return
+		}
+		e.flattenDeleteParent()
 		return
-	}
-	if n, ok := e.getParent().Children()[idx-1].(parser.Container); ok {
-		e.getParent().DeleteChildren(idx, idx)
-		e.enterContainerFromRight(n)
-		return
+	} else {
+		switch n := e.getParent().Children()[idx-1].(type) {
+		case *parser.ParenCompExpr:
+			e.getParent().DeleteChildren(idx, idx)
+			e.enterContainerFromRight(n)
+		case parser.Container:
+			e.getParent().DeleteChildren(idx-1, idx-1)
+		default:
+			e.getParent().DeleteChildren(idx-1, idx-1)
+		}
 	}
 }
 
