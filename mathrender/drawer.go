@@ -14,18 +14,18 @@ const (
 // style definitions
 var (
 	subtle    = lipgloss.AdaptiveColor{Light: "#D9DCCF", Dark: "#383838"}
-	fg        = lipgloss.AdaptiveColor{Light: "#383838", Dark: "#AFAFAF"}
-	invert    = lipgloss.AdaptiveColor{Light: "#AFAFAF", Dark: "#383838"}
-	accent    = lipgloss.AdaptiveColor{Light: "#579AD1", Dark: "#A1BAEA"}
-	accentBg  = lipgloss.Color("#505570")
-	highlight = lipgloss.Color("#FFA8B5")
+	fg        = lipgloss.AdaptiveColor{Light: "#1ff2f7", Dark: "#abb2bf"}
+	invert    = lipgloss.AdaptiveColor{Light: "#abb2bf", Dark: "#1ff2f7"}
+	accent    = fg //lipgloss.AdaptiveColor{Light: "#264f78", Dark: "#A1BAEA"}
+	accentBg  = lipgloss.Color("#777")
+	highlight = lipgloss.Color("#264f78")
 
 	docStyle       = lipgloss.NewStyle().Foreground(fg)
 	focusStyle     = lipgloss.NewStyle().Foreground(accent).Background(accentBg)
-	highlightStyle = focusStyle.Copy().Background(highlight).Foreground(lipgloss.Color("#000000"))
+	highlightStyle = focusStyle.Copy().Background(highlight).Foreground(fg)
 
-	underlineStyle = lipgloss.NewStyle().Underline(true)
-	variableStyle  = lipgloss.NewStyle().Italic(true)
+	// underlineStyle = lipgloss.NewStyle().Underline(true)
+	variableStyle = lipgloss.NewStyle().Italic(true)
 )
 
 // depth-first traverse of the latex tree and dim tree in parallel
