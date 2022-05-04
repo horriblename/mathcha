@@ -1,4 +1,4 @@
-package mathrender
+package renderer
 
 import (
 	parser "github.com/horriblename/latex-parser/latex"

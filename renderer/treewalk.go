@@ -1,6 +1,6 @@
 // Copied straight from https://cs.opensource.google/go/go/+/refs/tags/go1.17.5:src/go/ast/walk.go
 // and modified slightly to fit my use case
-package mathrender
+package renderer
 
 import (
 	parser "github.com/horriblename/latex-parser/latex"
