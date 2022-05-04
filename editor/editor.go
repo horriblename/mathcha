@@ -1,6 +1,6 @@
 // The Editor provides the interface for navigating/editing the math equation,
 // that an app can then bind controls to such methods
-package mathrender
+package editor
 
 import (
 	"os/exec"
@@ -9,6 +9,7 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 	parser "github.com/horriblename/latex-parser/latex"
+	render "github.com/horriblename/latex-parser/renderer"
 )
 
 type Direction int
@@ -23,49 +24,17 @@ const (
 	EDIT_SELECTION                     // something is in selection
 )
 
-// the Cursor object implements a zero-width parser.Literal TODO rn its still a normal character
-type Cursor struct {
-	Symbol string // appearance of the cursor
-}
-
-type LatexCmdInput struct {
-	Text *parser.TextStringWrapper
-}
-
 //
 type Editor struct {
-	renderer   *Renderer
+	renderer   *render.Renderer
 	traceStack []parser.Container // trace our position on the tree
-	cursor     *Cursor
-	markSelect *Cursor
+	cursor     *render.Cursor
+	markSelect *render.Cursor
 }
-
-func (c *Cursor) Pos() parser.Pos { return parser.Pos(0) } // FIXME remove
-func (c *Cursor) End() parser.Pos { return parser.Pos(0) }
-
-func (c *Cursor) VisualizeTree() string { return "Cursor" + c.Symbol }
-func (c *Cursor) Content() string       { return c.Symbol }
-
-func (x *LatexCmdInput) Pos() parser.Pos         { return 0 }
-func (x *LatexCmdInput) End() parser.Pos         { return 0 }
-func (x *LatexCmdInput) Children() []parser.Expr { return []parser.Expr{x.Text} }
-func (x *LatexCmdInput) Parameters() int         { return 1 }
-func (x *LatexCmdInput) SetArg(index int, expr parser.Expr) {
-	if index > 0 {
-		panic("SetArg(): index out of range")
-	}
-	// FIXME this is awful
-	if n, ok := expr.(*parser.TextStringWrapper); ok {
-		x.Text = n
-	} else {
-		panic("TextContainer.SetArg: expected TextStringWrapper")
-	}
-}
-func (x *LatexCmdInput) VisualizeTree() string { return "TextContainer " + x.Text.VisualizeTree() }
 
 func InitialModel() *Editor {
 	return &Editor{
-		cursor: &Cursor{Symbol: "\x1b[7m \x1b[27m"},
+		cursor: &render.Cursor{Symbol: "\x1b[7m \x1b[27m"},
 	}
 }
 
@@ -80,7 +49,7 @@ func (e *Editor) Read(latex string) {
 		p := parser.Parser{}
 		p.Init(latex)
 		// e.renderer.Load(p.GetTree()) // FIXME why doesn't this work
-		e.renderer = &Renderer{LatexTree: p.GetTree()}
+		e.renderer = &render.Renderer{LatexTree: p.GetTree()}
 		// p (Parser object) can be discarded now
 	} else {
 		e.renderer.Load(&parser.UnboundCompExpr{})
@@ -577,7 +546,7 @@ func (e *Editor) handleRest(char rune) {
 	}
 
 	if !eq {
-		if n, ok := e.traceStack[len(e.traceStack)-2].(*LatexCmdInput); ok {
+		if n, ok := e.traceStack[len(e.traceStack)-2].(*render.LatexCmdInput); ok {
 			switch {
 			case unicode.IsSpace(char), char == ' ': // IsSpace not working!
 				cmd := "\\" + n.Text.BuildString()
@@ -612,7 +581,7 @@ func (e *Editor) handleRest(char rune) {
 
 	case '\\':
 		// idx := e.getCursorIdxInParent()
-		field := &LatexCmdInput{Text: new(parser.TextStringWrapper)}
+		field := &render.LatexCmdInput{Text: new(parser.TextStringWrapper)}
 		e.getParent().DeleteChildren(idx, idx)
 		e.getParent().InsertChildren(idx, field)
 
@@ -684,7 +653,7 @@ func (e Editor) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				}
 
 				if e.markSelect == nil {
-					e.markSelect = new(Cursor)
+					e.markSelect = new(render.Cursor)
 					e.getParent().InsertChildren(idx+1, e.markSelect)
 				}
 				e.stepOverPrevSibling()
@@ -703,7 +672,7 @@ func (e Editor) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				}
 
 				if e.markSelect == nil {
-					e.markSelect = new(Cursor)
+					e.markSelect = new(render.Cursor)
 					e.getParent().InsertChildren(idx, e.markSelect)
 					idx++
 				}
@@ -742,7 +711,7 @@ func (e Editor) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case tea.KeyEnter:
 			// TODO see github.com/charmbracelet/bubbles/input.go for clipboard operation examples
 			cmd := exec.Command("xclip", "-selection", "c")
-			cmd.Stdin = strings.NewReader(ProduceLatex(e.renderer.LatexTree))
+			cmd.Stdin = strings.NewReader(render.ProduceLatex(e.renderer.LatexTree))
 			cmd.Run()
 
 		case tea.KeyRunes:
@@ -765,7 +734,7 @@ func (e Editor) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (e Editor) View() string {
-	return e.renderer.View() + "\n" + ProduceLatex(e.renderer.LatexTree)
+	return e.renderer.View() + "\n" + render.ProduceLatex(e.renderer.LatexTree)
 }
 
 // Search the tree for any FixedContainer type that has children that is
