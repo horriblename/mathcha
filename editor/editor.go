@@ -20,8 +20,9 @@ const (
 	DIR_LEFT Direction = iota
 	DIR_RIGHT
 
-	EDIT_EQUATION  editorStates = iota // equation editing mode (normal)
-	EDIT_SELECTION                     // something is in selection
+	EDIT_EQUATION editorState = iota // equation editing mode (normal)
+	EDIT_TEXT
+	EDIT_COMMAND
 )
 
 //
@@ -69,21 +70,27 @@ func (e *Editor) popStack() parser.Container {
 }
 
 // gets the 'state' of the editor,
-// isEquation means that the cursor is not in a raw text field
-// hasSelection means that we are in selection mode
-func (e *Editor) getState() (isEquation bool, hasSelection bool) {
+func (e *Editor) getState() editorState {
+	var state editorState
 	switch e.getParent().(type) {
 	case *parser.TextStringWrapper:
-		isEquation = false
+		if _, ok := e.traceStack[len(e.traceStack)-2].(*render.LatexCmdInput); ok {
+			state = EDIT_COMMAND
+		} else {
+			state = EDIT_TEXT
+		}
 	case parser.FlexContainer:
-		isEquation = true
+		state = EDIT_EQUATION
 	default:
 		// TODO
 		panic("getState could not match parent to an expected type")
 	}
 
-	hasSelection = e.markSelect != nil
-	return isEquation, hasSelection
+	return state
+}
+
+func (e *Editor) hasSelection() bool {
+	return e.markSelect != nil
 }
 
 func (e *Editor) cancelSelection() {
@@ -493,14 +500,15 @@ func (e *Editor) getSelectionIdxInParent() int {
 // ---
 // Keyboard input handlers
 func (e *Editor) handleLetter(letter rune) {
-	eq, sel := e.getState()
+	kind := e.getState()
+	sel := e.hasSelection()
 
 	if sel {
 		e.deleteSelection()
 	}
 
 	idx := e.getCursorIdxInParent()
-	if eq {
+	if kind == EDIT_EQUATION {
 		e.getParent().InsertChildren(idx, &parser.VarLit{Source: string(letter)})
 	} else {
 		e.getParent().InsertChildren(idx, parser.RawRuneLit(letter))
@@ -508,13 +516,14 @@ func (e *Editor) handleLetter(letter rune) {
 }
 
 func (e *Editor) handleDigit(digit rune) {
-	eq, sel := e.getState()
+	kind := e.getState()
+	sel := e.hasSelection()
 	if sel {
 		e.deleteSelection()
 	}
 
 	idx := e.getCursorIdxInParent()
-	if eq {
+	if kind == EDIT_EQUATION {
 		e.getParent().InsertChildren(idx, &parser.NumberLit{Source: string(digit)})
 	} else {
 		// TODO handle case where LatexCmdInput is second on stack
@@ -524,7 +533,8 @@ func (e *Editor) handleDigit(digit rune) {
 
 func (e *Editor) handleRest(char rune) {
 	// TODO handle special characters _, ^ etc
-	eq, sel := e.getState()
+	kind := e.getState()
+	sel := e.hasSelection()
 	idx := e.getCursorIdxInParent()
 	if sel {
 		switch char {
