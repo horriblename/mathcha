@@ -32,15 +32,10 @@ type Editor struct {
 	markSelect *render.Cursor
 }
 
-func InitialModel() *Editor {
+func New() *Editor {
 	return &Editor{
 		cursor: &render.Cursor{Symbol: "\x1b[7m \x1b[27m"},
 	}
-}
-
-// TODO remove?
-func (e Editor) Init() tea.Cmd {
-	return nil
 }
 
 func (e *Editor) Read(latex string) {
