@@ -640,7 +640,7 @@ func (e *Editor) findEnclosingVerticallyNavigableCommand(searchFrom int) (index 
 	return -1
 }
 
-func (e Editor) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+func (e Editor) Update(msg tea.Msg) (Editor, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
 		switch msg.Type {
