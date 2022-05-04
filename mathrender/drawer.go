@@ -220,9 +220,9 @@ func (r *Renderer) PrerenderCmdOverline(node parser.CmdContainer, dim *Dimension
 func (r *Renderer) PrerenderCmdUnderline(node parser.CmdContainer, dim *Dimensions) (output string, baseLevel int) {
 	block, baseLevel := r.Prerender(node.Children()[0], dim)
 	lines, _ := getLines(block)
-	// lines[len(lines)-1] = underlineStyle.Copy().Render(lines[len(lines)-1])
-	// lines[len(lines)-1] = termenv.String(lines[len(lines)-1]).Underline().String()
 	// \x1b[4m sets underline, \x1b[24m unsets it
+	// not using lipgloss as lipgloss ends with \x1b[0m, which resets everything
+	// TODO handle double underlines?
 	lines[len(lines)-1] = "\x1b[4m" + lines[len(lines)-1] + "\x1b[24m"
 
 	return lipgloss.JoinVertical(lipgloss.Center, lines...), baseLevel
