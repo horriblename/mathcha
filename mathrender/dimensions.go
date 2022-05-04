@@ -5,7 +5,18 @@ import (
 	rw "github.com/mattn/go-runewidth"
 )
 
-// TODO remove everything from this file
+// Everything here is currently not in use
+// the current rendering process is joining each block of strings vertically/horizontally
+// one by one using a depth-first search of the syntax tree, it's simpler and seems to work fine
+//
+// I have some other ideas for the rendering process which involves calculating the Dimensions
+// (height and width and relative y-position "BaseLine") of each block of text (DFS), then
+// 'stack' the text blocks to the left (using BFS), calculating the abosolute position in the
+// process. Pros of this new rendering method:
+// + we can know exactly where a given node is placed in the text block;
+// + knowing where the cursor is can help us form a 'scrollable' area
+// + and possibly partial-rerendering (only rerender the 'box' that the cursor is in), though
+//   this is not really needed as I don't see any performance issues for now
 type Dimensions struct {
 	Width    int
 	Height   int
