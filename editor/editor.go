@@ -13,7 +13,7 @@ import (
 )
 
 type Direction int
-type editorStates int // store the editor state/mode types
+type editorStates int // TODO remove?
 type editorState int
 
 const (
@@ -585,60 +585,79 @@ func (e *Editor) handleRest(char rune) {
 		}
 	}
 
-	if !eq {
-		if n, ok := e.traceStack[len(e.traceStack)-2].(*render.LatexCmdInput); ok {
+	// is equation and no selection
+	if kind == EDIT_EQUATION {
+		switch char {
+		case '^', '_':
+			brace := new(parser.CompositeExpr)
+			block := &parser.Cmd1ArgExpr{Type: parser.MatchLatexCmd(string(char)), Arg1: brace}
+			e.getParent().DeleteChildren(idx, idx)
+			e.getParent().InsertChildren(idx, block)
+			e.enterContainerFromLeft(block)
+		case '*':
+			dot := &parser.SimpleCmdLit{Source: `\cdot`, Type: parser.CMD_cdot}
+			e.getParent().InsertChildren(idx, dot)
+		case '(':
+			block := &parser.ParenCompExpr{Left: "(", Right: ")"}
+			e.getParent().DeleteChildren(idx, idx)
+			e.getParent().InsertChildren(idx, block)
+			e.enterContainerFromRight(block)
+
+		case '\\':
+			field := &render.LatexCmdInput{Text: new(parser.TextStringWrapper)}
+			e.getParent().DeleteChildren(idx, idx)
+			e.getParent().InsertChildren(idx, field)
+
+			e.traceStack = append(e.traceStack, field, field.Text)
+			e.getParent().AppendChildren(e.cursor)
+
+		case '/':
+			e.InsertFrac(true)
+			e.NavigateLeft()
+			e.NavigateDown()
+		case ' ':
+			e.getParent().InsertChildren(idx, &parser.SimpleCmdLit{Type: parser.CMD_SPACE, Source: `\ `})
+		default:
+			e.getParent().InsertChildren(idx, &parser.SimpleOpLit{Source: string(char)})
+		}
+		return
+	}
+
+	// guranteed to pass check
+	if n, ok := e.getLastOnStack().(*parser.TextStringWrapper); ok {
+		if kind == EDIT_COMMAND {
 			switch {
-			case unicode.IsSpace(char), char == ' ': // IsSpace not working!
-				cmd := "\\" + n.Text.BuildString()
+			case char == ' ':
+				cmd := "\\" + n.BuildString()
 				e.exitParent(DIR_RIGHT)
 				idx := e.getCursorIdxInParent() // TODO error handling for idx == 0?
 				e.getParent().DeleteChildren(idx-1, idx-1)
+				if len(cmd) <= 1 {
+					cmd += " "
+				}
 				e.InsertCmd(cmd)
-
 			default:
 				// TODO pass the key event back into Update?
-				n.Text.InsertChildren(idx, parser.RawRuneLit(char))
+				n.InsertChildren(idx, parser.RawRuneLit(char))
 			}
 			return
+		} else { // kind == EDIT_TEXT
+			switch {
+			default:
+				n.InsertChildren(idx, parser.RawRuneLit(char))
+			}
 		}
 	}
+}
 
-	switch char {
-	case '^', '_':
-		brace := new(parser.CompositeExpr)
-		block := &parser.Cmd1ArgExpr{Type: parser.MatchLatexCmd(string(char)), Arg1: brace}
-		e.getParent().DeleteChildren(idx, idx)
-		e.getParent().InsertChildren(idx, block)
-		e.enterContainerFromLeft(block)
-	case '*':
-		dot := &parser.SimpleCmdLit{Source: `\cdot`, Type: parser.CMD_cdot}
-		e.getParent().InsertChildren(idx, dot)
-	case '(':
-		block := &parser.ParenCompExpr{Left: "(", Right: ")"}
-		e.getParent().DeleteChildren(idx, idx)
-		e.getParent().InsertChildren(idx, block)
-		e.enterContainerFromRight(block)
+// not in use yet
+func (e *Editor) handlePaste(v string) {
+	idx := e.getCursorIdxInParent()
+	p := parser.Parser{}
 
-	case '\\':
-		// idx := e.getCursorIdxInParent()
-		field := &render.LatexCmdInput{Text: new(parser.TextStringWrapper)}
-		e.getParent().DeleteChildren(idx, idx)
-		e.getParent().InsertChildren(idx, field)
-
-		e.traceStack = append(e.traceStack, field, field.Text)
-		e.getParent().AppendChildren(e.cursor)
-
-	case '/':
-		e.InsertFrac(true)
-		e.NavigateLeft()
-		e.NavigateDown()
-	case ' ':
-		e.getParent().InsertChildren(idx, &parser.SimpleCmdLit{Type: parser.CMD_SPACE, Source: `\ `})
-		// case '\\':
-		//    e.getParent().InsertChild(idx, &parser.IncompleteCmdLit{})
-	default:
-		e.getParent().InsertChildren(idx, &parser.SimpleOpLit{Source: string(char)})
-	}
+	// TODO error handling, when the given string is not valid latex
+	p.Init(v)
+	e.getParent().InsertChildren(idx, p.GetTree().Children()...)
 }
 
 // ---
