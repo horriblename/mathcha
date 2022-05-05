@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	parser "github.com/horriblename/latex-parser/latex"
+	parser "github.com/horriblename/mathcha/latex"
 )
 
 // FIXME

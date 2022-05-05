@@ -31,12 +31,13 @@ import (
 // for the sake of clarity, level is an integer that represents how much lower/higher a block should
 // be drawn compared to normal/default blocks (level 0). Blocks usually align at level 0, superscripts
 // align at level 1, subscripts and fractions align at level -1 or below (depending on the block height)
-//    index    level    block
-//    0        1             y      1
-//    1        0        3 + x  = ───────
-//    2        -1                1     2
-//    3        -2                ─ + xy
-//    4        -3                2
+//    | slice_index  | level    |  block            |
+//    | ------------ | -------- | ----------------- |
+//    | 0            | 1        |       y      1    |
+//    | 1            | 0        |  3 + x  = ─────── |
+//    | 2            | -1       |           1     2 |
+//    | 3            | -2       |           ─ + xy  |
+//    | 4            | -3       |           2       |
 type level int
 
 func JoinHorizontal(baseline []int, strs ...string) string {

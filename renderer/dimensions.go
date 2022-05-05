@@ -1,7 +1,7 @@
 package renderer
 
 import (
-	parser "github.com/horriblename/latex-parser/latex"
+	parser "github.com/horriblename/mathcha/latex"
 	rw "github.com/mattn/go-runewidth"
 )
 

@@ -1,4 +1,4 @@
-module github.com/horriblename/latex-parser
+module github.com/horriblename/mathcha
 
 go 1.17
 

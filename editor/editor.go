@@ -8,8 +8,8 @@ import (
 	"unicode"
 
 	tea "github.com/charmbracelet/bubbletea"
-	parser "github.com/horriblename/latex-parser/latex"
-	render "github.com/horriblename/latex-parser/renderer"
+	parser "github.com/horriblename/mathcha/latex"
+	render "github.com/horriblename/mathcha/renderer"
 )
 
 type Direction int

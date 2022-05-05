@@ -2,7 +2,7 @@
 package renderer
 
 import (
-	parser "github.com/horriblename/latex-parser/latex"
+	parser "github.com/horriblename/mathcha/latex"
 )
 
 // the Cursor object implements a zero-width parser.Literal TODO rn its still a normal character

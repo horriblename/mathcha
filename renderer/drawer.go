@@ -4,7 +4,7 @@ import (
 	"strings"
 
 	"github.com/charmbracelet/lipgloss"
-	parser "github.com/horriblename/latex-parser/latex"
+	parser "github.com/horriblename/mathcha/latex"
 )
 
 const (
