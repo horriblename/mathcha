@@ -54,16 +54,13 @@ func main() {
 	var latex string
 	latex = `1-\frac{1}{1-\frac{1}{1-\frac{1}{1-\frac{1}{1-\frac{1}{1-\frac{1}{1-\frac{1}{1-\frac{1}{1-\frac{1}{1-\frac{1}{2}}}}}}}}}}`
 	latex = `E = \frac\underline{12}12 mv2`
-	// latex = `g(x) = \left(\frac{12}{13}\right)`
+	latex = `g(x) = \left(\frac{12}{13}\right)`
 	latex = `xyz = \text{this is a text}abc-{}+1`
 
 	latex = `f(x) = \frac{1}{\sigma\sqrt{2\pi}}\exp\left(-\frac{1}{2}\left(\frac{x-\mu}{\sigma}\right)\right)`
 	latex = "f(x)"
-	// latex = `E = mc^2`
 	e := initialModel()
 	e.editor.Read(latex)
-
-	// e := render.InitialModel(latex)
 
 	p := tea.NewProgram(e)
 	if err := p.Start(); err != nil {
