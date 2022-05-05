@@ -47,7 +47,7 @@ func (m model) View() string {
 		"math?\n\n%s\n\n%s\n%s",
 		m.editor.View(),
 		m.editor.LatexSource(),
-		"(ctrl+c to quit)",
+		"(esc or ctrl+c to quit)",
 	) + "\n"
 }
 
