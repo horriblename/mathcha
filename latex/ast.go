@@ -1,13 +1,14 @@
 package latex
 
-import "strings"
+import (
+	"strings"
+)
 
 /* ----------------------------------------------------------------------------
    Interface
 
-   There are 3 main classes of nodes: Expression nodes, ...?
-   nodes, and declaration nodes. The node names usually match the corresponding
-   latex command. The node fields correspond to the individual parts of the
+   There are 2 main classes of nodes: Container nodes and Literal nodes
+   The node fields correspond to the individual parts of the
    respective commmands
 
    All nodes contain position information marking the beginning of the
@@ -47,12 +48,14 @@ type Literal interface {
 // more interfaces...
 // these interfaces take after Container or Literal and includes some other
 // functions of their own. Each expression node struct defined later should
-// implement one of the following interfaces, or Literal TODO
+// implement one of the following interfaces, or Literal TODO poor desc.
 
 // Referring to containers that have indefinite amount of children
 type FlexContainer interface {
 	Container
-	AppendChild(Expr)
+	AppendChildren(...Expr)
+	DeleteChildren(from int, to int)
+	InsertChildren(int, ...Expr)
 	// TODO
 	Identifier() string // temporary solution to identify the concrete type
 }
@@ -63,16 +66,26 @@ type FlexContainer interface {
 type FixedContainer interface {
 	Container
 	Parameters() int // number of children
+	SetArg(int, Expr)
+}
+
+type RunesContainer interface {
+	Container
+	BuildString() string
+}
+
+type CmdExpr interface {
+	Command() LatexCmd
 }
 
 type CmdLiteral interface {
 	Literal // the only reason this is here is to identify UnknownCmdLit via Content()
-	Command() LatexCmd
+	CmdExpr
 }
 
 type CmdContainer interface {
 	FixedContainer
-	Command() LatexCmd
+	CmdExpr
 }
 
 // ---
@@ -84,10 +97,15 @@ type Comment struct {
 func (c *Comment) Pos() Pos { return c.Percent }
 func (c *Comment) End() Pos { return Pos(int(c.Percent) + len(c.Text)) }
 
-type TextLit struct {
-	CmdText  Pos    // position of "\text"
-	From, To Pos    // position of "{" / "}" or position of single-character
-	Content  string // contained
+type TextContainer struct {
+	CmdText  Pos // position of "\text"
+	Type     LatexCmd
+	From, To Pos // position of "{" / "}" or position of single-character
+	Text     *TextStringWrapper
+}
+
+type TextStringWrapper struct {
+	Runes []Expr
 }
 
 /* ----------------------------------------------------------------------------
@@ -104,6 +122,7 @@ type (
 	}
 
 	// A EmptyExpr node is a placeholder to mark the termination of a previous expression
+	// TODO remove?
 	EmptyExpr struct {
 		From, To Pos
 		Type     Token
@@ -112,16 +131,16 @@ type (
 	// A NumberLit node represents a literal consisting of digits
 	NumberLit struct {
 		From, To Pos
-		source   string // literal string; e.g. 23x
+		Source   string // literal string; e.g. 23x
 	}
 
 	// A VarLit node represents a literal consisting of alphabets
 	VarLit struct {
 		From, To Pos
-		source   string
+		Source   string
 	}
 
-	// A Composite node represents a composite bracea surrounded { expression }
+	// A Composite node represents a composite braces surrounded { expression }
 	CompositeExpr struct {
 		Type       Expr   // literal type; or nil ?
 		Lbrace     Pos    // Position of "{"
@@ -130,30 +149,54 @@ type (
 		Incomplete bool   // true if (source) expressions are missing in Elts
 	}
 
-	// A TopLevelExpr is basically the same as CompositeLit but without brackets "{}"
-	TopLevelExpr struct {
+	// A UnboundCompExpr is basically the same as CompositeLit but without brackets "{}"
+	UnboundCompExpr struct {
 		From, To Pos
+		Elts     []Expr // list of composite elements; or nil
+	}
+
+	// A ParenCompExpr is a parenthesized Composite Expression surrounded by \left\right commands
+	// e.g. \left( x-y \right)
+	// Implements FlexContainer
+	ParenCompExpr struct {
+		From, To Pos
+		Left     string // the character on the left side of the expression
+		Right    string // the character on the right side of the expression
 		Elts     []Expr // list of composite elements; or nil
 	}
 
 	// A SimpleOpLit node represents a simple operator literal
 	SimpleOpLit struct {
 		From, To Pos
-		source   string // e.g. + - =
+		Source   string // e.g. + - =
+	}
+
+	// IncompleteCmdLit node is a placeholder for an incomplete command
+	// It is treated as a SimpleCmdLit, without any special grammar
+	// TODO remove?
+	IncompleteCmdLit struct {
+		Backslash Pos    // Position of "\"
+		Source    string // he command string including backslash
+		To        Pos    // position of the last character
 	}
 
 	// UnknownCmdLit node is a placeholder for an unrecognized command
 	// It is treated as a SimpleCmdLit, without any special grammar
+	// TODO remove?
 	UnknownCmdLit struct {
 		Backslash Pos    // Position of "\"
-		source    string // he command string including backslash
+		Source    string // he command string including backslash
 		To        Pos    // position of the last character
 	}
+
+	// RawRuneLit node is a raw string, used by \text-like commands to wrap
+	// a string in a Expr node
+	RawRuneLit rune
 
 	// A SimpleCmdLit node is a simple command that behaves like any other simple literal e.g. \times
 	SimpleCmdLit struct {
 		Backslash Pos    // Position of "\"
-		source    string // the command string including backslash
+		Source    string // the command string including backslash
 		Type      LatexCmd
 		To        Pos // position of last character
 	}
@@ -193,63 +236,145 @@ type (
 	}
 )
 
-func (x *BadExpr) Pos() Pos       { return x.From }
-func (x *EmptyExpr) Pos() Pos     { return x.From }
-func (x *NumberLit) Pos() Pos     { return x.From }
-func (x *VarLit) Pos() Pos        { return x.From }
-func (x *CompositeExpr) Pos() Pos { return x.Lbrace }
-func (x *TopLevelExpr) Pos() Pos  { return x.From }
-func (x *SimpleOpLit) Pos() Pos   { return x.From }
-func (x *UnknownCmdLit) Pos() Pos { return x.Backslash }
-func (x *SimpleCmdLit) Pos() Pos  { return x.Backslash }
-func (x *SuperExpr) Pos() Pos     { return x.Symbol }
-func (x *SubExpr) Pos() Pos       { return x.Symbol }
-func (x *Cmd1ArgExpr) Pos() Pos   { return x.Backslash }
-func (x *Cmd2ArgExpr) Pos() Pos   { return x.Backslash }
+func (x *BadExpr) Pos() Pos           { return x.From }
+func (x *EmptyExpr) Pos() Pos         { return x.From }
+func (x *NumberLit) Pos() Pos         { return x.From }
+func (x *VarLit) Pos() Pos            { return x.From }
+func (x *TextContainer) Pos() Pos     { return x.CmdText }
+func (x *TextStringWrapper) Pos() Pos { return 0 }
+func (x *CompositeExpr) Pos() Pos     { return x.Lbrace }
+func (x *UnboundCompExpr) Pos() Pos   { return x.From }
+func (x *ParenCompExpr) Pos() Pos     { return x.From }
+func (x RawRuneLit) Pos() Pos         { return 0 }
+func (x *SimpleOpLit) Pos() Pos       { return x.From }
+func (x *UnknownCmdLit) Pos() Pos     { return x.Backslash }
+func (x *SimpleCmdLit) Pos() Pos      { return x.Backslash }
+func (x *SuperExpr) Pos() Pos         { return x.Symbol }
+func (x *SubExpr) Pos() Pos           { return x.Symbol }
+func (x *Cmd1ArgExpr) Pos() Pos       { return x.Backslash }
+func (x *Cmd2ArgExpr) Pos() Pos       { return x.Backslash }
 
-func (x *BadExpr) End() Pos       { return x.To }
-func (x *EmptyExpr) End() Pos     { return x.To }
-func (x *NumberLit) End() Pos     { return x.To }
-func (x *VarLit) End() Pos        { return x.To }
-func (x *CompositeExpr) End() Pos { return x.Lbrace }
-func (x *TopLevelExpr) End() Pos  { return x.To }
-func (x *SimpleOpLit) End() Pos   { return x.From }
-func (x *UnknownCmdLit) End() Pos { return x.To }
-func (x *SimpleCmdLit) End() Pos  { return x.To }
-func (x *SuperExpr) End() Pos     { return x.Close }
-func (x *SubExpr) End() Pos       { return x.Close }
-func (x *Cmd1ArgExpr) End() Pos   { return x.To }
-func (x *Cmd2ArgExpr) End() Pos   { return x.To }
+func (x *BadExpr) End() Pos           { return x.To }
+func (x *EmptyExpr) End() Pos         { return x.To }
+func (x *NumberLit) End() Pos         { return x.To }
+func (x *VarLit) End() Pos            { return x.To }
+func (x *TextContainer) End() Pos     { return x.To }
+func (x *TextStringWrapper) End() Pos { return 0 }
+func (x *CompositeExpr) End() Pos     { return x.Lbrace }
+func (x *UnboundCompExpr) End() Pos   { return x.To }
+func (x *ParenCompExpr) End() Pos     { return x.To }
+func (x RawRuneLit) End() Pos         { return 0 }
+func (x *SimpleOpLit) End() Pos       { return x.To }
+func (x *UnknownCmdLit) End() Pos     { return x.To }
+func (x *SimpleCmdLit) End() Pos      { return x.To }
+func (x *SuperExpr) End() Pos         { return x.Close }
+func (x *SubExpr) End() Pos           { return x.Close }
+func (x *Cmd1ArgExpr) End() Pos       { return x.To }
+func (x *Cmd2ArgExpr) End() Pos       { return x.To }
 
 // Container method definitions
-func (x *CompositeExpr) Children() []Expr { return x.Elts }
-func (x *TopLevelExpr) Children() []Expr  { return x.Elts }
+func (x *TextContainer) Children() []Expr     { return []Expr{x.Text} }
+func (x *TextStringWrapper) Children() []Expr { return x.Runes }
+func (x *CompositeExpr) Children() []Expr     { return x.Elts }
+func (x *UnboundCompExpr) Children() []Expr   { return x.Elts }
+func (x *ParenCompExpr) Children() []Expr     { return x.Elts }
 
 func (x *Cmd1ArgExpr) Children() []Expr { return []Expr{x.Arg1} }
 func (x *Cmd2ArgExpr) Children() []Expr { return []Expr{x.Arg1, x.Arg2} }
 
 // FlexContainer methods
-func (x *CompositeExpr) AppendChild(child Expr) { x.Elts = append(x.Elts, child) }
-func (x *TopLevelExpr) AppendChild(child Expr)  { x.Elts = append(x.Elts, child) }
+func (x *TextStringWrapper) AppendChildren(children ...Expr) { x.Runes = append(x.Runes, children...) } // TODO check children type?
+func (x *CompositeExpr) AppendChildren(children ...Expr)     { x.Elts = append(x.Elts, children...) }
+func (x *UnboundCompExpr) AppendChildren(children ...Expr)   { x.Elts = append(x.Elts, children...) }
+func (x *ParenCompExpr) AppendChildren(children ...Expr)     { x.Elts = append(x.Elts, children...) }
 
-func (x *CompositeExpr) Identifier() string { return "{" }
-func (x *TopLevelExpr) Identifier() string  { return "" }
+// Deletes Children from the first index to the second index, inclusive
+func (x *TextStringWrapper) DeleteChildren(from int, to int) { deleteChildren(&x.Runes, from, to) }
+func (x *CompositeExpr) DeleteChildren(from int, to int)     { deleteChildren(&x.Elts, from, to) }
+func (x *UnboundCompExpr) DeleteChildren(from int, to int)   { deleteChildren(&x.Elts, from, to) }
+func (x *ParenCompExpr) DeleteChildren(from int, to int)     { deleteChildren(&x.Elts, from, to) }
+
+// Insert child at index; the new child has the index 'at'
+func (x *TextStringWrapper) InsertChildren(at int, children ...Expr) {
+	insertChildren(&x.Runes, at, children...)
+}
+func (x *CompositeExpr) InsertChildren(at int, children ...Expr) {
+	insertChildren(&x.Elts, at, children...)
+}
+func (x *UnboundCompExpr) InsertChildren(at int, children ...Expr) {
+	insertChildren(&x.Elts, at, children...)
+}
+func (x *ParenCompExpr) InsertChildren(at int, children ...Expr) {
+	insertChildren(&x.Elts, at, children...)
+}
+
+func (x *TextStringWrapper) Identifier() string { return "\\text" }
+func (x *CompositeExpr) Identifier() string     { return "{" }
+func (x *UnboundCompExpr) Identifier() string   { return "" }
+func (x *ParenCompExpr) Identifier() string     { return "" }
 
 // FixedContainer methods
-func (x *Cmd1ArgExpr) Parameters() int { return 1 }
-func (x *Cmd2ArgExpr) Parameters() int { return 2 }
+func (x *TextContainer) Parameters() int { return 1 }
+func (x *Cmd1ArgExpr) Parameters() int   { return 1 }
+func (x *Cmd2ArgExpr) Parameters() int   { return 2 }
+
+func (x *TextContainer) SetArg(index int, expr Expr) {
+	if index > 0 {
+		panic("SetArg(): index out of range")
+	}
+	// FIXME this is awful
+	if n, ok := expr.(*TextStringWrapper); ok {
+		x.Text = n
+	} else {
+		panic("TextContainer.SetArg: expected TextStringWrapper")
+	}
+}
+func (x *Cmd1ArgExpr) SetArg(index int, expr Expr) {
+	if index != 0 {
+		panic("SetArg(): index out of range")
+	}
+	x.Arg1 = expr
+}
+func (x *Cmd2ArgExpr) SetArg(index int, expr Expr) {
+	if index > 1 || index < 0 {
+		panic("SetArg(): index out of range")
+	}
+	switch index {
+	case 0:
+		x.Arg1 = expr
+	case 1:
+		x.Arg2 = expr
+	}
+}
+
+// RunesContainer method definitions
+func (x *TextStringWrapper) BuildString() string {
+	var builder strings.Builder
+	for _, i := range x.Runes {
+		switch r := i.(type) {
+		case RawRuneLit:
+			builder.WriteRune(rune(r))
+		// case Literal:
+		// 	builder.WriteString(r.Content())
+		default: // panic?
+		}
+	}
+	return builder.String()
+}
 
 // Literal method definitions
 func (x *BadExpr) Content() string       { return x.source }
 func (x *EmptyExpr) Content() string     { return "" }
-func (x *NumberLit) Content() string     { return x.source }
-func (x *VarLit) Content() string        { return x.source }
-func (x *SimpleOpLit) Content() string   { return x.source }
-func (x *UnknownCmdLit) Content() string { return x.source }
-func (x *SimpleCmdLit) Content() string  { return x.source }
+func (x RawRuneLit) Content() string     { return string(x) }
+func (x *NumberLit) Content() string     { return x.Source }
+func (x *VarLit) Content() string        { return x.Source }
+func (x *SimpleOpLit) Content() string   { return x.Source }
+func (x *UnknownCmdLit) Content() string { return x.Source }
+func (x *SimpleCmdLit) Content() string  { return x.Type.GetCmd() }
 
 // CmdLiteral, CmdContainer method definitions
 func (x *UnknownCmdLit) Command() LatexCmd { return CMD_UNKNOWN }
+func (x *TextContainer) Command() LatexCmd { return x.Type }
 func (x *SimpleCmdLit) Command() LatexCmd  { return x.Type }
 func (x *Cmd1ArgExpr) Command() LatexCmd   { return x.Type }
 func (x *Cmd2ArgExpr) Command() LatexCmd   { return x.Type }
@@ -258,7 +383,7 @@ func (x *Cmd2ArgExpr) Command() LatexCmd   { return x.Type }
 
 // ----------------------------------------------------------------------------
 // VisualizeTree, naive approach, only for debugging purposes
-func (x *TopLevelExpr) VisualizeTree() string {
+func (x *UnboundCompExpr) VisualizeTree() string {
 	tree := "$\n"
 	for _, el := range x.Children() {
 		branch := (el).VisualizeTree()
@@ -292,6 +417,23 @@ func (x *CompositeExpr) VisualizeTree() string {
 	return tree
 }
 
+func (x *ParenCompExpr) VisualizeTree() string {
+	tree := x.Left + "\n"
+	for _, el := range x.Children() {
+		branch := (el).VisualizeTree()
+		splits := strings.Split(branch, "\n")
+		tree += "├───" + splits[0] + "\n"
+		if len(splits) == 1 {
+			continue
+		}
+		for _, line := range splits[1:] {
+			tree += "|   " + line + "\n"
+		}
+	}
+	tree += "└───" + x.Right + "\n"
+	return tree
+}
+
 func (x *SuperExpr) VisualizeTree() string {
 	tree := "^\n"
 	branch := x.X.VisualizeTree()
@@ -319,7 +461,7 @@ func (x *SubExpr) VisualizeTree() string {
 }
 
 func (x *Cmd1ArgExpr) VisualizeTree() string {
-	tree := x.source + "\n"
+	tree := x.Command().GetCmd() + "\n"
 	branch := x.Arg1.VisualizeTree()
 	splits := strings.Split(branch, "\n")
 	tree += "├───" + splits[0] + "\n"
@@ -332,7 +474,7 @@ func (x *Cmd1ArgExpr) VisualizeTree() string {
 }
 
 func (x *Cmd2ArgExpr) VisualizeTree() string {
-	tree := "\\frac\n"
+	tree := x.Command().GetCmd() + "\n"
 	branch := x.Arg1.VisualizeTree()
 	splits := strings.Split(branch, "\n")
 	tree += "├───" + splits[0] + "\n"
@@ -354,10 +496,42 @@ func (x *Cmd2ArgExpr) VisualizeTree() string {
 	return tree
 }
 
-func (x *BadExpr) VisualizeTree() string       { return "BadExpr" }
-func (x *EmptyExpr) VisualizeTree() string     { return "EmptyExpr" }
-func (x *NumberLit) VisualizeTree() string     { return "NumberLit     " + x.source }
-func (x *VarLit) VisualizeTree() string        { return "VarLit        " + x.source }
-func (x *SimpleOpLit) VisualizeTree() string   { return "SimpleOpLit   " + x.source }
-func (x *SimpleCmdLit) VisualizeTree() string  { return "SimpleCmdLit  " + x.source }
-func (x *UnknownCmdLit) VisualizeTree() string { return "UnknownCmdLit " + x.source }
+func (x *TextContainer) VisualizeTree() string     { return "TextContainer " + x.Text.VisualizeTree() }
+func (x *TextStringWrapper) VisualizeTree() string { return x.BuildString() }
+func (x *BadExpr) VisualizeTree() string           { return "BadExpr" }
+func (x *EmptyExpr) VisualizeTree() string         { return "EmptyExpr" }
+func (x RawRuneLit) VisualizeTree() string         { return x.Content() }
+func (x *NumberLit) VisualizeTree() string         { return "NumberLit     " + x.Source }
+func (x *VarLit) VisualizeTree() string            { return "VarLit        " + x.Source }
+func (x *SimpleOpLit) VisualizeTree() string       { return "SimpleOpLit   " + x.Source }
+func (x *SimpleCmdLit) VisualizeTree() string      { return "SimpleCmdLit  " + x.Source }
+func (x *UnknownCmdLit) VisualizeTree() string     { return "UnknownCmdLit " + x.Source }
+
+// utils
+// Slice manipulation utilities
+func deleteChildren(slice *[]Expr, from int, to int) {
+	if from < 0 || to >= len(*slice) {
+		panic("deleteChildren(): index out of range!")
+	}
+	if from > to {
+		panic("deleteChildren(): 'from' cannot be larger than 'to'")
+	}
+	l := to - from + 1
+	copy((*slice)[from:], (*slice)[to+1:])
+	for i := range (*slice)[len(*slice)-l:] {
+		(*slice)[len(*slice)-l+i] = nil // garbage collection
+	}
+	(*slice) = (*slice)[:len(*slice)-l]
+}
+
+func insertChildren(slice *[]Expr, at int, children ...Expr) {
+
+	if at < 0 || at > len(*slice) {
+		panic("insertChildren(): invalid index for 'at'")
+	}
+	if at == len(*slice) {
+		*slice = append(*slice, children...)
+		return
+	}
+	*slice = append((*slice)[:at], append(children, (*slice)[at:]...)...)
+}

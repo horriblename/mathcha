@@ -7,12 +7,12 @@
 package latex
 
 import (
-	"fmt"
 	re "regexp"
 	"strconv"
+	"strings"
 )
 
-type Pos int
+type Pos int // TODO remove
 
 // Token is the set of lexical tokens
 type Token int
@@ -87,10 +87,8 @@ type Tokenizer struct {
 	Cursor Pos
 	Stream string
 
-	curr   string
-	tok    Token
-	eof    bool
-	buffer []Token
+	curr string
+	tok  Token
 
 	strCmdRegex *re.Regexp // for matching commands that consist of alphabets
 	symCmdRegex *re.Regexp // for matching commands that consist of symbols e.g. "\;"
@@ -128,7 +126,6 @@ func (tok Token) IsOperator() bool { return operator_beg < tok && tok < operator
 
 func (t *Tokenizer) Init(stream string) {
 	t.Stream = stream
-	println(stream)
 	t.Cursor = Pos(0)
 
 	// FIXME move to package Init() function
@@ -145,16 +142,22 @@ func (t *Tokenizer) Peek() Token { return t.tok }
 
 func (t *Tokenizer) Eat() string {
 	t.consumeWhitespaces()
+	// TODO consumeComments
 	if t.IsEOF() {
-		fmt.Println("\x1b[31mthrow error: Eat() when at EOF\x1b[0m")
+		// fmt.Println("\x1b[31mthrow error: Tokenizer.Eat() when at EOF\x1b[0m")
+		// FIXME error handling
 		return t.curr
 	}
-	if int(t.Cursor) >= len(t.Stream)-1 {
-		t.eof = true
+	// don't move cursor anymore, just spit out the remaining token
+	// fmt.Printf("stream '\x1b[31m%s\x1b[0m%s'\n", t.curr, t.Stream[t.Cursor:])
+	if int(t.Cursor) >= len(t.Stream) {
+		// fmt.Printf("last token '\x1b[31m%s\x1b[0m%s'\n", t.curr, t.Stream[t.Cursor:])
+		curr := t.curr
 		t.tok = EOF
-		return t.curr
+		t.curr = ""
+		return curr
 	}
-	stream := t.Stream[t.Cursor:len(t.Stream)]
+	stream := t.Stream[t.Cursor:]
 	curr := t.curr
 	tok := SYM  // ensure a new token is assigned each call
 	length := 1 // default value to catch-all
@@ -211,7 +214,22 @@ func (t *Tokenizer) Eat() string {
 	return curr
 }
 
-func (t *Tokenizer) IsEOF() bool { return t.eof }
+// skips to the delimiter and return the skipped string
+func (t *Tokenizer) SkipToDelimiter(delimiter string) string {
+	// FIXME this will skip a whitespace if the second character is one
+	// TODO maybe add support for escape characters
+	stream := t.curr + t.Stream[t.Cursor:]
+	i := Pos(strings.Index(stream, delimiter))
+	if i == -1 {
+		panic("Tokenizer.SkipToDelimiter could not find '" + delimiter + "'")
+	}
+	t.Cursor += Pos(i)
+	t.Eat()
+
+	return stream[:i]
+}
+
+func (t *Tokenizer) IsEOF() bool { return t.tok == EOF }
 func (t *Tokenizer) consumeWhitespaces() {
 	stream := t.Stream[t.Cursor:]
 	if loc := t.spaceRegex.FindStringIndex(stream); loc != nil {

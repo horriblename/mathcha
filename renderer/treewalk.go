@@ -1,9 +1,9 @@
 // Copied straight from https://cs.opensource.google/go/go/+/refs/tags/go1.17.5:src/go/ast/walk.go
 // and modified slightly to fit my use case
-package mathrender
+package renderer
 
 import (
-	parser "github.com/horriblename/latex-parser/latex"
+	parser "github.com/horriblename/mathcha/latex"
 )
 
 // A Visitor's Visit method is invoked for each node encountered by Walk.

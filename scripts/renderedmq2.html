@@ -1,0 +1,448 @@
+// from https://math.chapman.edu/~jipsen/mathquill/test/test.html
+\mathrm: abc123@#%
+\mathit: abc123@#% does it work?? cf. abc123@#%
+\mathbf: abc123@#%
+\mathsf: abc123@#%
+\mathtt: abc123@#%
+\mathcal, \mathfrak: not available
+
+\underline: xyz, \underline{\sqrt x}: √x
+
+\overline{xyz}: xyz, \overline{\sqrt x}√x
+
+SubSup x_1^2: x12, x_{1}^{2}: x12
+
+subscript x_11 x11, x_{11}: x11, x\subscript11: x11
+
+superscript x^12: x12, x^{12}: x12, x\superscript12: x12, x\supscript12: x12
+
+\frac xy: xy , \dfrac xy: xy , \cfrac xy: xy , \fraction xy: xy 
+
+xy\over uv: xyoveruv,   x{y\over u}v: xyoveruv only for live fractions
+
+xy/uv: xy/uv,   x{y/u}v: xy/uv only for live fractions
+
+\sqrt{x^2}: √x2, \sqrt[n]{x^n}: n√xn, root and bar have small gap in Firefox
+
+(), [], \left\{\right\}, \langle, \rangle: (),[],(],{},leƒ tlanglerightrangle, \left{\right} need to be matched, \{\},\langle,\rangle don't work??
+
+& lang; ⟨, & rang; ⟩, 
+
+pipe |: |x works unmatched
+
+x\text{ hi }y: x hi y
+x\textnormal{ hi }y: x hi y 
+x\textrm{ hi }y: x hi y 
+x\textup{ hi }y: x hi y
+x\textmd{ hi }y: x hi y
+a \emph{all}b: aallb, a \em{all}b: aallb why do \em??
+a \italic{all}b: aallb, a \italics{all}b: aallb ??
+x\textit{ hi }y: x hi y
+x\textbf{ hi }y: x hi y, x\bold{ hi }y: x hi y, x\strong{ hi }y: x hi y, 
+x\textsf{ hi }y: x hi y, x\sf{ hi }y: x hi y
+x\texttt{ hi }y: x hi y, x\tt{ hi }y: x hi y
+x\textsc{ HIhi }y: x HIhi y
+x\uppercase{ HIhi }y: x HIhi y
+x\lowercase{ HIhi }y: x HIhi y
+
+\binom nk: (nk)
+
+n\choose k: nchoosek does it work?
+
+\vector?
+
+\f: ƒ  ?? why?
+
+prime x': x', x'': x'', x''': x'''
+
+@: @, \&; &, \%: %, %: %
+
+\alpha: α
+\beta: β
+\gamma: γ
+\delta: δ
+\zeta: ζ
+\eta: η
+\theta: θ
+\iota: ι
+\kappa: κ
+\mu: μ
+\nu: ν
+\xi: ξ
+\rho: ρ
+\sigma: σ
+\tau: τ
+\chi: χ
+\psi: ψ
+
+\phi: ϕ //W3C or Unicode?  [PJipsen: Comments from mathquill.js]
+\phiv: φ //Elsevier and 9573-13
+\varphi: φ //AMS and LaTeX
+
+\epsilon: ϵ //W3C or Unicode?
+\epsiv: ε //Elsevier and 9573-13
+\varepsilon: ε //AMS and LaTeX
+
+\piv: ϖ //W3C/Unicode and Elsevier and 9573-13
+\varpi: ϖ //AMS and LaTeX
+
+\sigmaf: ς //W3C/Unicode
+\sigmav: ς //Elsevier
+\varsigma: ς //LaTeX
+
+\thetav: ϑ //Elsevier and 9573-13
+\vartheta: ϑ //AMS and LaTeX
+\thetasym: ϑ //W3C/Unicode
+
+\upsilon: υ //AMS and LaTeX and W3C/Unicode
+\upsi: υ //Elsevier and 9573-13
+
+//these aren't even mentioned in the HTML character entity references
+\gammad: ϝ //Elsevier
+\Gammad: ϝ //9573-13 -- was this a typo in the reference (see above)
+\digamma: ϝ //LaTeX
+
+\kappav: ϰ //Elsevier
+\varkappa: ϰ //AMS and LaTeX
+
+\rhov: ϱ //Elsevier and 9573-13
+\varrho: ϱ //AMS and LaTeX
+
+//Greek constants, look best in un-italicised Times New Roman
+\pi: π 
+\lambda: λ 
+
+//uppercase greek letters
+\Upsilon: ϒ //LaTeX
+\Upsi: ϒ //Elsevier and 9573-13
+\upsih: ϒ //W3C/Unicode "upsilon with hook"
+\Upsih: ϒ //'cos it makes sense to me
+
+//other symbols with the same LaTeX command and HTML character entity reference
+\Gamma: Γ
+\Delta: Δ
+\Theta: Θ
+\Lambda: Λ
+\Xi: Ξ
+\Pi: Π
+\Sigma: Σ
+\Phi: Φ
+\Psi: Ψ
+\Omega: Ω
+
+Algebra
+x+y
+x−y, unary minus −x
+±x, ∓x
+x*y: x*y,    x\cdot y: x·y,    x\sdot y: x·y
+x=y: x=y, x & lt; y: x<y, x& gt;y: x>y can't use lt, gt on keyboard
+
+\sim: ∼
+\cong: ≅
+\equiv: ≡
+\oplus: ⊕
+\otimes: ⊗ 
+\times: × 
+\div: ÷, \divide: ÷, \divides: ÷
+\ne: ≠, \neq: ≠ 
+\ast: ∗, \star: ∗, \loast: ∗, \lowast: ∗
+\therefor: ∴, \therefore: ∴
+\cuz: ∵, \because: ∵ 
+
+\prop: ∝, \propto: ∝ 
+\asymp: ≈, \approx: ≈ 
+
+\lt: < 
+\gt: > 
+\le: ≤, \leq: ≤ 
+\ge: ≥, \geq: ≥ 
+\isin: ∈, \in: ∈ 
+\notin: ∉
+\ni: ∋, \contains: ∋ 
+\notni: ∌, \niton: ∌, \notcontains: ∌, \doesnotcontain: ∌
+
+\sub: ⊂, \subset: ⊂ 
+\sup: ⊃, \supset: ⊃, \superset: ⊃
+\nsub: ⊄, \notsub: ⊄, \nsubset: ⊄, \notsubset: ⊄
+\nsup: ⊅, \notsup: ⊅, \nsupset: ⊅, \notsupset: ⊅, \nsuperset: ⊅, \notsuperset: ⊅
+
+\sube: ⊆, \subeq: ⊆, \subsete: ⊆, \subseteq: ⊆
+\supe: ⊇, \supeq: ⊇, \supsete: ⊇, \supseteq: ⊇, \supersete: ⊇, \superseteq: ⊇
+
+\nsube: ⊈, \nsubeq: ⊈, \notsube: ⊈, \notsubeq: ⊈, \nsubsete: ⊈, \nsubseteq: ⊈, \notsubsete: ⊈, \notsubseteq: ⊈
+\nsupe: ⊉, \nsupeq: ⊉, \notsupe: ⊉, \notsupeq: ⊉, \nsupsete: ⊉, \nsupseteq: ⊉, \notsupsete: ⊉, \notsupseteq: ⊉, \nsupersete: ⊉, \nsuperseteq: ⊉, \notsupersete: ⊉, \notsuperseteq: ⊉
+
+//sum, product, coproduct, integral
+\sum: ∑, \summation: ∑ 
+\prod: ∏, \product: ∏ 
+\coprod: ∐, \coproduct: ∐ 
+\int: ∫, \integral: ∫ 
+
+//the canonical sets of numbers
+\N: ℕ, \naturals: ℕ, \Naturals: ℕ
+
+\P: ℙ, \primes: ℙ, \Primes: ℙ, \projective: ℙ, \Projective: ℙ, \probability: ℙ, \Probability: ℙ
+
+\Z: ℤ, \integers: ℤ, \Integers: ℤ
+
+\Q: ℚ, \rationals: ℚ, \Rationals: ℚ
+
+\R: ℝ, \reals: ℝ, \Reals: ℝ
+
+\C: ℂ, \complex: ℂ, \Complex: ℂ, \complexes: ℂ, \Complexes: ℂ, \complexplane: ℂ, \Complexplane: ℂ, \ComplexPlane: ℂ
+
+\H: ℍ, \Hamiltonian: ℍ, \quaternions: ℍ, \Quaternions: ℍ
+
+//spacing
+\quad: |    |, \emsp: |    |, \qquad: |        | 
+
+\, \,, \: \:,  \; \;,  \! \!  //these cause mathquill-textbox errors??
+
+//binary operators
+\diamond: ◇ 
+\bigtriangleup: △ 
+\ominus: ⊖ 
+\uplus: ⊎ 
+\bigtriangledown: ▽ 
+\sqcap: ⊓ 
+\triangleleft: ⊲ 
+\sqcup: ⊔ 
+\triangleright: ⊳ 
+\odot: ⊙ 
+\bigcirc: ◯ 
+\dagger: † 
+\ddagger: ‡ 
+\wr: ≀ 
+\amalg: ∐ 
+
+//relationship symbols
+\models: ⊨ 
+\prec: ≺ 
+\succ: ≻ 
+\preceq: ≼ 
+\succeq: ≽ 
+\simeq: ≃ 
+\mid: ∣ 
+\ll: ≪ 
+\gg: ≫ 
+\parallel: ∥ 
+\bowtie: ⋈ 
+\sqsubset: ⊏ 
+\sqsupset: ⊐ 
+\smile: ⌣ 
+\sqsubseteq: ⊑ 
+\sqsupseteq: ⊒ 
+\doteq: ≐ 
+\frown: ⌢ 
+\vdash: ⊦ 
+\dashv: ⊣ 
+
+//arrows
+\longleftarrow: ← 
+\longrightarrow: → 
+\Longleftarrow: ⇐ 
+\Longrightarrow: ⇒ 
+\longleftrightarrow: ↔ 
+\updownarrow: ↕ 
+\Longleftrightarrow: ⇔ 
+\Updownarrow: ⇕ 
+\mapsto: ↦ 
+\nearrow: ↗ 
+\hookleftarrow: ↩ 
+\hookrightarrow: ↪ 
+\searrow: ↘ 
+\leftharpoonup: ↼ 
+\rightharpoonup: ⇀ 
+\swarrow: ↙ 
+\leftharpoondown: ↽ 
+\rightharpoondown: ⇁ 
+\nwarrow: ↖ 
+
+//Misc
+\ldots: … 
+\cdots: ⋯ 
+\vdots: ⋮ 
+\ddots: ⋰ 
+\surd: √ 
+\triangle: ▵ 
+\ell: ℓ 
+\top: ⊤ 
+\flat: ♭ 
+\natural: ♮ 
+\sharp: ♯ 
+\wp: ℘ 
+\bot: ⊥ 
+\clubsuit: ♣ 
+\diamondsuit: ♢ 
+\heartsuit: ♡ 
+\spadesuit: ♠ 
+
+//variable-sized
+\oint: ∮ 
+\bigcap: ∩ 
+\bigcup: ∪ 
+\bigsqcup: ⊔ 
+\bigvee: ∨ 
+\bigwedge: ∧ 
+\bigodot: ⊙ 
+\bigotimes: ⊗ 
+\bigoplus: ⊕ 
+\biguplus: ⊎ 
+
+//delimiters
+\lfloor: ⌊ 
+\rfloor: ⌋ 
+\lceil: ⌈ 
+\rceil: ⌉ 
+\slash: / 
+\opencurlybrace: { 
+\closecurlybrace: } 
+
+//various symbols
+\caret: ^ 
+\underscore: _ 
+\backslash: \ 
+\vert: | 
+\perp: ⊥, \perpendicular: ⊥ 
+\nabla: ∇, \del: ∇ 
+\hbar: ℏ 
+\AA: Å, \Angstrom: Å, \angstrom: Å
+\ring: ∘, \circ: ∘, \circle: ∘
+\bull: •, \bullet: • 
+\setminus: ∖, \smallsetminus: ∖
+\not: ¬, \neg: ¬ 
+\dots: …, \ellip: …, \hellip: …, \ellipsis: …, \hellipsis: …
+
+\converges: ↓, \darr: ↓, \dnarr: ↓, \dnarrow: ↓, \downarrow: ↓
+\dArr: ⇓, \dnArr: ⇓, \dnArrow: ⇓, \Downarrow: ⇓
+\diverges: ↑, \uarr: ↑, \uparrow: ↑
+\uArr: ⇑, \Uparrow: ⇑ 
+\to: →, \rarr: →, \rightarrow: → 
+\implies: ⇒, \rArr: ⇒, \Rightarrow: ⇒ 
+\gets: ←, \larr: ←, \leftarrow: ← 
+\impliedby: ⇐, \lArr: ⇐, \Leftarrow: ⇐ 
+\harr: ↔, \lrarr: ↔, \leftrightarrow: ↔
+\iff: ⇔, \hArr: ⇔, \lrArr: ⇔, \Leftrightarrow: ⇔
+
+\Re: ℜ, \Real: ℜ, \real: ℜ 
+\Im: ℑ, \imag: ℑ, \image: ℑ, \imagin: ℑ, \imaginary: ℑ, \Imaginary: ℑ
+\part: ∂, \partial: ∂ 
+
+\inf: ∞, \infin: ∞, \infty: ∞, \infinity: ∞
+\alef: ℵ, \alefsym: ℵ, \aleph: ℵ, \alephsym: ℵ
+
+\forall: ∀ thankfully mathquill has only one version of forall [PJ]
+\xist: ∃, \xists: ∃, \exist: ∃, \exists: ∃
+\and: ∧, \land: ∧, \wedge: ∧
+\or: ∨, \lor: ∨, \vee: ∨ 
+
+\o: ∅, \O: ∅, \empty: ∅, \emptyset: ∅, \oslash: ∅, \Oslash: ∅, \nothing: ∅, \varnothing: ∅
+\cup: ∪, \union: ∪ 
+\cap: ∩, \intersect: ∩, \intersection: ∩
+
+\deg: °, \degree: ° 
+\ang: ∠, \angle: ∠ 
+
+\ln: ln
+\lg: lg
+\log: log
+\span: span
+\proj: proj
+\det: det
+\dim: dim
+\min: min
+\max: max
+\mod: mod
+\lcm: lcm
+\gcd: gcd, \gcf: gcf, \hcf: hcf
+\lim: lim 
+
+\sin: sin
+\cos: cos
+\tan: tan
+\sec: sec
+\cosec: cosec, \csc: csc
+\cotan: cotan, \cot: cot
+
+\sinh: sinh
+\cosh: cosh
+\tanh: tanh
+\sech: sech
+\cosech: cosech, \csch: csch
+\cotanh: cotanh, \coth: coth
+
+\asin: asin
+\acos: acos
+\atan: atan
+\asec: asec
+\acosec: acosec, \acsc: acsc
+\acotan: acotan, \acot: acot
+
+\asinh: asinh
+\acosh: acosh
+\atanh: atanh
+\asech: asech
+\acosech: acosech, \acsch: acsch
+\acotanh: acotanh, \acoth: acoth
+
+\arcsin: arcsin
+\arccos: arccos
+\arctan: arctan
+\arcsec: arcsec
+\arccosec: arccosec, \arccsc: arccsc
+\arccotan: arccotan, \arccot: arccot
+
+\arcsinh: arcsinh
+\arccosh: arccosh
+\arctanh: arctanh
+\arcsech: arcsech
+\arccosech: arccosech, \arccsch: arccsch
+\arccotanh: arccotanh, \arccoth: arccoth
+
+
+Synonymous keypresses:
+
+Backspace, Shift-backspace
+
+Esc, Tab, Spacebar: move cursor right
+
+Shift-Esc, Shift-Tab, Shift-spacebar: move cursor left
+
+Enter: prevent newlines from showing up??
+
+Up-arrow, downarrow: don't move between lines, only inside formulas??
+
+End: move to the end of the current block
+
+Ctrl-End: move all the way to the end of the root block
+
+Shift-End: select to the end of the current block
+
+Shift-Ctrl-End: select all the way to the end of the root block
+
+Home: move to the start of the root block or the current block
+
+Ctrl-Home: move to the start of the current block.
+
+Shift-Home: select to the start of the current block.
+
+Ctrl-Shift-Home: move to the start of the root block.
+
+Left:        moveLeft
+Shift-Left:  selectLeft
+Ctrl-Left:
+Right:       moveRight
+Shift-Right: selectRight
+Ctrl-Right:
+Up:          moveUp
+Down:        moveDown
+Shift-Up:
+Shift-Down:
+Ctrl-Up:
+Ctrl-Down:
+Ctrl-Shift-Del:
+Ctrl-Del:
+Shift-Del:
+Del:
+Meta-A:
+Ctrl-A:

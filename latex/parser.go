@@ -2,6 +2,7 @@ package latex
 
 import (
 	"fmt"
+	"github.com/mattn/go-runewidth"
 )
 
 type Parser struct {
@@ -15,34 +16,35 @@ type Parser struct {
 
 	// Non-syntactic parser control
 	exprLev  int // depth in tree of current position
-	treeRoot *TopLevelExpr
+	treeRoot *UnboundCompExpr
 }
 
 func (p *Parser) Init(src string) {
 	//eh := func(pos Pos, msg string) { p.errors = append(p.errors, msg) }
 	p.tokenizer.Init(src /*, eh*/)
-
 	p.next()
 	p.treeRoot = p.parseTopLevel()
 }
 
-func (p *Parser) GetTree() *TopLevelExpr { return p.treeRoot }
+func (p *Parser) GetTree() *UnboundCompExpr { return p.treeRoot }
 
 func (p *Parser) next() {
 	p.tok = p.tokenizer.Peek()
 	if !p.tokenizer.IsEOF() {
 		p.lit = p.tokenizer.Eat()
+	} else {
+		p.lit = p.tokenizer.curr // TODO add method to tokenizer instead of directly accessing curr?
 	}
-	println("next():p.tok:", p.tok.String(), " p.lit:", p.lit,
-		" t.IsEOF:", p.tokenizer.IsEOF(), " p.IsEOF:", p.IsEOF(),
-		" depth:", p.exprLev)
+	// println("next():p.tok:", p.tok.String(), " p.lit:", p.lit,
+	// 	" t.IsEOF:", p.tokenizer.IsEOF(), " p.IsEOF:", p.IsEOF(),
+	// 	" depth:", p.exprLev)
 }
 
 // the tokenizer is always one token ahead, we can use its tok value
 // to look ahead
 func (p *Parser) lookahead() Token { return p.tokenizer.Peek() }
 
-// Note that the parser's EOF is separate from the tokenizer's
+// Note that the parser's EOF is separate from the tokenizer's.
 // the Parser's EOF should arrive one iteration of Parser.next()
 // later than the tokenizer
 func (p *Parser) IsEOF() bool { return p.tok == EOF }
@@ -74,19 +76,19 @@ func (p *Parser) matchExpectation(lit string) bool {
 	return false
 }
 
-func (p *Parser) parseTopLevel() *TopLevelExpr {
-	tree := new(TopLevelExpr)
+func (p *Parser) parseTopLevel() *UnboundCompExpr {
+	tree := new(UnboundCompExpr)
 	for !p.IsEOF() {
-		tree.AppendChild(p.parseGenericOnce())
+		tree.AppendChildren(p.parseGenericOnce())
 	}
-	println(tree.VisualizeTree())
+	// println(tree.VisualizeTree())
 	return tree
 }
 
 // parse one token
 func (p *Parser) parseGenericOnce() Expr {
-	println("--\nParser.parseGeneric(): p.lit is \"", p.lit,
-		"\", token ", p.tok.String(), " depth: ", p.exprLev)
+	// println("--\nParser.parseGeneric(): p.lit is \"", p.lit,
+	// 	"\", token ", p.tok.String(), " depth: ", p.exprLev)
 	switch p.tok {
 	case CMDSTR:
 		return p.parseStringCmd()
@@ -101,9 +103,9 @@ func (p *Parser) parseGenericOnce() Expr {
 	case LBRACE:
 		return p.parseCompositeExpr()
 	case CARET:
-		return p.parseSuperExpr()
+		return p.parseCmd1Arg(CMD_superscript)
 	case UNDERSCORE:
-		return p.parseSubExpr()
+		return p.parseCmd1Arg(CMD_subscript)
 	case RBRACE:
 		if p.matchExpectation(p.lit) {
 			return &EmptyExpr{}
@@ -113,7 +115,7 @@ func (p *Parser) parseGenericOnce() Expr {
 		p.eh.AddErr(ERR_UNMATCHED_CLOSE, fmt.Sprintf("before cursor %d, at token %s of type %s",
 			p.tokenizer.Cursor, p.lit, p.tok.String()))
 	}
-	println("BadExpr!")
+	// println("BadExpr!")
 	p.next()
 	return &BadExpr{}
 }
@@ -124,32 +126,35 @@ func (p *Parser) parseStringCmd() Expr {
 	var leaf Expr
 
 	switch {
+	case kind.TakesRawStrArg():
+		leaf = p.parseTextCommand(kind)
 	case kind.IsVanillaSym():
-		leaf = &(SimpleCmdLit{source: p.lit})
-		break
+		leaf = &(SimpleCmdLit{Source: p.lit, Type: kind})
+		p.next()
 	case kind.TakesOneArg():
 		leaf = p.parseCmd1Arg(kind)
-		break
 	case kind.TakesTwoArg():
 		leaf = p.parseCmd2Arg(kind)
-		break
+	case kind.IsEnclosing():
+		leaf = p.parseCmdEnclosing(kind)
 	case kind == CMD_UNKNOWN:
-		leaf = &(UnknownCmdLit{source: p.lit})
-		break
+		leaf = &(UnknownCmdLit{Source: p.lit})
+		p.next()
 	default:
 		// this shouldn't be triggered
 		leaf = &(BadExpr{})
+		p.next()
 	}
 
-	// p.next() // FIXME next() should not be called here, but beware to call it 
-   // appropriately from within the above parse functions
+	// p.next() // FIXME next() should not be called here, but beware to call it
+	// appropriately from within the above parse functions
 	return leaf
 }
 
 // FIXME merge into parseStringCmd?
 func (p *Parser) parseSymbolCmd() Expr {
 	leaf := SimpleCmdLit{
-		source: p.lit,
+		Source: p.lit,
 	}
 	p.next()
 	return &leaf
@@ -157,23 +162,23 @@ func (p *Parser) parseSymbolCmd() Expr {
 
 func (p *Parser) parseNumLit() Expr {
 	leaf := NumberLit{
-		source: p.lit,
+		Source: p.lit,
 	}
 	p.next()
 	return &leaf
 }
 
 func (p *Parser) parseVarLit() Expr {
-	leaf := NumberLit{
-		source: p.lit,
+	leaf := VarLit{
+		Source: p.lit,
 	}
-	p.next() // skip last number
+	p.next()
 	return &leaf
 }
 
 func (p *Parser) parseSimpleOpLit() Expr {
 	leaf := SimpleOpLit{
-		source: p.lit,
+		Source: p.lit,
 	}
 	p.next()
 	return &leaf
@@ -185,8 +190,12 @@ func (p *Parser) parseCompositeExpr() Expr {
 	p.next() // skip "{"
 	node := new(CompositeExpr)
 	for !p.IsEOF() && p.tok != RBRACE {
-		node.AppendChild(p.parseGenericOnce())
-		println("add child to node; depth: ", p.exprLev)
+		node.AppendChildren(p.parseGenericOnce())
+		// println("add child to node; depth: ", p.exprLev)
+	}
+	if p.IsEOF() {
+		// FIXME error handling
+		panic("expecting '}' got EOF")
 	}
 	p.next() // skip "}"
 	p.dropExpect("}")
@@ -194,6 +203,7 @@ func (p *Parser) parseCompositeExpr() Expr {
 	return node
 }
 
+// TODO remove
 func (p *Parser) parseSuperExpr() Expr {
 	p.exprLev++
 	p.next() // skip "^"
@@ -206,10 +216,34 @@ func (p *Parser) parseSuperExpr() Expr {
 // this should be merged with parseSuperExpr(), and maybe even parseFuncCmd1
 func (p *Parser) parseSubExpr() Expr {
 	p.exprLev++
-	p.next() // skip "^"
+	p.next() // skip "_"
 	node := new(SubExpr)
 	node.X = p.parseGenericOnce()
 
+	p.exprLev--
+	return node
+}
+
+func (p *Parser) parseTextCommand(kind LatexCmd) Expr {
+	p.exprLev++
+	p.next() // skip command
+	node := &TextContainer{Text: &TextStringWrapper{}, Type: kind}
+	if p.tok != LBRACE {
+		runes := make([]Expr, 1)
+		runes[0] = RawRuneLit(p.lit[0])
+		node.Text = &TextStringWrapper{Runes: runes}
+		p.next()
+		return node
+	}
+
+	text := p.tokenizer.SkipToDelimiter("}")
+	runeLiterals := make([]Expr, runewidth.StringWidth(text))
+	for i, r := range text {
+		runeLiterals[i] = RawRuneLit(r)
+	}
+	node.Text.Runes = runeLiterals
+
+	p.next() // skip }
 	p.exprLev--
 	return node
 }
@@ -233,6 +267,41 @@ func (p *Parser) parseCmd2Arg(kind LatexCmd) Expr {
 	node.Arg1 = p.parseGenericOnce()
 	node.Arg2 = p.parseGenericOnce()
 
+	p.exprLev--
+	return node
+}
+
+func (p *Parser) parseCmdEnclosing(kind LatexCmd) Expr {
+	p.exprLev++
+	p.expect("\\right")
+	p.next() // skip "\left"
+	node := new(ParenCompExpr)
+	switch p.lit {
+	case "(", "[", "\\{":
+	default:
+		panic("\\left expected '(', '[' or '\\{' but got " + p.lit)
+	}
+	node.Left = p.lit
+	p.next() // skip left parenthesis e.g. "("
+	for !p.IsEOF() && p.lit != "\\right" {
+		node.AppendChildren(p.parseGenericOnce())
+	}
+	if p.IsEOF() {
+		// FIXME error handling
+		panic("expecting `\\right` got EOF")
+	}
+	p.next() // skip "\right"
+	switch {
+	case node.Left == "(" && p.lit != ")":
+		panic("\\right expected ')' but got " + p.lit)
+	case node.Left == "[" && p.lit != "]":
+		panic("\\right expected ']' but got " + p.lit)
+	case node.Left == "\\{" && p.lit != "\\}":
+		panic("\\right expected '\\}' but got " + p.lit)
+	}
+	node.Right = p.lit
+	p.next()
+	p.dropExpect("\\right")
 	p.exprLev--
 	return node
 }
