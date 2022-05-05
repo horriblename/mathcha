@@ -21,9 +21,6 @@ type Renderer struct {
 	Size         *Dimensions
 }
 
-// Rendering is a 2 step process: TODO merge the process?
-// 1. build a separate tree with all the dimensions
-// 2.
 func (r *Renderer) Load(tree parser.FlexContainer) {
 	r.LatexTree = tree
 	r.Sync(nil, false)
