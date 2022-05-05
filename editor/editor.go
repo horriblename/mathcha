@@ -793,7 +793,7 @@ func (e Editor) Update(msg tea.Msg) (Editor, tea.Cmd) {
 }
 
 func (e Editor) View() string {
-	return e.renderer.View() + "\n" + render.ProduceLatex(e.renderer.LatexTree)
+	return e.renderer.View()
 }
 
 // Search the tree for any FixedContainer type that has children that is
@@ -815,4 +815,8 @@ func formatLatexTree(tree parser.Expr) {
 			formatLatexTree(child)
 		}
 	}
+}
+
+func (e Editor) LatexSource() string {
+	return render.ProduceLatex(e.renderer.LatexTree)
 }

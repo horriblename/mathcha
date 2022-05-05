@@ -44,8 +44,9 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (m model) View() string {
 	return fmt.Sprintf(
-		"math?\n\n%s\n\n%s",
+		"math?\n\n%s\n\n%s\n%s",
 		m.editor.View(),
+		m.editor.LatexSource(),
 		"(ctrl+c to quit)",
 	) + "\n"
 }
