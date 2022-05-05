@@ -22,6 +22,8 @@ func initialModel() model {
 	return model{*ed.New()}
 }
 
+var keyPressed = "[waiting key]"
+
 func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var cmd tea.Cmd
 
@@ -30,6 +32,8 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		switch msg.Type {
 		case tea.KeyCtrlC, tea.KeyEsc:
 			return m, tea.Quit
+		default:
+			keyPressed = msg.String()
 		}
 
 		// We handle errors just like any other message
@@ -44,9 +48,10 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (m model) View() string {
 	return fmt.Sprintf(
-		"math?\n\n%s\n\n%s\n%s",
+		"\n%s\n\n%s\n\x1b[34mKey:\x1b[33m %s\x1b[34m pressed\x1b[0m\n%s",
 		m.editor.View(),
 		m.editor.LatexSource(),
+		keyPressed,
 		"(esc or ctrl+c to quit)",
 	) + "\n"
 }
