@@ -132,31 +132,31 @@ const (
 	CMD_pm
 	CMD_mp
 	CMD_ast
-	CMD_therefor
-	CMD_cuz
+	CMD_therefore
+	CMD_because
 
-	CMD_prop
+	CMD_propto
 	CMD_asymp
 
 	CMD_lt
 	CMD_gt
 	CMD_le
 	CMD_ge
-	CMD_isin
+	CMD_in
 	CMD_notin
 	CMD_ni
 	CMD_notni
 
-	CMD_sub
-	CMD_sup
-	CMD_nsub
-	CMD_nsup
+	CMD_subset
+	CMD_supset
+	CMD_nsubset
+	CMD_nsupset
 
-	CMD_sube
-	CMD_supe
+	CMD_subseteq
+	CMD_supseteq
 
-	CMD_nsube
-	CMD_nsupe
+	CMD_nsubseteq
+	CMD_nsupseteq
 
 	CMD_sum
 	CMD_prod
@@ -167,8 +167,8 @@ const (
 	CMD_P
 	CMD_Z
 	CMD_Q
-	CMD_R
-	CMD_C
+	CMD_Reals
+	CMD_Complex
 	CMD_H
 
 	// spacing
@@ -279,42 +279,42 @@ const (
 	CMD_nabla
 	CMD_hbar
 	CMD_AA
-	CMD_ring
-	CMD_bull
+	CMD_circ
+	CMD_bullet
 	CMD_setminus
 	CMD_smallsetminus
 	CMD_neg
 	CMD_dots
 
-	CMD_converges
+	CMD_darr
 	CMD_dArr
-	CMD_diverges
+	CMD_uarr
 	CMD_uArr
 	CMD_to
-	CMD_implies
+	CMD_rArr
 	CMD_gets
-	CMD_impliedby
+	CMD_lArr
 	CMD_harr
-	CMD_iff
+	CMD_hArr
 
 	CMD_Re
 	CMD_Im
-	CMD_part
+	CMD_partial
 
-	CMD_inf
+	CMD_infty
 	CMD_alef
 
 	CMD_forall
-	CMD_xist
-	CMD_and
-	CMD_or
+	CMD_exists
+	CMD_land
+	CMD_lor
 
-	CMD_o
+	CMD_emptyset
 	CMD_cup
 	CMD_cap
 
-	CMD_deg
-	CMD_ang
+	CMD_degree
+	CMD_angle
 
 	CMD_ln
 	CMD_lg
@@ -489,12 +489,10 @@ var latexCmds = map[string]LatexCmd{
 	// functional commands
 	`\text`: CMD_text,
 	// accents
-	`\underline`:   CMD_underline,
-	`\overline`:    CMD_overline,
-	`\subscript`:   CMD_subscript,
-	`\superscript`: CMD_superscript,
-	`_`:            CMD_subscript,
-	`^`:            CMD_superscript,
+	`\underline`: CMD_underline,
+	`\overline`:  CMD_overline,
+	`_`:          CMD_subscript,
+	`^`:          CMD_superscript,
 	// text formatting
 
 	`\left`:  CMD_left,
@@ -503,11 +501,8 @@ var latexCmds = map[string]LatexCmd{
 	`\sqrt`: CMD_sqrt,
 
 	// 2 parameter commands
-	`\binom`:    CMD_binom,
-	`\frac`:     CMD_frac,
-	`\dfrac`:    CMD_frac,
-	`\cfrac`:    CMD_frac,
-	`\fraction`: CMD_frac,
+	`\binom`: CMD_binom,
+	`\frac`:  CMD_frac,
 
 	"\\alpha":      CMD_alpha,
 	"\\beta":       CMD_beta,
@@ -567,7 +562,6 @@ var latexCmds = map[string]LatexCmd{
 	"\\Omega":      CMD_Omega,
 
 	"\\cdot ":              CMD_cdot,
-	"\\sdot":               CMD_cdot,
 	"\\sim":                CMD_sim,
 	"\\cong":               CMD_cong,
 	"\\equiv":              CMD_equiv,
@@ -575,123 +569,41 @@ var latexCmds = map[string]LatexCmd{
 	"\\otimes":             CMD_otimes,
 	"\\times":              CMD_times,
 	"\\div":                CMD_div,
-	"\\divide":             CMD_div,
-	"\\divides":            CMD_div,
 	"\\ne":                 CMD_ne,
-	"\\neq":                CMD_ne,
 	"\\pm":                 CMD_pm,
 	"\\mp":                 CMD_mp,
 	"\\ast":                CMD_ast,
-	"\\star":               CMD_ast,
-	"\\loast":              CMD_ast,
-	"\\lowast":             CMD_ast,
-	"\\therefor":           CMD_therefor,
-	"\\therefore":          CMD_therefor,
-	"\\cuz":                CMD_cuz,
-	"\\because":            CMD_cuz,
-	"\\prop":               CMD_prop,
-	"\\propto":             CMD_prop,
-	"\\asymp":              CMD_asymp,
+	"\\therefore":          CMD_therefore,
+	"\\because":            CMD_because,
+	"\\propto":             CMD_propto,
 	"\\approx":             CMD_asymp,
 	"\\lt":                 CMD_lt,
 	"\\gt":                 CMD_gt,
 	"\\le":                 CMD_le,
-	"\\leq":                CMD_le,
 	"\\ge":                 CMD_ge,
-	"\\geq":                CMD_ge,
-	"\\isin":               CMD_isin,
-	"\\in":                 CMD_isin,
+	"\\in":                 CMD_in,
 	"\\notin":              CMD_notin,
 	"\\ni":                 CMD_ni,
-	"\\contains":           CMD_ni,
 	"\\notni":              CMD_notni,
-	"\\niton":              CMD_notni,
-	"\\notcontains":        CMD_notni,
-	"\\doesnotcontain":     CMD_notni,
-	"\\sub":                CMD_sub,
-	"\\subset":             CMD_sub,
-	"\\sup":                CMD_sup,
-	"\\supset":             CMD_sup,
-	"\\superset":           CMD_sup,
-	"\\nsub":               CMD_nsub,
-	"\\notsub":             CMD_nsub,
-	"\\nsubset":            CMD_nsub,
-	"\\notsubset":          CMD_nsub,
-	"\\nsup":               CMD_nsup,
-	"\\notsup":             CMD_nsup,
-	"\\nsupset":            CMD_nsup,
-	"\\notsupset":          CMD_nsup,
-	"\\nsuperset":          CMD_nsup,
-	"\\notsuperset":        CMD_nsup,
-	"\\sube":               CMD_sube,
-	"\\subeq":              CMD_sube,
-	"\\subsete":            CMD_sube,
-	"\\subseteq":           CMD_sube,
-	"\\supe":               CMD_supe,
-	"\\supeq":              CMD_supe,
-	"\\supsete":            CMD_supe,
-	"\\supseteq":           CMD_supe,
-	"\\supersete":          CMD_supe,
-	"\\superseteq":         CMD_supe,
-	"\\nsube":              CMD_nsube,
-	"\\nsubeq":             CMD_nsube,
-	"\\notsube":            CMD_nsube,
-	"\\notsubeq":           CMD_nsube,
-	"\\nsubsete":           CMD_nsube,
-	"\\nsubseteq":          CMD_nsube,
-	"\\notsubsete":         CMD_nsube,
-	"\\notsubseteq":        CMD_nsube,
-	"\\nsupe":              CMD_nsupe,
-	"\\nsupeq":             CMD_nsupe,
-	"\\notsupe":            CMD_nsupe,
-	"\\notsupeq":           CMD_nsupe,
-	"\\nsupsete":           CMD_nsupe,
-	"\\nsupseteq":          CMD_nsupe,
-	"\\notsupsete":         CMD_nsupe,
-	"\\notsupseteq":        CMD_nsupe,
-	"\\nsupersete":         CMD_nsupe,
-	"\\nsuperseteq":        CMD_nsupe,
-	"\\notsupersete":       CMD_nsupe,
-	"\\notsuperseteq":      CMD_nsupe,
+	"\\subset":             CMD_subset,
+	"\\supset":             CMD_supset,
+	"\\nsubset":            CMD_nsubset,
+	"\\nsupset":            CMD_nsupset,
+	"\\subseteq":           CMD_subseteq,
+	"\\supseteq":           CMD_supseteq,
+	"\\nsubseteq":          CMD_nsubseteq,
+	"\\nsupseteq":          CMD_nsupseteq,
 	"\\sum":                CMD_sum,
-	"\\summation":          CMD_sum,
 	"\\prod":               CMD_prod,
-	"\\product":            CMD_prod,
 	"\\coprod":             CMD_coprod,
-	"\\coproduct":          CMD_coprod,
 	"\\int":                CMD_int,
-	"\\integral":           CMD_int,
 	"\\N":                  CMD_N,
-	"\\naturals":           CMD_N,
-	"\\Naturals":           CMD_N,
 	"\\P":                  CMD_P,
-	"\\primes":             CMD_P,
-	"\\Primes":             CMD_P,
-	"\\projective":         CMD_P,
-	"\\Projective":         CMD_P,
-	"\\probability":        CMD_P,
-	"\\Probability":        CMD_P,
 	"\\Z":                  CMD_Z,
-	"\\integers":           CMD_Z,
-	"\\Integers":           CMD_Z,
 	"\\Q":                  CMD_Q,
-	"\\rationals":          CMD_Q,
-	"\\Rationals":          CMD_Q,
-	"\\R":                  CMD_R,
-	"\\reals":              CMD_R,
-	"\\Reals":              CMD_R,
-	"\\C":                  CMD_C,
-	"\\complex":            CMD_C,
-	"\\Complex":            CMD_C,
-	"\\complexes":          CMD_C,
-	"\\Complexes":          CMD_C,
-	"\\complexplane":       CMD_C,
-	"\\Complexplane":       CMD_C,
-	"\\ComplexPlane":       CMD_C,
+	"\\Reals":              CMD_Reals,
+	"\\Complex":            CMD_Complex,
 	"\\H":                  CMD_H,
-	"\\Hamiltonian":        CMD_H,
-	"\\quaternions":        CMD_H,
-	"\\Quaternions":        CMD_H,
 	"\\ ":                  CMD_SPACE,
 	"\\quad":               CMD_quad,
 	"\\emsp":               CMD_emsp,
@@ -789,107 +701,39 @@ var latexCmds = map[string]LatexCmd{
 	"\\backslash":          CMD_backslash,
 	"\\vert":               CMD_vert,
 	"\\perp":               CMD_perp,
-	"\\perpendicular":      CMD_perp,
 	"\\nabla":              CMD_nabla,
-	"\\del":                CMD_nabla,
 	"\\hbar":               CMD_hbar,
 	"\\AA":                 CMD_AA,
-	"\\Angstrom":           CMD_AA,
-	"\\angstrom":           CMD_AA,
-	"\\ring":               CMD_ring,
-	"\\circ":               CMD_ring,
-	"\\circle":             CMD_ring,
-	"\\bull":               CMD_bull,
-	"\\bullet":             CMD_bull,
+	"\\circ":               CMD_circ,
+	"\\bullet":             CMD_bullet,
 	"\\setminus":           CMD_setminus,
-	"\\not":                CMD_not,
-	"\\neg":                CMD_not,
 	"\\smallsetminus":      CMD_smallsetminus,
+	"\\neg":                CMD_neg,
 	"\\dots":               CMD_dots,
-	"\\ellip":              CMD_dots,
-	"\\hellip":             CMD_dots,
-	"\\ellipsis":           CMD_dots,
-	"\\hellipsis":          CMD_dots,
-	"\\converges":          CMD_converges,
-	"\\darr":               CMD_converges,
-	"\\dnarr":              CMD_converges,
-	"\\dnarrow":            CMD_converges,
-	"\\downarrow":          CMD_converges,
+	"\\darr":               CMD_darr,
 	"\\dArr":               CMD_dArr,
-	"\\dnArr":              CMD_dArr,
-	"\\dnArrow":            CMD_dArr,
-	"\\Downarrow":          CMD_dArr,
-	"\\diverges":           CMD_diverges,
-	"\\uarr":               CMD_diverges,
-	"\\uparrow":            CMD_diverges,
+	"\\uarr":               CMD_uarr,
 	"\\uArr":               CMD_uArr,
-	"\\Uparrow":            CMD_uArr,
 	"\\to":                 CMD_to,
-	"\\rarr":               CMD_to,
-	"\\rightarrow":         CMD_to,
-	"\\implies":            CMD_implies,
-	"\\rArr":               CMD_implies,
-	"\\Rightarrow":         CMD_implies,
+	"\\rArr":               CMD_rArr,
 	"\\gets":               CMD_gets,
-	"\\larr":               CMD_gets,
-	"\\leftarrow":          CMD_gets,
-	"\\impliedby":          CMD_impliedby,
-	"\\lArr":               CMD_impliedby,
-	"\\Leftarrow":          CMD_impliedby,
+	"\\lArr":               CMD_lArr,
 	"\\harr":               CMD_harr,
-	"\\lrarr":              CMD_harr,
-	"\\leftrightarrow":     CMD_harr,
-	"\\iff":                CMD_iff,
-	"\\hArr":               CMD_iff,
-	"\\lrArr":              CMD_iff,
-	"\\Leftrightarrow":     CMD_iff,
+	"\\hArr":               CMD_hArr,
 	"\\Re":                 CMD_Re,
-	"\\Real":               CMD_Re,
-	"\\real":               CMD_Re,
 	"\\Im":                 CMD_Im,
-	"\\imag":               CMD_Im,
-	"\\image":              CMD_Im,
-	"\\imagin":             CMD_Im,
-	"\\imaginary":          CMD_Im,
-	"\\Imaginary":          CMD_Im,
-	"\\part":               CMD_part,
-	"\\partial":            CMD_part,
-	"\\inf":                CMD_inf,
-	"\\infin":              CMD_inf,
-	"\\infty":              CMD_inf,
-	"\\infinity":           CMD_inf,
+	"\\partial":            CMD_partial,
+	"\\infty":              CMD_infty,
 	"\\alef":               CMD_alef,
-	"\\alefsym":            CMD_alef,
-	"\\aleph":              CMD_alef,
-	"\\alephsym":           CMD_alef,
 	"\\forall":             CMD_forall,
-	"\\xist":               CMD_xist,
-	"\\xists":              CMD_xist,
-	"\\exist":              CMD_xist,
-	"\\exists":             CMD_xist,
-	"\\and":                CMD_and,
-	"\\land":               CMD_and,
-	"\\wedge":              CMD_and,
-	"\\or":                 CMD_or,
-	"\\lor":                CMD_or,
-	"\\vee":                CMD_or,
-	"\\o":                  CMD_o,
-	"\\O":                  CMD_o,
-	"\\empty":              CMD_o,
-	"\\emptyset":           CMD_o,
-	"\\oslash":             CMD_o,
-	"\\Oslash":             CMD_o,
-	"\\nothing":            CMD_o,
-	"\\varnothing":         CMD_o,
+	"\\exists":             CMD_exists,
+	"\\land":               CMD_land,
+	"\\lor":                CMD_lor,
+	"\\emptyset":           CMD_emptyset,
 	"\\cup":                CMD_cup,
-	"\\union":              CMD_cup,
 	"\\cap":                CMD_cap,
-	"\\intersect":          CMD_cap,
-	"\\intersection":       CMD_cap,
-	"\\deg":                CMD_deg,
-	"\\degree":             CMD_deg,
-	"\\ang":                CMD_ang,
-	"\\angle":              CMD_ang,
+	"\\degree":             CMD_degree,
+	"\\angle":              CMD_angle,
 	"\\ln":                 CMD_ln,
 	"\\lg":                 CMD_lg,
 	"\\log":                CMD_log,
@@ -1051,6 +895,167 @@ var latexCmds = map[string]LatexCmd{
 	"\\boxdot":           CMD_boxdot,
 }
 
+// cmds that are accepted during editing/input, but will be outputed as something else
+var acceptedCmds = map[string]LatexCmd{
+	`\subscript`:       CMD_subscript,
+	`\superscript`:     CMD_superscript,
+	`\dfrac`:           CMD_frac,
+	`\cfrac`:           CMD_frac,
+	`\fraction`:        CMD_frac,
+	"\\sdot":           CMD_cdot,
+	"\\divide":         CMD_div,
+	"\\divides":        CMD_div,
+	"\\neq":            CMD_ne,
+	"\\star":           CMD_ast,
+	"\\loast":          CMD_ast,
+	"\\lowast":         CMD_ast,
+	"\\therefor":       CMD_therefore,
+	"\\cuz":            CMD_because,
+	"\\prop":           CMD_propto,
+	"\\asymp":          CMD_asymp,
+	"\\leq":            CMD_le,
+	"\\geq":            CMD_ge,
+	"\\isin":           CMD_in,
+	"\\contains":       CMD_ni,
+	"\\niton":          CMD_notni,
+	"\\notcontains":    CMD_notni,
+	"\\doesnotcontain": CMD_notni,
+	"\\sub":            CMD_subset,
+	"\\sup":            CMD_supset,
+	"\\superset":       CMD_supset,
+	"\\nsub":           CMD_nsubset,
+	"\\notsub":         CMD_nsubset,
+	"\\notsubset":      CMD_nsubset,
+	"\\nsup":           CMD_nsupset,
+	"\\notsup":         CMD_nsupset,
+	"\\notsupset":      CMD_nsupset,
+	"\\nsuperset":      CMD_nsupset,
+	"\\notsuperset":    CMD_nsupset,
+	"\\sube":           CMD_subseteq,
+	"\\subeq":          CMD_subseteq,
+	"\\subsete":        CMD_subseteq,
+	"\\supe":           CMD_supseteq,
+	"\\supeq":          CMD_supseteq,
+	"\\supersete":      CMD_supseteq,
+	"\\superseteq":     CMD_supseteq,
+	"\\supsete":        CMD_supseteq,
+	"\\nsube":          CMD_nsubseteq,
+	"\\nsubeq":         CMD_nsubseteq,
+	"\\notsube":        CMD_nsubseteq,
+	"\\notsubeq":       CMD_nsubseteq,
+	"\\nsubsete":       CMD_nsubseteq,
+	"\\notsubsete":     CMD_nsubseteq,
+	"\\notsubseteq":    CMD_nsubseteq,
+	"\\nsupe":          CMD_nsupseteq,
+	"\\nsupeq":         CMD_nsupseteq,
+	"\\notsupe":        CMD_nsupseteq,
+	"\\notsupeq":       CMD_nsupseteq,
+	"\\nsupsete":       CMD_nsupseteq,
+	"\\notsupsete":     CMD_nsupseteq,
+	"\\notsupseteq":    CMD_nsupseteq,
+	"\\nsupersete":     CMD_nsupseteq,
+	"\\nsuperseteq":    CMD_nsupseteq,
+	"\\notsupersete":   CMD_nsupseteq,
+	"\\notsuperseteq":  CMD_nsupseteq,
+	"\\summation":      CMD_sum,
+	"\\product":        CMD_prod,
+	"\\coproduct":      CMD_coprod,
+	"\\integral":       CMD_int,
+	"\\naturals":       CMD_N,
+	"\\Naturals":       CMD_N,
+	"\\primes":         CMD_P,
+	"\\Primes":         CMD_P,
+	"\\projective":     CMD_P,
+	"\\Projective":     CMD_P,
+	"\\probability":    CMD_P,
+	"\\Probability":    CMD_P,
+	"\\integers":       CMD_Z,
+	"\\Integers":       CMD_Z,
+	"\\rationals":      CMD_Q,
+	"\\Rationals":      CMD_Q,
+	"\\R":              CMD_Reals,
+	"\\reals":          CMD_Reals,
+	"\\C":              CMD_Complex,
+	"\\complex":        CMD_Complex,
+	"\\complexes":      CMD_Complex,
+	"\\Complexes":      CMD_Complex,
+	"\\complexplane":   CMD_Complex,
+	"\\Complexplane":   CMD_Complex,
+	"\\ComplexPlane":   CMD_Complex,
+	"\\Hamiltonian":    CMD_H,
+	"\\quaternions":    CMD_H,
+	"\\Quaternions":    CMD_H,
+	"\\perpendicular":  CMD_perp,
+	"\\del":            CMD_nabla,
+	"\\Angstrom":       CMD_AA,
+	"\\angstrom":       CMD_AA,
+	"\\circle":         CMD_circ,
+	"\\ring":           CMD_circ,
+	"\\bull":           CMD_bullet,
+	"\\lnot":           CMD_neg,
+	"\\not":            CMD_neg,
+	"\\ellip":          CMD_dots,
+	"\\hellip":         CMD_dots,
+	"\\ellipsis":       CMD_dots,
+	"\\hellipsis":      CMD_dots,
+	"\\converges":      CMD_darr,
+	"\\dnarr":          CMD_darr,
+	"\\dnarrow":        CMD_darr,
+	"\\downarrow":      CMD_darr,
+	"\\dnArr":          CMD_dArr,
+	"\\dnArrow":        CMD_dArr,
+	"\\Downarrow":      CMD_dArr,
+	"\\diverges":       CMD_uarr,
+	"\\uparrow":        CMD_uarr,
+	"\\Uparrow":        CMD_uArr,
+	"\\rarr":           CMD_to,
+	"\\rightarrow":     CMD_to,
+	"\\implies":        CMD_rArr,
+	"\\Rightarrow":     CMD_rArr,
+	"\\larr":           CMD_gets,
+	"\\leftarrow":      CMD_gets,
+	"\\impliedby":      CMD_lArr,
+	"\\Leftarrow":      CMD_lArr,
+	"\\lrarr":          CMD_harr,
+	"\\leftrightarrow": CMD_harr,
+	"\\iff":            CMD_hArr,
+	"\\lrArr":          CMD_hArr,
+	"\\Leftrightarrow": CMD_hArr,
+	"\\Real":           CMD_Re,
+	"\\real":           CMD_Re,
+	"\\imag":           CMD_Im,
+	"\\image":          CMD_Im,
+	"\\imagin":         CMD_Im,
+	"\\imaginary":      CMD_Im,
+	"\\Imaginary":      CMD_Im,
+	"\\part":           CMD_partial,
+	"\\inf":            CMD_infty,
+	"\\infin":          CMD_infty,
+	"\\infinity":       CMD_infty,
+	"\\alefsym":        CMD_alef,
+	"\\aleph":          CMD_alef,
+	"\\alephsym":       CMD_alef,
+	"\\xist":           CMD_exists,
+	"\\xists":          CMD_exists,
+	"\\exist":          CMD_exists,
+	"\\and":            CMD_land,
+	"\\wedge":          CMD_land,
+	"\\or":             CMD_lor,
+	"\\vee":            CMD_lor,
+	"\\o":              CMD_emptyset,
+	"\\O":              CMD_emptyset,
+	"\\empty":          CMD_emptyset,
+	"\\oslash":         CMD_emptyset,
+	"\\Oslash":         CMD_emptyset,
+	"\\nothing":        CMD_emptyset,
+	"\\varnothing":     CMD_emptyset,
+	"\\union":          CMD_cup,
+	"\\intersect":      CMD_cap,
+	"\\intersection":   CMD_cap,
+	"\\deg":            CMD_degree,
+	"\\ang":            CMD_angle,
+}
+
 // BUG map variables are unordered, this returns a different string everytime if multiple commands are available
 func (cmd LatexCmd) GetCmd() string {
 	for k, v := range latexCmds {
@@ -1062,7 +1067,10 @@ func (cmd LatexCmd) GetCmd() string {
 }
 
 func MatchLatexCmd(cmd string) LatexCmd {
-	return latexCmds[cmd]
+	if c, ok := latexCmds[cmd]; ok {
+		return c
+	}
+	return acceptedCmds[cmd]
 }
 
 func (cmd LatexCmd) TakesRawStrArg() bool {
