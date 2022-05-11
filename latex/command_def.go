@@ -68,6 +68,7 @@ const (
 	CMD_tau
 	CMD_chi
 	CMD_psi
+	CMD_omega
 
 	CMD_phi
 	CMD_phiv
@@ -521,6 +522,7 @@ var latexCmds = map[string]LatexCmd{
 	"\\tau":        CMD_tau,
 	"\\chi":        CMD_chi,
 	"\\psi":        CMD_psi,
+	"\\omega":      CMD_omega,
 	"\\phi":        CMD_phi,
 	"\\phiv":       CMD_phiv,
 	"\\varphi":     CMD_varphi,

@@ -25,6 +25,7 @@ var VanillaToUnicode = map[parser.LatexCmd]string{
 	parser.CMD_tau:   `τ`,
 	parser.CMD_chi:   `χ`,
 	parser.CMD_psi:   `ψ`,
+	parser.CMD_omega: `ω`,
 
 	parser.CMD_phi:    `ϕ`,
 	parser.CMD_phiv:   `φ`,
