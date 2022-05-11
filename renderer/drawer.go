@@ -17,7 +17,7 @@ var (
 	fg        = lipgloss.AdaptiveColor{Light: "#1ff2f7", Dark: "#abb2bf"}
 	invert    = lipgloss.AdaptiveColor{Light: "#abb2bf", Dark: "#1ff2f7"}
 	accent    = fg //lipgloss.AdaptiveColor{Light: "#264f78", Dark: "#A1BAEA"}
-	accentBg  = lipgloss.Color("#777")
+	accentBg  = lipgloss.Color("#555")
 	highlight = lipgloss.Color("#264f78")
 
 	docStyle       = lipgloss.NewStyle().Foreground(fg)
@@ -188,7 +188,14 @@ func (r *Renderer) PrerenderFlexContainer(node parser.FlexContainer, dim *Dimens
 
 	if 0 <= selStart && selStart < selEnd {
 		str, base := r.Prerender(&parser.UnboundCompExpr{Elts: node.Children()[selStart:selEnd]}, dim)
-		renderedChildren[selStart] = highlightStyle.Render(str) + "\x1b[48;2;127;127;127m"
+		// FIXME workaround for highlight hiding active background
+		activeBg := "\x1b[48;2;80;80;80m"
+		highlightBg := "\x1b[48;2;26;79;120m"
+		lines, _ := getLines(str)
+		for i, line := range lines {
+			lines[i] = highlightBg + line + activeBg
+		}
+		renderedChildren[selStart] = lipgloss.JoinVertical(lipgloss.Center, lines...)
 		baseLines[selStart] = base
 	}
 	return JoinHorizontal(baseLines, renderedChildren...), min(baseLines...)
