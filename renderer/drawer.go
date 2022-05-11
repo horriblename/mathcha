@@ -188,7 +188,7 @@ func (r *Renderer) PrerenderFlexContainer(node parser.FlexContainer, dim *Dimens
 
 	if 0 <= selStart && selStart < selEnd {
 		str, base := r.Prerender(&parser.UnboundCompExpr{Elts: node.Children()[selStart:selEnd]}, dim)
-		renderedChildren[selStart] = highlightStyle.Render(str)
+		renderedChildren[selStart] = highlightStyle.Render(str) + string(accentBg)
 		baseLines[selStart] = base
 	}
 	return JoinHorizontal(baseLines, renderedChildren...), min(baseLines...)
