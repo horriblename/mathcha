@@ -28,8 +28,6 @@ var (
 	variableStyle = lipgloss.NewStyle().Italic(true)
 )
 
-// depth-first traverse of the latex tree and dim tree in parallel
-// to build the later rendered string
 func (r *Renderer) DrawToBuffer(tree parser.Expr, dim *Dimensions) {
 	r.Buffer, _ = r.Prerender(tree, dim)
 }
@@ -150,11 +148,10 @@ func (r *Renderer) PrerenderFlexContainer(node parser.FlexContainer, dim *Dimens
 		// deal with elements that render on top of eaech other
 		if c, ok := child.(*parser.Cmd1ArgExpr); ok {
 			switch c.Command() {
+			// stack neighboring superscripts and subscripts onto each other
 			case parser.CMD_subscript:
 				var sup, sub string
 				if vertJoinQueue != nil {
-					// if vertJoinQueue.Command() == c.Command() {
-					// } else
 					if vertJoinQueue.Command() == parser.CMD_superscript {
 						sup = renderedChildren[index-1]
 						sub, baseLines[index] = r.Prerender(c, dim)
@@ -169,8 +166,6 @@ func (r *Renderer) PrerenderFlexContainer(node parser.FlexContainer, dim *Dimens
 			case parser.CMD_superscript: // TODO merge above
 				var sup, sub string
 				if vertJoinQueue != nil {
-					// if vertJoinQueue.Command() == c.Command() {
-					// } else
 					if vertJoinQueue.Command() == parser.CMD_subscript {
 						sub = renderedChildren[index-1]
 						sup, _ = r.Prerender(c, dim)
