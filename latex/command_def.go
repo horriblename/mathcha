@@ -282,7 +282,8 @@ const (
 	CMD_ring
 	CMD_bull
 	CMD_setminus
-	CMD_not
+	CMD_smallsetminus
+	CMD_neg
 	CMD_dots
 
 	CMD_converges
@@ -801,9 +802,9 @@ var latexCmds = map[string]LatexCmd{
 	"\\bull":               CMD_bull,
 	"\\bullet":             CMD_bull,
 	"\\setminus":           CMD_setminus,
-	"\\smallsetminus":      CMD_setminus,
 	"\\not":                CMD_not,
 	"\\neg":                CMD_not,
+	"\\smallsetminus":      CMD_smallsetminus,
 	"\\dots":               CMD_dots,
 	"\\ellip":              CMD_dots,
 	"\\hellip":             CMD_dots,
