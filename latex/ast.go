@@ -108,11 +108,13 @@ type TextStringWrapper struct {
 	Runes []Expr
 }
 
-/* ----------------------------------------------------------------------------
-   Expresions
+/*
+----------------------------------------------------------------------------
 
-   An expression is represented by a tree consisting of one or more of the
-   folowing concrete expression nodes.
+	Expresions
+
+	An expression is represented by a tree consisting of one or more of the
+	folowing concrete expression nodes.
 */
 type (
 	// A BadExpr node is a placeholder for an expression containing syntax errors for which a correct expression node cannot be created.
@@ -510,12 +512,6 @@ func (x *UnknownCmdLit) VisualizeTree() string     { return "UnknownCmdLit " + x
 // utils
 // Slice manipulation utilities
 func deleteChildren(slice *[]Expr, from int, to int) {
-	if from < 0 || to >= len(*slice) {
-		panic("deleteChildren(): index out of range!")
-	}
-	if from > to {
-		panic("deleteChildren(): 'from' cannot be larger than 'to'")
-	}
 	l := to - from + 1
 	copy((*slice)[from:], (*slice)[to+1:])
 	for i := range (*slice)[len(*slice)-l:] {
@@ -525,10 +521,6 @@ func deleteChildren(slice *[]Expr, from int, to int) {
 }
 
 func insertChildren(slice *[]Expr, at int, children ...Expr) {
-
-	if at < 0 || at > len(*slice) {
-		panic("insertChildren(): invalid index for 'at'")
-	}
 	if at == len(*slice) {
 		*slice = append(*slice, children...)
 		return
