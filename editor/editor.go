@@ -77,8 +77,12 @@ func (e *Editor) popStack() parser.Container {
 }
 
 func (e *Editor) SetFocus(f bool) {
+	if e.focus == f {
+		return
+	}
 	e.focus = f
 	e.renderer.Focus = f
+	e.renderer.Sync(e.getLastOnStack(), false)
 }
 
 // gets the 'state' of the editor,
