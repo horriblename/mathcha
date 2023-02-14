@@ -25,17 +25,24 @@ const (
 	EDIT_COMMAND
 )
 
-//
 type Editor struct {
 	renderer   *render.Renderer
 	traceStack []parser.Container // trace our position on the tree
 	cursor     *render.Cursor
 	markSelect *render.Cursor
+	focus      bool
 }
 
 func New() *Editor {
+	renderer := render.New()
+	cursor := render.Cursor{Symbol: "\x1b[7m \x1b[27m"}
+	renderer.LatexTree.AppendChildren(&cursor)
 	return &Editor{
-		cursor: &render.Cursor{Symbol: "\x1b[7m \x1b[27m"},
+		renderer:   &renderer,
+		traceStack: []parser.Container{renderer.LatexTree},
+		cursor:     &cursor,
+		markSelect: nil,
+		focus:      false,
 	}
 }
 
@@ -67,6 +74,11 @@ func (e *Editor) popStack() parser.Container {
 	e.traceStack[len(e.traceStack)-1] = nil
 	e.traceStack = e.traceStack[:len(e.traceStack)-1]
 	return ret
+}
+
+func (e *Editor) SetFocus(f bool) {
+	e.focus = f
+	e.renderer.Focus = f
 }
 
 // gets the 'state' of the editor,
@@ -350,7 +362,6 @@ func (e *Editor) enterContainerFromLeft(target parser.Container) {
 	e.traceStack = append(e.traceStack, parent)
 }
 
-//
 func (e *Editor) NavigateToBeginning() {
 	idx := e.getCursorIdxInParent()
 	parent := e.getParent()

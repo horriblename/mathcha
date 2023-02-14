@@ -149,7 +149,7 @@ type (
 		Incomplete bool   // true if (source) expressions are missing in Elts
 	}
 
-	// A UnboundCompExpr is basically the same as CompositeLit but without brackets "{}"
+	// A UnboundCompExpr is basically the same as CompositeExpr but without brackets "{}"
 	UnboundCompExpr struct {
 		From, To Pos
 		Elts     []Expr // list of composite elements; or nil

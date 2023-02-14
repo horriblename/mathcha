@@ -1,5 +1,7 @@
 package renderer
 
+// NOTE `Dimensions` and the `dim` parameter in functions are deprecated and will be removed
+
 import (
 	"strings"
 
@@ -34,7 +36,7 @@ func (r *Renderer) DrawToBuffer(tree parser.Expr, dim *Dimensions) {
 
 func (r *Renderer) Prerender(node parser.Expr, dim *Dimensions) (out string, baseLevel int) {
 	defer func() {
-		if node == r.FocusOn {
+		if node == r.FocusOn && r.Focus {
 			out = focusStyle.Render(out)
 		}
 	}()
@@ -156,7 +158,7 @@ func (r *Renderer) PrerenderFlexContainer(node parser.FlexContainer, dim *Dimens
 						sup = renderedChildren[index-1]
 						sub, baseLines[index] = r.Prerender(c, dim)
 						renderedChildren[index] = lipgloss.JoinVertical(lipgloss.Left, sup, " ", sub)
-						println(renderedChildren[index])
+						// println(renderedChildren[index])
 						renderedChildren[index-1] = ""
 						continue
 					}

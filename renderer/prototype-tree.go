@@ -18,7 +18,20 @@ type Renderer struct {
 	LatexTree    parser.FlexContainer
 	FocusOn      parser.Container // the container in which the cursor is, a better implementation would be letting Render functions return a 'focused' flag when cursor is found
 	HasSelection bool             // whether there is a selection in FocusOn
-	Size         *Dimensions
+	Size         *Dimensions      // currently not used
+	Focus        bool             // whether the widget itself is focused
+}
+
+func New() Renderer {
+	root := &parser.UnboundCompExpr{}
+	return Renderer{
+		Buffer:       "",
+		LatexTree:    root,
+		FocusOn:      root,
+		HasSelection: false,
+		Size:         nil, // unused!
+		Focus:        false,
+	}
 }
 
 func (r *Renderer) Load(tree parser.FlexContainer) {
