@@ -11,7 +11,6 @@ type Renderer struct {
 	LatexTree    parser.FlexContainer
 	FocusOn      parser.Container // the container in which the cursor is, a better implementation would be letting Render functions return a 'focused' flag when cursor is found
 	HasSelection bool             // whether there is a selection in FocusOn
-	Size         *Dimensions      // currently not used
 	Focus        bool             // whether the widget itself is focused
 }
 
@@ -22,7 +21,6 @@ func New() Renderer {
 		LatexTree:    root,
 		FocusOn:      root,
 		HasSelection: false,
-		Size:         nil, // unused!
 		Focus:        false,
 	}
 }
@@ -34,10 +32,9 @@ func (r *Renderer) Load(tree parser.FlexContainer) {
 
 // rerender the latex tree
 func (r *Renderer) Sync(focus parser.Container, selected bool /*whether there is a selection*/) {
-	r.Size = calculateDim(r.LatexTree)
 	r.FocusOn = focus
 	r.HasSelection = selected
-	r.DrawToBuffer(r.LatexTree, r.Size)
+	r.DrawToBuffer(r.LatexTree)
 }
 
 func (r *Renderer) View() string {
@@ -95,4 +92,27 @@ func ProduceLatex(node parser.Expr, useUnicode bool) string {
 	default:
 		return "[unknown node encountered]"
 	}
+}
+
+func max(a int, b int) int {
+	if a > b {
+		return a
+	}
+	return b
+}
+
+func min(numbers ...int) int {
+	if len(numbers) == 0 {
+		panic("min was passed 0 parameters")
+	} else if len(numbers) == 1 {
+		return numbers[0]
+	}
+
+	m := numbers[0]
+	for _, n := range numbers {
+		if n < m {
+			m = n
+		}
+	}
+	return m
 }
