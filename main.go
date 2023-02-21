@@ -39,11 +39,11 @@ func (m model) CopyLatex() {
 	if len(m.editors) == 1 {
 		latex = m.editors[0].LatexSource()
 	} else {
-		latex = "\\begin{equation}\n"
+		latex = "\\begin{aligned}\n"
 		for _, editor := range m.editors {
 			latex += editor.LatexSource() + "\\\\\n"
 		}
-		latex += "\\end{equation}"
+		latex += "\\end{aligned}"
 	}
 
 	cmd := exec.Command("wl-copy")
