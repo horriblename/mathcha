@@ -1,17 +1,10 @@
 package renderer
 
 import (
-	"fmt"
 	"strings"
 
 	parser "github.com/horriblename/mathcha/latex"
 )
-
-// FIXME
-var x = fmt.Println
-var _ = strings.Title
-
-// TODO maybe add Dimensions.Init
 
 type Renderer struct {
 	Buffer       string
@@ -54,7 +47,7 @@ func (r *Renderer) View() string {
 // possible optimisation: pass the strings.Builder object by reference into the recursive
 // function to avoid multiple Builder instances. Then returning string is no longer needed,
 // we just use the original Builder to get the string instead
-func ProduceLatex(node parser.Expr) string {
+func ProduceLatex(node parser.Expr, useUnicode bool) string {
 	latex := ""
 	suffix := ""
 	switch n := node.(type) {
@@ -64,7 +57,7 @@ func ProduceLatex(node parser.Expr) string {
 		builder := strings.Builder{}
 		builder.WriteString("\\left" + n.Left)
 		for _, c := range n.Children() {
-			builder.WriteString(ProduceLatex(c))
+			builder.WriteString(ProduceLatex(c, useUnicode))
 		}
 		builder.WriteString("\\right" + n.Right)
 		return builder.String()
@@ -77,16 +70,23 @@ func ProduceLatex(node parser.Expr) string {
 			suffix = "}"
 		}
 		for _, c := range n.Children() {
-			latex += ProduceLatex(c)
+			latex += ProduceLatex(c, useUnicode)
 		}
 		return latex + suffix
 	case parser.CmdContainer:
 		latex = n.Command().GetCmd() + " "
 		for _, c := range n.Children() {
-			latex += ProduceLatex(c)
+			latex += ProduceLatex(c, useUnicode)
 		}
 		return latex
 	case parser.CmdLiteral:
+		if useUnicode {
+			unicode := GetVanillaString(n.Command())
+			if len(unicode) == 1 {
+				return unicode
+			}
+			return n.Content() + " "
+		}
 		return n.Content() + " "
 	case *Cursor:
 		return ""

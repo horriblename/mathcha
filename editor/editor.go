@@ -25,6 +25,8 @@ const (
 	EDIT_COMMAND
 )
 
+const LATEX_SOURCE_USE_UNICODE_SYMBOLS = true
+
 type Editor struct {
 	renderer   *render.Renderer
 	traceStack []parser.Container // trace our position on the tree
@@ -785,7 +787,7 @@ func (e Editor) Update(msg tea.Msg) (Editor, tea.Cmd) {
 		case tea.KeyEnter:
 			// TODO see github.com/charmbracelet/bubbles/input.go for clipboard operation examples
 			cmd := exec.Command("xclip", "-selection", "c")
-			cmd.Stdin = strings.NewReader(render.ProduceLatex(e.renderer.LatexTree))
+			cmd.Stdin = strings.NewReader(render.ProduceLatex(e.renderer.LatexTree, LATEX_SOURCE_USE_UNICODE_SYMBOLS))
 			cmd.Run()
 
 		case tea.KeyRunes:
@@ -833,5 +835,5 @@ func formatLatexTree(tree parser.Expr) {
 }
 
 func (e Editor) LatexSource() string {
-	return render.ProduceLatex(e.renderer.LatexTree)
+	return render.ProduceLatex(e.renderer.LatexTree, LATEX_SOURCE_USE_UNICODE_SYMBOLS)
 }
