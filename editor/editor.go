@@ -20,6 +20,7 @@ const (
 	DIR_LEFT Direction = iota
 	DIR_RIGHT
 
+	// TODO rename/use container type?
 	EDIT_EQUATION editorState = iota // equation editing mode (normal)
 	EDIT_TEXT
 	EDIT_COMMAND
@@ -88,7 +89,7 @@ func (e *Editor) SetFocus(f bool) {
 }
 
 // gets the 'state' of the editor,
-func (e *Editor) getState() editorState {
+func (e *Editor) GetState() editorState {
 	var state editorState
 	switch e.getParent().(type) {
 	case *parser.TextStringWrapper:
@@ -517,7 +518,7 @@ func (e *Editor) getSelectionIdxInParent() int {
 // ---
 // Keyboard input handlers
 func (e *Editor) handleLetter(letter rune) {
-	kind := e.getState()
+	kind := e.GetState()
 	sel := e.hasSelection()
 
 	if sel {
@@ -533,7 +534,7 @@ func (e *Editor) handleLetter(letter rune) {
 }
 
 func (e *Editor) handleDigit(digit rune) {
-	kind := e.getState()
+	kind := e.GetState()
 	sel := e.hasSelection()
 	if sel {
 		e.deleteSelection()
@@ -550,7 +551,7 @@ func (e *Editor) handleDigit(digit rune) {
 
 func (e *Editor) handleRest(char rune) {
 	// TODO handle special characters _, ^ etc
-	kind := e.getState()
+	kind := e.GetState()
 	sel := e.hasSelection()
 	idx := e.getCursorIdxInParent()
 	if sel {
