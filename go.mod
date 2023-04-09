@@ -5,6 +5,7 @@ go 1.17
 require (
 	github.com/charmbracelet/bubbletea v0.19.3
 	github.com/charmbracelet/lipgloss v0.4.0
+	github.com/derekparker/trie v0.0.0-20221221181808-1424fce0c981
 	github.com/mattn/go-runewidth v0.0.13
 	github.com/muesli/reflow v0.3.0
 )
