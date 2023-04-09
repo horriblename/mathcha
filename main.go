@@ -10,12 +10,17 @@ import (
 	"strings"
 
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/derekparker/trie"
 	ed "github.com/horriblename/mathcha/editor"
+	"github.com/horriblename/mathcha/latex"
+	"github.com/horriblename/mathcha/renderer"
 )
 
 type model struct {
-	focus   int
-	editors []ed.Editor
+	focus       int
+	editors     []ed.Editor
+	compList    *trie.Trie
+	compMatches []string
 }
 
 func (m model) Init() tea.Cmd {
@@ -26,8 +31,9 @@ func initialModel() model {
 	editor := ed.New()
 	editor.SetFocus(true)
 	return model{
-		focus:   0,
-		editors: []ed.Editor{*editor}, // TODO should prolly make this slice of pointers to Editors
+		focus:    0,
+		editors:  []ed.Editor{*editor}, // TODO should prolly make this slice of pointers to Editors
+		compList: latex.NewCompletion(),
 	}
 }
 
@@ -84,6 +90,14 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case tea.KeyCtrlC, tea.KeyEsc: // chain tea command?
 			m.CopyLatex()
 			return m, tea.Quit
+		case tea.KeyTab, tea.KeyShiftTab:
+			if m.editors[m.focus].GetState() != ed.EDIT_COMMAND {
+				break
+			}
+			lead := m.editors[m.focus].FocusedTextField().BuildString()
+			m.compMatches = m.compList.FuzzySearch(lead)
+			return m, nil
+
 		default:
 			keyPressed = msg.String()
 		}
@@ -104,10 +118,32 @@ func (m model) View() string {
 		editorsView = append(editorsView, editor.View())
 	}
 
+	var compDisplay strings.Builder
+	var displayLen int
+	for _, match := range m.compMatches {
+		cmd := latex.MatchLatexCmd("\\" + match)
+		compDisplay.WriteString("\x1b[34m")
+		if cmd.IsVanillaSym() {
+			compDisplay.WriteString(renderer.GetVanillaString(cmd))
+		} else {
+			compDisplay.WriteRune(' ')
+		}
+		compDisplay.WriteString(" \x1b[33m")
+		compDisplay.WriteString(match)
+		compDisplay.WriteString("   ")
+
+		displayLen += len(match) + 5
+		// hard line width limit
+		if displayLen > 500 {
+			break
+		}
+	}
+
 	return fmt.Sprintf(
-		"\n%s\n\n%s\n\x1b[34mKey:\x1b[33m %s\x1b[34m pressed\x1b[0m\n%s",
+		"\n%s\n\n%s\n%s\n\x1b[34mKey:\x1b[33m %s\x1b[34m pressed\x1b[0m\n%s",
 		strings.Join(editorsView, "\n"),
 		m.editors[m.focus].LatexSource(),
+		compDisplay.String(),
 		keyPressed,
 		"(esc or ctrl+c to quit | ctrl+k previous line | ctrl+j next line | ctrl+y Copy Latex to clipboard (via wl-copy))",
 	) + "\n"
