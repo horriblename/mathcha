@@ -78,11 +78,15 @@ type CmdExpr interface {
 	Command() LatexCmd
 }
 
+// A Latex Command which takes no arguments and is (usually?) rendered as a single unicode symbol
+// e.g. "\times", "\oplus", ...
 type CmdLiteral interface {
 	Literal // the only reason this is here is to identify UnknownCmdLit via Content()
 	CmdExpr
 }
 
+// A Latex Command that accepts a fixed number of children as its arguments.
+// e.g. "_" which accepts 1 argument, "\frac" which accepts 2 args
 type CmdContainer interface {
 	FixedContainer
 	CmdExpr
