@@ -1,8 +1,6 @@
 package renderer
 
 import (
-	"strings"
-
 	parser "github.com/horriblename/mathcha/latex"
 )
 
@@ -39,59 +37,6 @@ func (r *Renderer) Sync(focus parser.Container, selected bool /*whether there is
 
 func (r *Renderer) View() string {
 	return r.Buffer
-}
-
-// possible optimisation: pass the strings.Builder object by reference into the recursive
-// function to avoid multiple Builder instances. Then returning string is no longer needed,
-// we just use the original Builder to get the string instead
-func ProduceLatex(node parser.Expr, useUnicode bool) string {
-	latex := ""
-	suffix := ""
-	switch n := node.(type) {
-	case *parser.TextContainer: // TODO CmdContainer subtype
-		return "\\text {" + n.Text.BuildString() + "}"
-	case *parser.ParenCompExpr: // TODO FlexContainer subtype
-		builder := strings.Builder{}
-		builder.WriteString("\\left" + n.Left)
-		for _, c := range n.Children() {
-			builder.WriteString(ProduceLatex(c, useUnicode))
-		}
-		builder.WriteString("\\right" + n.Right)
-		return builder.String()
-
-	case parser.FlexContainer:
-		// FIXME type switch for cases CompositeExpr and others
-		// FIXME use strings.Builder instead
-		if n.Identifier() == "{" { // CompositeExpr
-			latex = "{"
-			suffix = "}"
-		}
-		for _, c := range n.Children() {
-			latex += ProduceLatex(c, useUnicode)
-		}
-		return latex + suffix
-	case parser.CmdContainer:
-		latex = n.Command().GetCmd() + " "
-		for _, c := range n.Children() {
-			latex += ProduceLatex(c, useUnicode)
-		}
-		return latex
-	case parser.CmdLiteral:
-		if useUnicode {
-			unicode := GetVanillaString(n.Command())
-			if len(unicode) == 1 {
-				return unicode
-			}
-			return n.Content() + " "
-		}
-		return n.Content() + " "
-	case *Cursor:
-		return ""
-	case parser.Literal:
-		return n.Content()
-	default:
-		return "[unknown node encountered]"
-	}
 }
 
 func max(a int, b int) int {
