@@ -3,6 +3,7 @@ package renderer
 import (
 	"strings"
 	"unicode"
+	"unicode/utf8"
 
 	parser "github.com/horriblename/mathcha/latex"
 )
@@ -52,9 +53,9 @@ func (cfg *LatexSourceConfig) ProduceLatex(node parser.Expr) string {
 		return latex
 	case parser.CmdLiteral:
 		if cfg.UseUnicode {
-			symbol := GetVanillaString(n.Command())
-			if len(symbol) == 1 {
-				return symbol
+			renderedString := GetVanillaString(n.Command())
+			if utf8.RuneCountInString(renderedString) == 1 {
+				return renderedString
 			}
 			return n.Content() + " "
 		}
