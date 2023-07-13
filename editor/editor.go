@@ -721,7 +721,7 @@ func (e Editor) Update(msg tea.Msg) (Editor, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
 		switch msg.Type {
-		case tea.KeyLeft:
+		case tea.KeyLeft, tea.KeyCtrlB:
 			if msg.Alt {
 				idx := e.getCursorIdxInParent()
 				if idx == 0 {
@@ -740,7 +740,7 @@ func (e Editor) Update(msg tea.Msg) (Editor, tea.Cmd) {
 				e.cancelSelection()
 			}
 			e.NavigateLeft()
-		case tea.KeyRight:
+		case tea.KeyRight, tea.KeyCtrlF:
 			if msg.Alt {
 				idx := e.getCursorIdxInParent()
 				if idx >= len(e.getLastOnStack().Children())-1 {
@@ -762,12 +762,12 @@ func (e Editor) Update(msg tea.Msg) (Editor, tea.Cmd) {
 				e.cancelSelection()
 			}
 			e.NavigateRight()
-		case tea.KeyDown:
+		case tea.KeyDown, tea.KeyCtrlN:
 			if e.markSelect != nil {
 				e.cancelSelection()
 			}
 			e.NavigateDown()
-		case tea.KeyUp:
+		case tea.KeyUp, tea.KeyCtrlP:
 			if e.markSelect != nil {
 				e.cancelSelection()
 			}
