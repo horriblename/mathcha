@@ -1,7 +1,5 @@
 package renderer
 
-// NOTE `Dimensions` and the `dim` parameter in functions are deprecated and will be removed
-
 import (
 	"strings"
 
