@@ -143,11 +143,10 @@ func (m model) View() string {
 	}
 
 	return fmt.Sprintf(
-		"\n%s\n\n%s\n%s\n\x1b[34mKey:\x1b[33m %s\x1b[34m pressed\x1b[0m\n%s",
+		"\n%s\n\n%s\n%s\n%s",
 		strings.Join(editorsView, "\n"),
 		m.editors[m.focus].LatexSource(),
 		compDisplay.String(),
-		keyPressed,
 		"(esc or ctrl+c to quit | ctrl+k previous line | ctrl+j next line | ctrl+y Copy Latex to clipboard (via wl-copy))",
 	) + "\n"
 }
