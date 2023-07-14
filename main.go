@@ -5,6 +5,7 @@ import (
 	// tea "github.com/charmbracelet/bubbletea"
 	// parser "github.com/horriblename/mathcha/latex"
 	// render "github.com/horriblename/mathcha/renderer"
+	"flag"
 	"fmt"
 	"os/exec"
 	"strings"
@@ -17,23 +18,25 @@ import (
 )
 
 type model struct {
-	focus       int
-	editors     []ed.Editor
-	compList    *trie.Trie
-	compMatches []string
+	focus        int
+	editors      []ed.Editor
+	compList     *trie.Trie
+	compMatches  []string
+	editorConfig *ed.EditorConfig
 }
 
 func (m model) Init() tea.Cmd {
 	return nil
 }
 
-func initialModel() model {
-	editor := ed.New()
+func initialModel(editorCfg ed.EditorConfig) model {
+	editor := ed.NewWithConfig(editorCfg)
 	editor.SetFocus(true)
 	return model{
-		focus:    0,
-		editors:  []ed.Editor{*editor}, // TODO should prolly make this slice of pointers to Editors
-		compList: latex.NewCompletion(),
+		focus:        0,
+		editors:      []ed.Editor{*editor}, // TODO should prolly make this slice of pointers to Editors
+		compList:     latex.NewCompletion(),
+		editorConfig: &editorCfg,
 	}
 }
 
@@ -64,7 +67,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.KeyMsg:
 		switch msg.Type {
 		case tea.KeyEnter:
-			editor := ed.New()
+			editor := ed.NewWithConfig(*m.editorConfig)
 			m.editors = append(m.editors, *editor)
 			m.editors[m.focus].SetFocus(false)
 			m.editors[m.focus], cmd = m.editors[m.focus].Update(msg)
@@ -150,16 +153,17 @@ func (m model) View() string {
 }
 
 func main() {
-	// var latex string
-	// latex = `1-\frac{1}{1-\frac{1}{1-\frac{1}{1-\frac{1}{1-\frac{1}{1-\frac{1}{1-\frac{1}{1-\frac{1}{1-\frac{1}{1-\frac{1}{2}}}}}}}}}}`
-	// latex = `E = \frac\underline{12}12 mv2`
-	// latex = `g(x) = \left(\frac{12}{13}\right)`
-	// latex = `xyz = \text{this is a text}abc-{}+1`
-	//
-	// latex = `f(x) = \frac{1}{\sigma\sqrt{2\pi}}\exp\left(-\frac{1}{2}\left(\frac{x-\mu}{\sigma}\right)\right)`
-	// latex = ""
-	e := initialModel()
-	// e.editors[e.focus].Read(latex)
+	var useUnicode bool
+	flag.BoolVar(&useUnicode, "symbols", false, `Use unicode symbols in latex output wherever possible. e.g. output "α" in place of "\alpha"`)
+	flag.BoolVar(&useUnicode, "s", false, `Use unicode symbols in latex output wherever possible. e.g. output "α" in place of "\alpha"`)
+	flag.Parse()
+
+	editorCfg := ed.EditorConfig{
+		LatexCfg: renderer.LatexSourceConfig{
+			UseUnicode: useUnicode,
+		},
+	}
+	e := initialModel(editorCfg)
 
 	p := tea.NewProgram(e)
 	if err := p.Start(); err != nil {

@@ -32,7 +32,11 @@ type Editor struct {
 	cursor     *render.Cursor
 	markSelect *render.Cursor
 	focus      bool
-	latexCfg   *render.LatexSourceConfig
+	config     *EditorConfig
+}
+
+type EditorConfig struct {
+	LatexCfg render.LatexSourceConfig
 }
 
 func New() *Editor {
@@ -45,10 +49,18 @@ func New() *Editor {
 		cursor:     &cursor,
 		markSelect: nil,
 		focus:      false,
-		latexCfg: &render.LatexSourceConfig{
-			UseUnicode: true,
+		config: &EditorConfig{
+			LatexCfg: render.LatexSourceConfig{
+				UseUnicode: true,
+			},
 		},
 	}
+}
+
+func NewWithConfig(cfg EditorConfig) *Editor {
+	editor := New()
+	editor.config = &cfg
+	return editor
 }
 
 func (e *Editor) Read(latex string) {
@@ -790,7 +802,7 @@ func (e Editor) Update(msg tea.Msg) (Editor, tea.Cmd) {
 		case tea.KeyEnter:
 			// TODO see github.com/charmbracelet/bubbles/input.go for clipboard operation examples
 			cmd := exec.Command("xclip", "-selection", "c")
-			cmd.Stdin = strings.NewReader(e.latexCfg.ProduceLatex(e.renderer.LatexTree))
+			cmd.Stdin = strings.NewReader(e.config.LatexCfg.ProduceLatex(e.renderer.LatexTree))
 			cmd.Run()
 
 		case tea.KeyRunes:
@@ -838,5 +850,5 @@ func formatLatexTree(tree parser.Expr) {
 }
 
 func (e Editor) LatexSource() string {
-	return e.latexCfg.ProduceLatex(e.renderer.LatexTree)
+	return e.config.LatexCfg.ProduceLatex(e.renderer.LatexTree)
 }
