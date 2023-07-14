@@ -42,8 +42,7 @@ func initialModel(editorCfg ed.EditorConfig) model {
 
 var keyPressed = "[waiting key]"
 
-func (m model) CopyLatex() {
-	// wayland clipboard support: https://github.com/golang-design/clipboard/issues/6
+func (m model) latex() string {
 	var latex string
 	if len(m.editors) == 1 {
 		latex = m.editors[0].LatexSource()
@@ -54,6 +53,13 @@ func (m model) CopyLatex() {
 		}
 		latex += "\\end{aligned}"
 	}
+
+	return latex
+}
+
+func (m model) CopyLatex() {
+	// wayland clipboard support: https://github.com/golang-design/clipboard/issues/6
+	latex := m.latex()
 
 	cmd := exec.Command("wl-copy")
 	cmd.Stdin = strings.NewReader(latex)
@@ -143,9 +149,8 @@ func (m model) View() string {
 	}
 
 	return fmt.Sprintf(
-		"\n%s\n\n%s\n%s\n%s",
+		"\n%s\n\n%s\n%s",
 		strings.Join(editorsView, "\n"),
-		m.editors[m.focus].LatexSource(),
 		compDisplay.String(),
 		"(esc or ctrl+c to quit | ctrl+k previous line | ctrl+j next line | ctrl+y Copy Latex to clipboard (via wl-copy))",
 	) + "\n"
