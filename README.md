@@ -27,5 +27,6 @@ I started this project when I was learning parsing, and this remains as a toy pr
 Other interesting stuff I might try in the future:
 - reactive-programming styled rendering
 - autocomplete
+- using parsing libraries for a declarative approach
 - go-specific memory optimizations
 - rendering on other, non-TUI platforms (WASM!)
