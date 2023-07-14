@@ -28,3 +28,4 @@ Other interesting stuff I might try in the future:
 - reactive-programming styled rendering
 - autocomplete
 - go-specific memory optimizations
+- rendering on other, non-TUI platforms (WASM!)
