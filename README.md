@@ -1,4 +1,5 @@
 # mathcha
+
 A [mathquill](http://mathquill.com/)-like interactive math input in a terminal, built with the charm TUI library.
 
 [![asciicast](https://asciinema.org/a/rph5qHyOpcjpQ4pvQJUFZqUDI.svg)](https://asciinema.org/a/rph5qHyOpcjpQ4pvQJUFZqUDI)
@@ -16,6 +17,7 @@ Keybinds:
 - `Ctrl+k` to go to previous line, `Ctrl+j` to go to next line
 
 ## Supported Symbols and Commands
+
 There is no standard support table or even a goal, if I ever feel like turning this into a serious project, I would start from KaTeX, but that probably won't happen :P.
 
 Take a look at [command_def.go](latex/command_def.go)for a list of all recognized latex commands.
@@ -25,7 +27,9 @@ Take a look at [command_def.go](latex/command_def.go)for a list of all recognize
 I started this project when I was learning parsing, and this remains as a toy project in which I add stuff when I feel like doing so. Feature requests and whatnot is welcome, but I probably won't do anything.
 
 Other interesting stuff I might try in the future:
+
 - reactive-programming styled rendering
+- undo
 - autocomplete
 - using parsing libraries for a declarative approach
 - go-specific memory optimizations
