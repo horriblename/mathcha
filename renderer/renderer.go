@@ -23,6 +23,17 @@ func New() Renderer {
 	}
 }
 
+func FromFormula(formula string) *Renderer {
+	root := parser.Parse(formula)
+	return &Renderer{
+		Buffer:       "",
+		LatexTree:    root,
+		FocusOn:      root,
+		HasSelection: false,
+		Focus:        false,
+	}
+}
+
 func (r *Renderer) Load(tree parser.FlexContainer) {
 	r.LatexTree = tree
 	r.Sync(nil, false)

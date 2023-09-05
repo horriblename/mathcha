@@ -7,6 +7,8 @@ import (
 	// render "github.com/horriblename/mathcha/renderer"
 	"flag"
 	"fmt"
+	"io"
+	"os"
 	"os/exec"
 	"strings"
 
@@ -29,8 +31,8 @@ func (m model) Init() tea.Cmd {
 	return nil
 }
 
-func initialModel(editorCfg ed.EditorConfig) model {
-	editor := ed.NewWithConfig(editorCfg)
+func initialModel(editorCfg ed.EditorConfig, initFormula string) model {
+	editor := ed.NewWithConfig(editorCfg, initFormula)
 	editor.SetFocus(true)
 	return model{
 		focus:        0,
@@ -73,7 +75,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.KeyMsg:
 		switch msg.Type {
 		case tea.KeyEnter:
-			editor := ed.NewWithConfig(*m.editorConfig)
+			editor := ed.NewWithConfig(*m.editorConfig, "")
 			m.editors = append(m.editors, *editor)
 			m.editors[m.focus].SetFocus(false)
 			m.editors[m.focus], cmd = m.editors[m.focus].Update(msg)
@@ -160,6 +162,7 @@ func main() {
 	var useUnicode bool
 	flag.BoolVar(&useUnicode, "symbols", false, `Use unicode symbols in latex output wherever possible. e.g. output "α" in place of "\alpha"`)
 	flag.BoolVar(&useUnicode, "s", false, `Use unicode symbols in latex output wherever possible. e.g. output "α" in place of "\alpha"`)
+	file := flag.String("f", "", "Read initial formula from file; use '-' to read from stdin")
 	flag.Parse()
 
 	editorCfg := ed.EditorConfig{
@@ -167,7 +170,25 @@ func main() {
 			UseUnicode: useUnicode,
 		},
 	}
-	e := initialModel(editorCfg)
+
+	var latex string
+	switch *file {
+	case "":
+	case "-":
+		l, err := io.ReadAll(os.Stdin)
+		if err != nil {
+			panic("error reading stdin: " + err.Error())
+		}
+		latex = string(l)
+	default:
+		l, err := os.ReadFile(*file)
+		if err != nil {
+			panic("error reading " + *file + ": " + err.Error())
+		}
+		latex = string(l)
+	}
+
+	e := initialModel(editorCfg, latex)
 
 	p := tea.NewProgram(e)
 	if err := p.Start(); err != nil {

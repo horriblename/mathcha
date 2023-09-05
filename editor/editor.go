@@ -39,12 +39,12 @@ type EditorConfig struct {
 	LatexCfg render.LatexSourceConfig
 }
 
-func New() *Editor {
-	renderer := render.New()
+func New(formula string) *Editor {
+	renderer := render.FromFormula(formula)
 	cursor := render.Cursor{Symbol: "\x1b[7m \x1b[27m"}
 	renderer.LatexTree.AppendChildren(&cursor)
 	return &Editor{
-		renderer:   &renderer,
+		renderer:   renderer,
 		traceStack: []parser.Container{renderer.LatexTree},
 		cursor:     &cursor,
 		markSelect: nil,
@@ -57,8 +57,8 @@ func New() *Editor {
 	}
 }
 
-func NewWithConfig(cfg EditorConfig) *Editor {
-	editor := New()
+func NewWithConfig(cfg EditorConfig, formula string) *Editor {
+	editor := New(formula)
 	editor.config = &cfg
 	return editor
 }

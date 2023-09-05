@@ -30,6 +30,7 @@ func NewParser(src string) *Parser {
 	p.tokenizer.Init(src /*, eh*/)
 	p.next()
 	p.treeRoot = p.parseTopLevel()
+	return p
 }
 
 func (p *Parser) GetTree() *UnboundCompExpr { return p.treeRoot }
