@@ -19,7 +19,13 @@ type Parser struct {
 	treeRoot *UnboundCompExpr
 }
 
-func (p *Parser) Init(src string) {
+func Parse(src string) *UnboundCompExpr {
+	return NewParser(src).GetTree()
+}
+
+// TODO: don't export?
+func NewParser(src string) *Parser {
+	p := &Parser{}
 	//eh := func(pos Pos, msg string) { p.errors = append(p.errors, msg) }
 	p.tokenizer.Init(src /*, eh*/)
 	p.next()

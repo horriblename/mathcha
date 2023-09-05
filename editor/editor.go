@@ -66,10 +66,9 @@ func NewWithConfig(cfg EditorConfig) *Editor {
 func (e *Editor) Read(latex string) {
 	// load latex input
 	if latex != "" {
-		p := parser.Parser{}
-		p.Init(latex)
+		ast := parser.Parse(latex)
 		// e.renderer.Load(p.GetTree()) // FIXME why doesn't this work
-		e.renderer = &render.Renderer{LatexTree: p.GetTree()}
+		e.renderer = &render.Renderer{LatexTree: ast}
 		// p (Parser object) can be discarded now
 	} else {
 		e.renderer.Load(&parser.UnboundCompExpr{})
@@ -685,11 +684,10 @@ func (e *Editor) handleRest(char rune) {
 // not in use yet
 func (e *Editor) handlePaste(v string) {
 	idx := e.getCursorIdxInParent()
-	p := parser.Parser{}
 
 	// TODO error handling, when the given string is not valid latex
-	p.Init(v)
-	e.getParent().InsertChildren(idx, p.GetTree().Children()...)
+	ast := parser.Parse(v)
+	e.getParent().InsertChildren(idx, ast.Children()...)
 }
 
 // ---
