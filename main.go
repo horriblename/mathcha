@@ -20,6 +20,7 @@ import (
 )
 
 type model struct {
+	// current editor in focus
 	focus        int
 	editors      []ed.Editor
 	compList     *trie.Trie
