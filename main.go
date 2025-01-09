@@ -113,7 +113,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, nil
 
 		case tea.KeyF1:
-			m.showHelp = true
+			m.showHelp = !m.showHelp
 			return m, nil
 
 		default:
