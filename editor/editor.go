@@ -101,7 +101,7 @@ func (e *Editor) SetFocus(f bool) {
 	e.renderer.Sync(e.getLastOnStack(), false)
 }
 
-// gets the 'state' of the editor,
+// gets the 'state' of the editor, e.g. inserting a command/text node, or in normal equation node
 func (e *Editor) GetState() editorState {
 	var state editorState
 	switch e.getParent().(type) {
@@ -697,28 +697,7 @@ func (e *Editor) handleRest(char rune) {
 
 	// guranteed to pass check
 	if n, ok := e.getLastOnStack().(*parser.TextStringWrapper); ok {
-		if kind == EDIT_COMMAND {
-			switch {
-			case char == ' ':
-				cmd := "\\" + n.BuildString()
-				e.exitParent(DIR_RIGHT)
-				idx := e.getCursorIdxInParent() // TODO error handling for idx == 0?
-				e.getParent().DeleteChildren(idx-1, idx-1)
-				if len(cmd) <= 1 {
-					cmd += " "
-				}
-				e.InsertCmd(cmd)
-			default:
-				// TODO pass the key event back into Update?
-				n.InsertChildren(idx, parser.RawRuneLit(char))
-			}
-			return
-		} else { // kind == EDIT_TEXT
-			switch {
-			default:
-				n.InsertChildren(idx, parser.RawRuneLit(char))
-			}
-		}
+		n.InsertChildren(idx, parser.RawRuneLit(char))
 	}
 }
 
@@ -830,6 +809,32 @@ func (e Editor) Update(msg tea.Msg) (Editor, tea.Cmd) {
 			cmd.Stdin = strings.NewReader(e.config.LatexCfg.ProduceLatex(e.renderer.LatexTree))
 			cmd.Run()
 
+		case tea.KeySpace:
+			idx := e.getCursorIdxInParent()
+			switch e.GetState() {
+			case EDIT_EQUATION:
+				e.getParent().InsertChildren(idx, &parser.SimpleCmdLit{
+					Type:   parser.CMD_SPACE,
+					Source: `\ `,
+				})
+
+			case EDIT_COMMAND:
+				if n, ok := e.getLastOnStack().(*parser.TextStringWrapper); ok {
+					cmd := "\\" + n.BuildString()
+					e.exitParent(DIR_RIGHT)
+					idx := e.getCursorIdxInParent() // TODO error handling for idx == 0?
+					e.getParent().DeleteChildren(idx-1, idx-1)
+					if len(cmd) <= 1 {
+						cmd += " "
+					}
+					e.InsertCmd(cmd)
+				}
+
+			case EDIT_TEXT:
+				if n, ok := e.getLastOnStack().(*parser.TextStringWrapper); ok {
+					n.InsertChildren(idx, parser.RawRuneLit(' '))
+				}
+			}
 		case tea.KeyRunes:
 			if len(msg.Runes) == 1 {
 				if msg.Alt {
