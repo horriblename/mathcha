@@ -142,6 +142,33 @@ func (e *Editor) deleteSelection() {
 	e.markSelect = nil
 }
 
+func (e *Editor) deleteToStart() {
+	if e.markSelect != nil {
+		e.deleteSelection()
+	}
+
+	idx := e.getCursorIdxInParent()
+	if idx == 0 {
+		return
+	}
+
+	e.getParent().DeleteChildren(0, idx-1)
+}
+
+func (e *Editor) deleteToEnd() {
+	if e.markSelect != nil {
+		e.deleteSelection()
+	}
+
+	idx := e.getCursorIdxInParent()
+	lastIdx := len(e.getParent().Children()) - 1
+	if idx == lastIdx {
+		return
+	}
+
+	e.getParent().DeleteChildren(idx+1, lastIdx)
+}
+
 // A convenience function to move cursor to a new position and handle clean ups
 // TODO remove if only stepOver*Sibling uses this
 func (e *Editor) moveCursorTo(
@@ -751,11 +778,13 @@ func (e *Editor) findEnclosingVerticallyNavigableCommand(searchFrom int) (index 
 
 const KeybindsHelp = `
 	Arrow keys - move around
-	Ctrl+p / Ctrl+n / Ctrl+f / Ctrl+b - Up / Down / Left / Right
-	Alt+p / Alt+n / Alt+f / Alt+b - Move around without entering a node
+	ctrl+p / ctrl+n / ctrl+f / ctrl+b - Up / Down / Left / Right
+	alt+p / alt+n / alt+f / alt+b - Move around without entering a node
+	alt + Left/Right - Select Text
+	alt + w/W - Select Text
 
-	Alt + Left/Right - Select Text
-	Alt + w/W - Select Text
+	ctrl + u - delete to start of node
+	ctrl + k - delete to end of node
 	`
 
 func (e Editor) Update(msg tea.Msg) (Editor, tea.Cmd) {
@@ -808,6 +837,12 @@ func (e Editor) Update(msg tea.Msg) (Editor, tea.Cmd) {
 			cmd := exec.Command("xclip", "-selection", "c")
 			cmd.Stdin = strings.NewReader(e.config.LatexCfg.ProduceLatex(e.renderer.LatexTree))
 			cmd.Run()
+
+		case tea.KeyCtrlU:
+			e.deleteToStart()
+
+		case tea.KeyCtrlK:
+			e.deleteToEnd()
 
 		case tea.KeySpace:
 			idx := e.getCursorIdxInParent()

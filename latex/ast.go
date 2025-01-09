@@ -54,6 +54,8 @@ type Literal interface {
 type FlexContainer interface {
 	Container
 	AppendChildren(...Expr)
+
+	// delete range of children, range inclusive on both ends
 	DeleteChildren(from int, to int)
 	InsertChildren(int, ...Expr)
 	// TODO
