@@ -316,25 +316,27 @@ LookForContainerAbove:
 }
 
 // Moves cursor to before the previous sibling
-// Throws error if there is no previous Sibling
-func (e *Editor) stepOverPrevSibling() {
+// Returns false if no previous node
+func (e *Editor) stepOverPrevSibling() bool {
 	idx := e.getCursorIdxInParent()
 	if idx == 0 {
-		panic("stepOverPrevSibling(): No siblings before cursor!")
+		return false
 	}
 
 	e.moveCursorTo(e.getParent(), idx-1, []parser.Container{e.getParent()})
+	return true
 }
 
 // Moves cursor to after the next sibling
-// Throws error if there is no next Sibling
-func (e *Editor) stepOverNextSibling() {
+// Returns false if no next node
+func (e *Editor) stepOverNextSibling() bool {
 	idx := e.getCursorIdxInParent()
 	if len(e.getParent().Children()) <= idx+1 {
-		panic("stepOverNextSibling(): No siblings after cursor!")
+		return false
 	}
 
 	e.moveCursorTo(e.getParent(), idx+1, []parser.Container{e.getParent()})
+	return true
 }
 
 // enter a Container from the right
@@ -805,6 +807,15 @@ func (e Editor) Update(msg tea.Msg) (Editor, tea.Cmd) {
 
 		case tea.KeyRunes:
 			if len(msg.Runes) == 1 {
+				if msg.Alt {
+					switch msg.Runes[0] {
+					case 'b':
+						e.stepOverPrevSibling()
+					case 'f':
+						e.stepOverNextSibling()
+					}
+					break
+				}
 				switch {
 				case unicode.IsLetter(msg.Runes[0]):
 					e.handleLetter(msg.Runes[0])
