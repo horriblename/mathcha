@@ -344,6 +344,40 @@ func (e *Editor) stepOverNextSibling() bool {
 	return true
 }
 
+// Start or extend selection to the left
+// If at first child, do nothing and return false
+func (e *Editor) selectLeft() bool {
+	idx := e.getCursorIdxInParent()
+	if idx == 0 {
+		return false
+	}
+
+	if e.markSelect == nil {
+		e.markSelect = new(render.Cursor)
+		e.getParent().InsertChildren(idx+1, e.markSelect)
+	}
+	_ = e.stepOverPrevSibling() || e.NavigateLeft()
+	return true
+}
+
+// Start or extend selection to the right
+// If at last child, do nothing and return false
+func (e *Editor) selectRight() bool {
+	idx := e.getCursorIdxInParent()
+	if idx >= len(e.getLastOnStack().Children())-1 {
+		return false
+	}
+
+	if e.markSelect == nil {
+		e.markSelect = new(render.Cursor)
+		e.getParent().InsertChildren(idx, e.markSelect)
+		idx++
+	}
+
+	_ = e.stepOverNextSibling() || e.NavigateRight()
+	return true
+}
+
 // enter a Container from the right
 // The old cursor and traceStack MUST be handled before calling this
 // TODO rewrite using the moveCursorTo function?
@@ -742,17 +776,7 @@ func (e Editor) Update(msg tea.Msg) (Editor, tea.Cmd) {
 		switch msg.Type {
 		case tea.KeyLeft, tea.KeyCtrlB:
 			if msg.Alt {
-				idx := e.getCursorIdxInParent()
-				if idx == 0 {
-					// TODO exit 1 level
-					return e, nil
-				}
-
-				if e.markSelect == nil {
-					e.markSelect = new(render.Cursor)
-					e.getParent().InsertChildren(idx+1, e.markSelect)
-				}
-				_ = e.stepOverPrevSibling() || e.NavigateLeft()
+				e.selectLeft()
 				e.renderer.Sync(e.getLastOnStack(), true)
 				return e, nil
 			} else if e.markSelect != nil {
@@ -761,19 +785,7 @@ func (e Editor) Update(msg tea.Msg) (Editor, tea.Cmd) {
 			e.NavigateLeft()
 		case tea.KeyRight, tea.KeyCtrlF:
 			if msg.Alt {
-				idx := e.getCursorIdxInParent()
-				if idx >= len(e.getLastOnStack().Children())-1 {
-					// TODO exit 1 level
-					return e, nil
-				}
-
-				if e.markSelect == nil {
-					e.markSelect = new(render.Cursor)
-					e.getParent().InsertChildren(idx, e.markSelect)
-					idx++
-				}
-
-				_ = e.stepOverNextSibling() || e.NavigateRight()
+				e.selectRight()
 				e.renderer.Sync(e.getLastOnStack(), true)
 				return e, nil
 			} else if e.markSelect != nil {
@@ -790,9 +802,9 @@ func (e Editor) Update(msg tea.Msg) (Editor, tea.Cmd) {
 				e.cancelSelection()
 			}
 			e.NavigateUp()
-		case tea.KeyHome:
+		case tea.KeyHome, tea.KeyCtrlA:
 			e.NavigateToBeginning()
-		case tea.KeyEnd:
+		case tea.KeyEnd, tea.KeyCtrlE:
 			e.NavigateToEnd()
 		case tea.KeyBackspace:
 			e.DeleteBack()
@@ -817,6 +829,10 @@ func (e Editor) Update(msg tea.Msg) (Editor, tea.Cmd) {
 						_ = e.stepOverPrevSibling() || e.NavigateLeft()
 					case 'f':
 						_ = e.stepOverNextSibling() || e.NavigateRight()
+					case 'w':
+						e.selectRight()
+					case 'W':
+						e.selectLeft()
 					}
 					break
 				}
