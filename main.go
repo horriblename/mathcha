@@ -99,7 +99,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case tea.KeyCtrlY:
 			m.CopyLatex()
 			return m, nil
-		case tea.KeyCtrlC, tea.KeyEsc: // chain tea command?
+		case tea.KeyCtrlC: // chain tea command?
 			m.CopyLatex()
 			return m, tea.Quit
 		case tea.KeyTab, tea.KeyShiftTab:
@@ -155,7 +155,7 @@ func (m model) View() string {
 		"\n%s\n\n%s\n%s",
 		strings.Join(editorsView, "\n"),
 		compDisplay.String(),
-		"(esc or ctrl+c to quit | ctrl+k previous line | ctrl+j next line | ctrl+y Copy Latex to clipboard (via wl-copy))",
+		"(ctrl+c to quit | ctrl+k previous line | ctrl+j next line | ctrl+y Copy Latex to clipboard (via wl-copy))",
 	) + "\n"
 }
 
