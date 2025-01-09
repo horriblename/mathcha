@@ -14,6 +14,7 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/derekparker/trie"
+	"github.com/horriblename/mathcha/editor"
 	ed "github.com/horriblename/mathcha/editor"
 	"github.com/horriblename/mathcha/latex"
 	"github.com/horriblename/mathcha/renderer"
@@ -26,6 +27,7 @@ type model struct {
 	compList     *trie.Trie
 	compMatches  []string
 	editorConfig *ed.EditorConfig
+	showHelp     bool
 }
 
 func (m model) Init() tea.Cmd {
@@ -110,6 +112,10 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.compMatches = m.compList.FuzzySearch(lead)
 			return m, nil
 
+		case tea.KeyF1:
+			m.showHelp = true
+			return m, nil
+
 		default:
 			keyPressed = msg.String()
 		}
@@ -155,8 +161,30 @@ func (m model) View() string {
 		"\n%s\n\n%s\n%s",
 		strings.Join(editorsView, "\n"),
 		compDisplay.String(),
-		"(ctrl+c to quit | ctrl+k previous line | ctrl+j next line | ctrl+y Copy Latex to clipboard (via wl-copy))",
+		m.helpSection(),
 	) + "\n"
+}
+
+var extendedHelp = `
+Editor
+------
+` + editor.KeybindsHelp + `
+
+General
+-------
+	F1 toggles keybinds help
+	ctrl+c to quit
+	ctrl+k previous line
+	ctrl+j next line
+	ctrl+y Copy Latex to clipboard (via wl-copy)
+`
+
+func (m model) helpSection() string {
+	if !m.showHelp {
+		return "press F1 to keybinds help"
+	} else {
+		return extendedHelp
+	}
 }
 
 func main() {

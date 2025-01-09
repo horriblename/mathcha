@@ -770,6 +770,15 @@ func (e *Editor) findEnclosingVerticallyNavigableCommand(searchFrom int) (index 
 	return -1
 }
 
+const KeybindsHelp = `
+	Arrow keys - move around
+	Ctrl+p / Ctrl+n / Ctrl+f / Ctrl+b - Up / Down / Left / Right
+	Alt+p / Alt+n / Alt+f / Alt+b - Move around without entering a node
+
+	Alt + Left/Right - Select Text
+	Alt + w/W - Select Text
+	`
+
 func (e Editor) Update(msg tea.Msg) (Editor, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
