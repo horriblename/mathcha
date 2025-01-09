@@ -165,14 +165,15 @@ func (e *Editor) moveCursorTo(
 
 // Navigates cursor to the left, exits a parent container if there is no left sibling
 // Enters a Container if left sibling is one that allows entering
-func (e *Editor) NavigateLeft() {
+// Does nothing and returns false if we're the first child of the root node
+func (e *Editor) NavigateLeft() bool {
 	idx := e.getCursorIdxInParent()
 	if idx < 0 {
-		panic("cursor not found in parent")
+		return false
 	}
 	if idx == 0 {
 		if len(e.traceStack) <= 1 {
-			return
+			return true
 		}
 		e.exitParent(DIR_LEFT)
 	} else if prev, ok := e.getParent().Children()[idx-1].(parser.Container); ok {
@@ -181,18 +182,21 @@ func (e *Editor) NavigateLeft() {
 	} else {
 		e.stepOverPrevSibling()
 	}
+
+	return true
 }
 
 // Navigates cursor to the right, exits a parent container if there is no right sibling
 // Enters a Container if right sibling is one that allows entering
-func (e *Editor) NavigateRight() {
+// Does nothing and returns false if we're the last child of the root node
+func (e *Editor) NavigateRight() bool {
 	idx := e.getCursorIdxInParent()
 	if idx < 0 {
-		panic("cursor not found in parent")
+		return false
 	}
 	if idx+1 >= len(e.getParent().Children()) {
 		if len(e.traceStack) <= 1 {
-			return
+			return true
 		}
 		e.exitParent(DIR_RIGHT)
 	} else if next, ok := e.getParent().Children()[idx+1].(parser.Container); ok {
@@ -201,6 +205,7 @@ func (e *Editor) NavigateRight() {
 	} else {
 		e.stepOverNextSibling()
 	}
+	return true
 }
 
 // Convenience function for exiting a Container to the left or right
@@ -747,7 +752,7 @@ func (e Editor) Update(msg tea.Msg) (Editor, tea.Cmd) {
 					e.markSelect = new(render.Cursor)
 					e.getParent().InsertChildren(idx+1, e.markSelect)
 				}
-				e.stepOverPrevSibling()
+				_ = e.stepOverPrevSibling() || e.NavigateLeft()
 				e.renderer.Sync(e.getLastOnStack(), true)
 				return e, nil
 			} else if e.markSelect != nil {
@@ -768,8 +773,7 @@ func (e Editor) Update(msg tea.Msg) (Editor, tea.Cmd) {
 					idx++
 				}
 
-				e.getParent().DeleteChildren(idx, idx)
-				e.getParent().InsertChildren(idx+1, e.cursor)
+				_ = e.stepOverNextSibling() || e.NavigateRight()
 				e.renderer.Sync(e.getLastOnStack(), true)
 				return e, nil
 			} else if e.markSelect != nil {
@@ -810,9 +814,9 @@ func (e Editor) Update(msg tea.Msg) (Editor, tea.Cmd) {
 				if msg.Alt {
 					switch msg.Runes[0] {
 					case 'b':
-						e.stepOverPrevSibling()
+						_ = e.stepOverPrevSibling() || e.NavigateLeft()
 					case 'f':
-						e.stepOverNextSibling()
+						_ = e.stepOverNextSibling() || e.NavigateRight()
 					}
 					break
 				}
