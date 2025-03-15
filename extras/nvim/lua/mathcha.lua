@@ -10,14 +10,11 @@ local ns_id = vim.api.nvim_create_namespace("mathcha")
 ---@return State, string error
 State.new = function(bufnr)
 	local state = setmetatable({ buf = bufnr }, { __index = State })
-	local ts = vim.treesitter
 
 	local query = vim.treesitter.query.parse('markdown_inline', [[ (latex_block) @latex ]])
 	local tree = vim.treesitter.get_parser(bufnr):parse()[1]
 
-	vim.print('tree', tree, tree:root())
 	for _, match, _ in query:iter_matches(tree:root(), bufnr, 0, -1, { all = true }) do
-		print(1)
 		for _, nodes in pairs(match) do
 			for _, node in ipairs(nodes) do
 				local start_row, start_col, end_row, end_col = node:range()
@@ -25,17 +22,14 @@ State.new = function(bufnr)
 			end
 		end
 	end
-	print(4)
 
 	return state
 end
 
 function State.create_conceal(self, start_row, start_col, end_row, end_col)
-	print(2)
 	vim.system({ 'mathcha', '-render' }, {
 		stdin = vim.api.nvim_buf_get_lines(self.buf, start_row, end_row, false)
 	}, function(obj)
-		print(3)
 		-- TODO: check exit code
 		vim.schedule(function()
 			local lines = vim.tbl_map(function(x)
