@@ -92,13 +92,13 @@ func (r *Renderer) Prerender(node parser.Expr) (out string, baseLevel int) {
 	case parser.FlexContainer:
 		return r.PrerenderFlexContainer(n)
 	case *parser.UnknownCmdLit: // FIXME subcase of CmdLiteral, what to do with UnknownCmdLit?
-		return "\x1b[4m?\x1b[24m", 0
+		return r.styleAndReset(underline, "?"), 0
 	case parser.CmdLiteral:
 		content := GetVanillaString(n.Command())
 		return content, 0
 		// parser.Literal interface types
 	case *parser.VarLit:
-		return "\x1b[3m" + n.Content() + "\x1b[23m", 0 // apply italic(3) then unset italic(23)
+		return r.styleAndReset(italic, n.Content()), 0
 	// case *Cursor:
 	// 	return "\x1b[7m \x1b[27m", 0 // set bg color as white(47) then set bg color to default(49)
 	case parser.Literal:
@@ -189,8 +189,8 @@ func (r *Renderer) PrerenderFlexContainer(node parser.FlexContainer) (output str
 	if 0 <= selStart && selStart < selEnd {
 		str, base := r.Prerender(&parser.UnboundCompExpr{Elts: node.Children()[selStart:selEnd]})
 		// FIXME workaround for highlight hiding active background
-		activeBg := "\x1b[48;2;80;80;80m"
-		highlightBg := "\x1b[48;2;26;79;120m"
+		activeBg := r.backgroundRGB(80, 80, 80)
+		highlightBg := r.backgroundRGB(26, 79, 120)
 		lines, _ := getLines(str)
 		for i, line := range lines {
 			lines[i] = highlightBg + line + activeBg
@@ -225,7 +225,7 @@ func (r *Renderer) PrerenderCmdUnderline(node parser.CmdContainer) (output strin
 	// \x1b[4m sets underline, \x1b[24m unsets it
 	// not using lipgloss as lipgloss ends with \x1b[0m, which resets everything
 	// TODO handle double underlines?
-	lines[len(lines)-1] = "\x1b[4m" + lines[len(lines)-1] + "\x1b[24m"
+	lines[len(lines)-1] = r.styleAndReset(underline, lines[len(lines)-1])
 
 	return lipgloss.JoinVertical(lipgloss.Center, lines...), baseLevel
 }
@@ -244,7 +244,7 @@ func (r *Renderer) PrerenderCmdSqrt(node parser.CmdContainer) (output string, ba
 	// TODO simplify adding overline escape chars
 	block, baseLevel := r.Prerender(node.Children()[0])
 	lines, _ := getLines(block)
-	lines[0] = "\x1b[53m" + lines[0] + "\x1b[55m"
+	lines[0] = r.overlineAndReset(lines[0])
 	block = lipgloss.JoinVertical(lipgloss.Center, lines...)
 	height := lipgloss.Height(block)
 	root := strings.Repeat("⎟\n", height-1) + `⎷`

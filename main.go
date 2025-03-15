@@ -234,7 +234,8 @@ func main() {
 	}
 
 	if *render {
-		r := renderer.FromFormula(latex)
+		// TODO: detect color from tty
+		r := renderer.FromFormula(latex, false)
 		r.Sync(nil, false)
 		fmt.Print(r.Buffer)
 		return

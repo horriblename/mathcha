@@ -5,6 +5,7 @@ import (
 )
 
 type Renderer struct {
+	Color        bool
 	Buffer       string
 	LatexTree    parser.FlexContainer
 	FocusOn      parser.Container // the container in which the cursor is, a better implementation would be letting Render functions return a 'focused' flag when cursor is found
@@ -12,9 +13,10 @@ type Renderer struct {
 	Focus        bool             // whether the widget itself is focused
 }
 
-func New() Renderer {
+func New(color bool) Renderer {
 	root := &parser.UnboundCompExpr{}
 	return Renderer{
+		Color:        color,
 		Buffer:       "",
 		LatexTree:    root,
 		FocusOn:      root,
@@ -23,9 +25,10 @@ func New() Renderer {
 	}
 }
 
-func FromFormula(formula string) *Renderer {
+func FromFormula(formula string, color bool) *Renderer {
 	root := parser.Parse(formula)
 	return &Renderer{
+		Color:        color,
 		Buffer:       "",
 		LatexTree:    root,
 		FocusOn:      root,
