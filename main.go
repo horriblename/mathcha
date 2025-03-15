@@ -131,7 +131,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m model) View() string {
-	editorsView := make([]string, len(m.editors))
+	editorsView := make([]string, 0, len(m.editors))
 	for _, editor := range m.editors {
 		editorsView = append(editorsView, editor.View())
 	}
