@@ -165,6 +165,11 @@ func (m model) View() string {
 	) + "\n"
 }
 
+func logf(s string, args ...interface{}) error {
+	_, err := fmt.Fprintf(os.Stderr, s, args)
+	return err
+}
+
 var extendedHelp = `
 Editor
 ------
@@ -191,6 +196,7 @@ func main() {
 	var useUnicode bool
 	flag.BoolVar(&useUnicode, "symbols", false, `Use unicode symbols in latex output wherever possible. e.g. output "α" in place of "\alpha"`)
 	flag.BoolVar(&useUnicode, "s", false, `Use unicode symbols in latex output wherever possible. e.g. output "α" in place of "\alpha"`)
+	render := flag.Bool("render", false, `Render equation and exit`)
 	file := flag.String("f", "", "Read initial formula from file; use '-' to read from stdin")
 	flag.Parse()
 
@@ -203,6 +209,16 @@ func main() {
 	var latex string
 	switch *file {
 	case "":
+		if *render {
+			l, err := io.ReadAll(os.Stdin)
+			if err != nil {
+				logf("error reading stdin: %s", err.Error())
+			}
+			latex = string(l)
+			if latex == "" {
+				logf("warn: -render flag used but stdin is empty")
+			}
+		}
 	case "-":
 		l, err := io.ReadAll(os.Stdin)
 		if err != nil {
@@ -215,6 +231,13 @@ func main() {
 			panic("error reading " + *file + ": " + err.Error())
 		}
 		latex = string(l)
+	}
+
+	if *render {
+		r := renderer.FromFormula(latex)
+		r.Sync(nil, false)
+		fmt.Print(r.Buffer)
+		return
 	}
 
 	e := initialModel(editorCfg, latex)
