@@ -69,6 +69,12 @@ function State.new(bufnr)
 end
 
 function State:create_conceal(start_row, end_row)
+	assert(start_row < end_row,
+		string.format(
+			"invariant (start_row < end_row) violated: start_row=%d end_row=%d",
+			start_row, end_row
+		))
+
 	vim.system({ 'mathcha', '-render' }, {
 		stdin = vim.api.nvim_buf_get_lines(self.buf, start_row, end_row, false)
 	}, function(obj)
