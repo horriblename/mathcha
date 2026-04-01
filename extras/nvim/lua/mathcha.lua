@@ -12,6 +12,8 @@ M._states = {}
 ---@class State
 ---@field buf integer
 ---@field jobs table<NodeID, NodeBinding>
+---@field md_inline_tree vim.treesitter.LanguageTree
+---@field query vim.treesitter.Query
 local State = {}
 
 local ns_id = vim.api.nvim_create_namespace("mathcha")
@@ -40,37 +42,45 @@ function State.new(bufnr)
 	vim.api.nvim_buf_clear_namespace(bufnr, ns_id, 0, -1)
 	local state = setmetatable({ buf = bufnr, jobs = {} }, { __index = State })
 
-	local query = vim.treesitter.query.parse('markdown_inline', [[ (latex_block) @latex ]])
-	local md_inline_tree = vim.treesitter.get_parser(bufnr, "markdown")
+	state.query = vim.treesitter.query.parse('markdown_inline', [[ (latex_block) @latex ]])
+	state.md_inline_tree = vim.treesitter.get_parser(bufnr, "markdown")
 		:children()["markdown_inline"]
 
-	if md_inline_tree == nil then
+	if state.md_inline_tree == nil then
 		return nil
 	end
 
-	md_inline_tree:parse(
-		false, -- TODO: parse only visible region maybe
-		function(err, trees)
-			if err ~= nil or trees == nil then
-				vim.notify(("failed to parse buffer %d: %s"):format(bufnr, err), vim.log.levels.ERROR)
-				return
-			end
+	state.md_inline_tree:register_cbs({
+		on_changedtree = function(_changes, _tree)
+			vim.schedule(function()
+				state:reset_marks()
+				state:_parse_and_render()
+			end)
+		end,
+	}, true)
 
-			for _, tree in pairs(trees) do
-				for _, match, _ in query:iter_matches(tree:root(), bufnr, 0, -1) do
-					for _, nodes in pairs(match) do
-						for _, node in ipairs(nodes) do
-							local start_row, start_col, end_row, end_col = node:range()
-							-- FIXME: start_row+1 to skip $$ but will probably break something down the line
-							state:update_conceal(node:id(), start_row + 1, end_row)
-						end
+	state:_parse_and_render()
+	return state
+end
+
+function State:_parse_and_render()
+	self.md_inline_tree:parse(false, function(err, trees)
+		if err ~= nil or trees == nil then
+			vim.notify_once(("failed to parse markdown_inline: %s"):format(self.buf, err), vim.log.levels.ERROR)
+			return
+		end
+
+		for _, tree in pairs(trees) do
+			for _, match, _ in self.query:iter_matches(tree:root(), self.buf, 0, -1) do
+				for _, nodes in pairs(match) do
+					for _, node in ipairs(nodes) do
+						local start_row, _, end_row, _ = node:range()
+						self:update_conceal(node:id(), start_row + 1, end_row)
 					end
 				end
 			end
 		end
-	)
-
-	return state
+	end)
 end
 
 ---@param node_id NodeID
@@ -145,21 +155,21 @@ function State:update_conceal(node_id, start_row, end_row)
 
 			if last_replaced_row == nil then
 				for i = start_row, end_row do
-					vim.api.nvim_buf_set_extmark(self.buf, ns_id, i, 0, {
+					table.insert(extmarks, vim.api.nvim_buf_set_extmark(self.buf, ns_id, i, 0, {
 						virt_text_hide = true,
 						conceal = "",
 						end_col = 999999,
 						strict = false,
-					})
+					}))
 				end
 			elseif last_replaced_row < end_row then
 				for i = last_replaced_row + 1, end_row do
-					vim.api.nvim_buf_set_extmark(self.buf, ns_id, i, 0, {
+					table.insert(extmarks, vim.api.nvim_buf_set_extmark(self.buf, ns_id, i, 0, {
 						virt_text_hide = true,
 						conceal = "",
 						end_col = 9999,
 						strict = false,
-					})
+					}))
 				end
 			end
 
