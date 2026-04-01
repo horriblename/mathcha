@@ -49,11 +49,9 @@ function State.new(bufnr)
 			end
 
 			for i, tree in pairs(trees) do
-				print("i", i, tree:root():sexpr())
 				for _, match, _ in query:iter_matches(tree:root(), bufnr, 0, -1) do
 					for _, nodes in pairs(match) do
 						for _, node in ipairs(nodes) do
-							print("1")
 							local start_row, start_col, end_row, end_col = node:range()
 							-- FIXME: start_row+1 to skip $$ but will probably break something down the line
 							state:create_conceal(start_row + 1, end_row)
@@ -84,7 +82,6 @@ function State:create_conceal(start_row, end_row)
 		end
 		vim.schedule(function()
 			local lines = enumerate(vim.gsplit(obj.stdout, '\n', { plain = true }))
-			vim.print(lines)
 			---@type integer?
 			local last_replaced_row
 			for i, line in lines do
@@ -160,7 +157,6 @@ function M.attach(bufnr)
 	if not M._states[buf] then
 		M._states[buf] = State.new(buf)
 	end
-	print("attached to ", buf)
 end
 
 function M.instance(bufnr)
