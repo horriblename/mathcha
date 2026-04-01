@@ -21,6 +21,8 @@ import (
 )
 
 type model struct {
+	cliFlags
+
 	// current editor in focus
 	focus        int
 	editors      []ed.Editor
@@ -30,14 +32,21 @@ type model struct {
 	showHelp     bool
 }
 
+// some CLI flags are not present here cuz they don't matter to model init
+type cliFlags struct {
+	helpText    *string
+	printStderr *bool
+}
+
 func (m model) Init() tea.Cmd {
 	return nil
 }
 
-func initialModel(editorCfg ed.EditorConfig, initFormula string) model {
+func initialModel(c cliFlags, editorCfg ed.EditorConfig, initFormula string) model {
 	editor := ed.NewWithConfig(editorCfg, initFormula)
 	editor.SetFocus(true)
 	return model{
+		cliFlags:     c,
 		focus:        0,
 		editors:      []ed.Editor{*editor}, // TODO should prolly make this slice of pointers to Editors
 		compList:     latex.NewCompletion(),
@@ -52,11 +61,11 @@ func (m model) latex() string {
 	if len(m.editors) == 1 {
 		latex = m.editors[0].LatexSource()
 	} else {
-		latex = "\\begin{aligned}\n"
+		latex = `\begin{aligned}` + "\n"
 		for _, editor := range m.editors {
-			latex += editor.LatexSource() + "\\\\\n"
+			latex += editor.LatexSource() + `\\` + "\n"
 		}
-		latex += "\\end{aligned}"
+		latex += `\end{aligned}`
 	}
 
 	return latex
@@ -184,9 +193,11 @@ General
 	ctrl+y Copy Latex to clipboard (via wl-copy)
 `
 
+const defaultHelpText = "press F1 to keybinds help"
+
 func (m model) helpSection() string {
 	if !m.showHelp {
-		return "press F1 to keybinds help"
+		return *m.helpText
 	} else {
 		return extendedHelp
 	}
@@ -194,10 +205,13 @@ func (m model) helpSection() string {
 
 func main() {
 	var useUnicode bool
+	cliFlags := cliFlags{}
 	flag.BoolVar(&useUnicode, "symbols", false, `Use unicode symbols in latex output wherever possible. e.g. output "α" in place of "\alpha"`)
 	flag.BoolVar(&useUnicode, "s", false, `Use unicode symbols in latex output wherever possible. e.g. output "α" in place of "\alpha"`)
 	render := flag.Bool("render", false, `Render equation and exit`)
 	file := flag.String("f", "", "Read initial formula from file; use '-' to read from stdin")
+	cliFlags.helpText = flag.String("helptext", defaultHelpText, "Help text to print below the editor")
+	cliFlags.printStderr = flag.Bool("print", true, "Print latex to stderr upon exit")
 	flag.Parse()
 
 	editorCfg := ed.EditorConfig{
@@ -241,10 +255,14 @@ func main() {
 		return
 	}
 
-	e := initialModel(editorCfg, latex)
+	e := initialModel(cliFlags, editorCfg, latex)
 
 	p := tea.NewProgram(e)
 	if _, err := p.Run(); err != nil {
 		// log error
+	}
+
+	if *e.printStderr {
+		fmt.Println(e.latex())
 	}
 }
