@@ -91,8 +91,9 @@ function State:create_conceal(start_row, end_row)
 						virt_text_pos = "overlay",
 						virt_text_hide = true,
 						conceal = "",
-						end_col = 9999,
-						strict = false,
+						-- why -1 no worky??
+						end_col = math.huge,
+						strict = true,
 					})
 				else
 					-- squash the rest into one big virt_lines
