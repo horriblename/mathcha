@@ -1,8 +1,10 @@
 local M = {}
+---@type table<integer, State>
+M._states = {}
 
 ---@class State
 ---@field buf integer
-State = {}
+local State = {}
 
 local ns_id = vim.api.nvim_create_namespace("mathcha")
 
@@ -25,23 +27,43 @@ end
 ---@field
 
 ---@param bufnr integer
----@return State
-State.new = function(bufnr)
+---@return State?
+function State.new(bufnr)
 	vim.api.nvim_buf_clear_namespace(bufnr, ns_id, 0, -1)
 	local state = setmetatable({ buf = bufnr }, { __index = State })
 
 	local query = vim.treesitter.query.parse('markdown_inline', [[ (latex_block) @latex ]])
-	local tree = vim.treesitter.get_parser(bufnr):parse()[1]
+	local md_inline_tree = vim.treesitter.get_parser(bufnr, "markdown")
+		:children()["markdown_inline"]
 
-	for _, match, _ in query:iter_matches(tree:root(), bufnr, 0, -1, { all = true }) do
-		for _, nodes in pairs(match) do
-			for _, node in ipairs(nodes) do
-				local start_row, start_col, end_row, end_col = node:range()
-				-- FIXME: start_row+1 to skip $$ but will probably break something down the line
-				state:create_conceal(start_row + 1, end_row)
+	if md_inline_tree == nil then
+		return nil
+	end
+
+	md_inline_tree:parse(
+		true, -- TODO: parse only visible region maybe
+		function(err, trees)
+			if err ~= nil or trees == nil then
+				vim.notify(("failed to parse buffer %d: %s"):format(bufnr, err))
+				return
+			end
+
+			for i, tree in pairs(trees) do
+				print("i", i, tree:root():sexpr())
+				for _, match, _ in query:iter_matches(tree:root(), bufnr, 0, -1) do
+					for _, nodes in pairs(match) do
+						for _, node in ipairs(nodes) do
+							print("1")
+							local start_row, start_col, end_row, end_col = node:range()
+							-- FIXME: start_row+1 to skip $$ but will probably break something down the line
+							state:create_conceal(start_row + 1, end_row)
+						end
+					end
+				end
 			end
 		end
-	end
+	)
+
 
 	return state
 end
@@ -51,8 +73,12 @@ function State:create_conceal(start_row, end_row)
 		stdin = vim.api.nvim_buf_get_lines(self.buf, start_row, end_row, false)
 	}, function(obj)
 		-- TODO: check exit code
+		if obj.code ~= 0 then
+			vim.notify("mathcha failed: " .. obj.stderr, vim.log.levels.ERROR)
+		end
 		vim.schedule(function()
 			local lines = enumerate(vim.gsplit(obj.stdout, '\n', { plain = true }))
+			vim.print(lines)
 			---@type integer?
 			local last_replaced_row
 			for i, line in lines do
@@ -119,15 +145,19 @@ function State:reset_marks()
 end
 
 function M.attach(bufnr)
-	-- local ok, _ = pcall(vim.api.nvim_buf_get_var, bufnr, 'mathcha_state')
-	-- if not ok then
-	vim.api.nvim_buf_set_var(bufnr, 'mathcha_state', State.new(bufnr))
-	-- end
+	local buf = bufnr or vim.fn.bufnr()
+	if buf == -1 then
+		error("invalid bufnr " .. tostring(bufnr))
+	end
+	-- TODO: cleanup state on buf delete
+	if not M._states[buf] then
+		M._states[buf] = State.new(buf)
+	end
+	print("attached to ", buf)
 end
 
 function M.instance(bufnr)
-	local ok, val = pcall(vim.api.nvim_buf_get_var, bufnr or 0, 'mathcha_state')
-	if ok then return val else return nil end
+	return M._states[vim.fn.bufnr(bufnr or 0)]
 end
 
 M.State = State
