@@ -3,8 +3,6 @@
 package editor
 
 import (
-	"os/exec"
-	"strings"
 	"unicode"
 
 	tea "github.com/charmbracelet/bubbletea"
@@ -834,10 +832,14 @@ func (e Editor) Update(msg tea.Msg) (Editor, tea.Cmd) {
 		case tea.KeyCtrlC:
 			return e, tea.Quit
 		case tea.KeyEnter:
-			// TODO see github.com/charmbracelet/bubbles/input.go for clipboard operation examples
-			cmd := exec.Command("xclip", "-selection", "c")
-			cmd.Stdin = strings.NewReader(e.config.LatexCfg.ProduceLatex(e.renderer.LatexTree))
-			cmd.Run()
+			switch e.GetState() {
+			case EDIT_COMMAND:
+				e.realizeCommand()
+			case EDIT_TEXT:
+				e.exitParent(DIR_RIGHT)
+			case EDIT_EQUATION:
+				// TODO
+			}
 
 		case tea.KeyCtrlU:
 			e.deleteToStart()
@@ -855,16 +857,7 @@ func (e Editor) Update(msg tea.Msg) (Editor, tea.Cmd) {
 				})
 
 			case EDIT_COMMAND:
-				if n, ok := e.getLastOnStack().(*parser.TextStringWrapper); ok {
-					cmd := "\\" + n.BuildString()
-					e.exitParent(DIR_RIGHT)
-					idx := e.getCursorIdxInParent() // TODO error handling for idx == 0?
-					e.getParent().DeleteChildren(idx-1, idx-1)
-					if len(cmd) <= 1 {
-						cmd += " "
-					}
-					e.InsertCmd(cmd)
-				}
+				e.realizeCommand()
 
 			case EDIT_TEXT:
 				if n, ok := e.getLastOnStack().(*parser.TextStringWrapper); ok {
@@ -901,6 +894,24 @@ func (e Editor) Update(msg tea.Msg) (Editor, tea.Cmd) {
 	}
 	e.renderer.Sync(e.getLastOnStack(), e.markSelect != nil)
 	return e, nil
+}
+
+// panics if the cursor is not in EDIT_COMMAND mode
+func (e Editor) realizeCommand() {
+	if e.GetState() != EDIT_COMMAND {
+		panic("realizeCommand called outside of command editing mode")
+	}
+
+	if n, ok := e.getLastOnStack().(*parser.TextStringWrapper); ok {
+		cmd := "\\" + n.BuildString()
+		e.exitParent(DIR_RIGHT)
+		idx := e.getCursorIdxInParent() // TODO error handling for idx == 0?
+		e.getParent().DeleteChildren(idx-1, idx-1)
+		if len(cmd) <= 1 {
+			cmd += " "
+		}
+		e.InsertCmd(cmd)
+	}
 }
 
 func (e Editor) View() string {

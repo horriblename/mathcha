@@ -77,13 +77,13 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
 		switch msg.Type {
-		case tea.KeyEnter:
-			editor := ed.NewWithConfig(*m.editorConfig, "")
-			m.editors = append(m.editors, *editor)
-			m.editors[m.focus].SetFocus(false)
-			m.editors[m.focus], cmd = m.editors[m.focus].Update(msg)
-			m.focus = len(m.editors) - 1
-			m.editors[m.focus].SetFocus(true)
+		// case tea.KeyEnter:
+		// 	editor := ed.NewWithConfig(*m.editorConfig, "")
+		// 	m.editors = append(m.editors, *editor)
+		// 	m.editors[m.focus].SetFocus(false)
+		// 	m.editors[m.focus], cmd = m.editors[m.focus].Update(msg)
+		// 	m.focus = len(m.editors) - 1
+		// 	m.editors[m.focus].SetFocus(true)
 		case tea.KeyCtrlK:
 			if m.focus > 0 {
 				m.editors[m.focus].SetFocus(false)
