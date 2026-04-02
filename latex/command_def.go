@@ -904,6 +904,7 @@ var acceptedCmds = map[string]LatexCmd{
 	`\dfrac`:           CMD_frac,
 	`\cfrac`:           CMD_frac,
 	`\fraction`:        CMD_frac,
+	"\\cdot":           CMD_cdot,
 	"\\sdot":           CMD_cdot,
 	"\\divide":         CMD_div,
 	"\\divides":        CMD_div,
