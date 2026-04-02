@@ -73,8 +73,8 @@ var tokens = [...]string{
 	UNDERSCORE: "_",
 	AMPERSAND:  "&",
 
-	CMDSTR: "CMDSTR",
-	CMDSYM: "CMDSYM",
+	CMDSTR: "CMDSTR", // control sequence `\text`, `\frac`, `\pi` etc.
+	CMDSYM: "CMDSYM", // control symbols, `\^`, `\\` etc.
 }
 
 type tokenizer interface {
@@ -116,12 +116,10 @@ func (tok Token) String() string {
 
 // IsLiteral returns true for tokens corresponding to identifiers
 // and basic type literals; it returns false otherwise.
-//
 func (tok Token) IsLiteral() bool { return literal_beg < tok && tok < literal_end }
 
 // IsOperator returns true for tokens corresponding to operators and
 // delimiters; it returns false otherwise.
-//
 func (tok Token) IsOperator() bool { return operator_beg < tok && tok < operator_end }
 
 func (t *Tokenizer) Init(stream string) {
