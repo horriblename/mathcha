@@ -181,6 +181,11 @@ local function win_size()
 	}
 end
 
+-- see |on_stdout|
+local function is_stdout_EOF_marker(l)
+	return #l == 1 and l[1] == ""
+end
+
 ---@return boolean
 function State:open_editor()
 	local cursor = vim.api.nvim_win_get_cursor(0)
@@ -247,7 +252,7 @@ function State:open_editor()
 		end),
 		on_stdout = function(_, data)
 			---@cast data string[]
-			if out_marker_found then
+			if out_marker_found and not is_stdout_EOF_marker(data) then
 				vim.list_extend(out_buf, data)
 				return
 			end
