@@ -128,19 +128,22 @@ function State:update_conceal(node_id, start_row, end_row)
 			local extmarks = {}
 			---@type integer?
 			local last_replaced_row
+			local function ext_opt(x)
+				x.virt_text_hide = true
+				x.conceal = ""
+				x.end_col = 999999 -- why -1 no work???
+				x.strict = false
+				x.invalidate = true
+				return x
+			end
 			for i, line in lines do
 				local row = start_row + i
 				last_replaced_row = row
 				if row ~= end_row then
-					table.insert(extmarks, vim.api.nvim_buf_set_extmark(self.buf, ns_id, row, 0, {
-						invalidate = true,
+					table.insert(extmarks, vim.api.nvim_buf_set_extmark(self.buf, ns_id, row, 0, ext_opt {
 						virt_text = { { line } },
 						virt_text_pos = "overlay",
 						virt_text_hide = true,
-						conceal = "",
-						-- why -1 no worky??
-						end_col = 999999,
-						strict = false,
 					}))
 				else
 					-- squash the rest into one big virt_lines
@@ -150,37 +153,21 @@ function State:update_conceal(node_id, start_row, end_row)
 						table.insert(rest, { { l } })
 					end
 
-					table.insert(extmarks, vim.api.nvim_buf_set_extmark(self.buf, ns_id, row, 0, {
-						invalidate = true,
+					table.insert(extmarks, vim.api.nvim_buf_set_extmark(self.buf, ns_id, row, 0, ext_opt {
 						virt_lines = rest,
 						virt_text_pos = "overlay",
 						virt_lines_above = true,
-						virt_text_hide = true,
-						conceal = "",
-
-						end_col = 999999,
-						strict = false,
 					}))
 				end
 			end
 
 			if last_replaced_row == nil then
 				for i = start_row, end_row do
-					table.insert(extmarks, vim.api.nvim_buf_set_extmark(self.buf, ns_id, i, 0, {
-						virt_text_hide = true,
-						conceal = "",
-						end_col = 999999,
-						strict = false,
-					}))
+					table.insert(extmarks, vim.api.nvim_buf_set_extmark(self.buf, ns_id, i, 0, ext_opt {}))
 				end
 			elseif last_replaced_row < end_row then
 				for i = last_replaced_row + 1, end_row do
-					table.insert(extmarks, vim.api.nvim_buf_set_extmark(self.buf, ns_id, i, 0, {
-						virt_text_hide = true,
-						conceal = "",
-						end_col = 9999,
-						strict = false,
-					}))
+					table.insert(extmarks, vim.api.nvim_buf_set_extmark(self.buf, ns_id, i, 0, ext_opt {}))
 				end
 			end
 
