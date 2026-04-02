@@ -27,6 +27,11 @@ local function enumerate(iter)
 	end
 end
 
+---@param cmd string[]
+---@param opt table
+---@param win_opt vim.api.keyset.win_config
+---@return integer?
+---@return string?
 local function jobstart_in_floating_win(cmd, opt, win_opt)
 	assert(opt.term, "jobstart_in_floating_win called with no term flag")
 	local buf = vim.api.nvim_create_buf(false, true)
@@ -41,7 +46,7 @@ local function jobstart_in_floating_win(cmd, opt, win_opt)
 	vim.bo[buf].bufhidden = "wipe"
 	vim.wo[win][0].winfixbuf = true
 
-	return vim.fn.jobstart(cmd, opt)
+	return vim.fn.jobstart(cmd, opt), nil
 end
 
 ---@param bufnr integer
@@ -75,7 +80,8 @@ function State.new(bufnr)
 	md_inline_tree:register_cbs({
 		on_changedtree = function(_, tree)
 			vim.schedule(function()
-				-- HACK: idk what the index should be
+				-- FIXME: this forces a reload on all renders, I need to
+				-- listen to on_bytes or nvim_buf_attach
 				state:_parse_and_render({ [1] = tree })
 			end)
 		end,
@@ -224,8 +230,9 @@ function State:open_editor()
 		style = "minimal",
 		border = "rounded",
 	}
-	local stderr_buf = {}
-	local editor_cmd = { "./mathcha", "-print", "-f", in_path }
+	local out_marker_found = false
+	local out_buf = {}
+	local editor_cmd = { "./mathcha", "-printout", "-f", in_path }
 	local job
 	job, err = jobstart_in_floating_win(editor_cmd, {
 		term = true,
@@ -233,14 +240,31 @@ function State:open_editor()
 			-- TODO is it better to use the TSNode for range + has_changes check
 			if code ~= 0 then
 				vim.notify("mathcha returned non-zero exit code " .. tostring(code), vim.log.levels.ERROR)
-			else
-				vim.api.nvim_buf_set_text(self.buf, start_row, start_col, end_row - 1, -1, stderr_buf)
+			elseif next(out_buf) then
+				vim.api.nvim_buf_set_text(self.buf, start_row, start_col, end_row - 1, -1, out_buf)
 			end
+			vim.fn.chanclose(assert(job))
 		end),
-		on_stderr = function(_, data)
-			stderr_buf = data
+		on_stdout = function(_, data)
+			---@cast data string[]
+			if out_marker_found then
+				vim.list_extend(out_buf, data)
+				return
+			end
+			for i, line in ipairs(data) do
+				-- cursed magic string
+				local MAGIC = '!mAtHcHa!'
+				local mark = string.sub(line, 1, #MAGIC)
+				-- HACK: I don't even know if this is consistent behavior
+				if mark == MAGIC then
+					local latex = string.sub(line, #MAGIC + 1)
+					out_marker_found = true
+					table.insert(out_buf, latex)
+					vim.list_extend(out_buf, data, i + 1)
+					return
+				end
+			end
 		end,
-		stderr_buffered = true,
 	}, win_opt)
 
 	if not job or err then
@@ -280,8 +304,7 @@ function M.attach(bufnr)
 		end
 	end
 
-	vim.keymap.set("n", "i", open_editor_or_fallback("i"), { buffer = buf })
-	vim.keymap.set("n", "a", open_editor_or_fallback("a"), { buffer = buf })
+	vim.keymap.set("n", "<localleader>i", M.open_editor, { buffer = buf })
 end
 
 function M.open_editor()

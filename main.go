@@ -34,8 +34,8 @@ type model struct {
 
 // some CLI flags are not present here cuz they don't matter to model init
 type cliFlags struct {
-	helpText    *string
-	printStderr *bool
+	helpText *string
+	printOut *bool
 }
 
 func (m model) Init() tea.Cmd {
@@ -211,7 +211,7 @@ func main() {
 	render := flag.Bool("render", false, `Render equation and exit`)
 	file := flag.String("f", "", "Read initial formula from file; use '-' to read from stdin")
 	cliFlags.helpText = flag.String("helptext", defaultHelpText, "Help text to print below the editor")
-	cliFlags.printStderr = flag.Bool("print", true, "Print latex to stderr upon exit")
+	cliFlags.printOut = flag.Bool("printout", false, "Internal flag for communicating with the nvim plugin")
 	flag.Parse()
 
 	editorCfg := ed.EditorConfig{
@@ -257,12 +257,17 @@ func main() {
 
 	e := initialModel(cliFlags, editorCfg, latex)
 
-	p := tea.NewProgram(e, tea.WithInput(os.Stdout), tea.WithInputTTY(), tea.WithAltScreen())
+	p := tea.NewProgram(e,
+		tea.WithInputTTY(),
+		tea.WithOutput(os.Stderr),
+		tea.WithAltScreen())
 	if _, err := p.Run(); err != nil {
 		// log error
 	}
 
-	if *e.printStderr {
-		fmt.Fprintln(os.Stderr, e.latex())
+	if *e.printOut {
+		// cursed magic string
+		fmt.Fprint(os.Stdout, "!mAtHcHa!", e.latex())
+		os.Stdout.Close()
 	}
 }
