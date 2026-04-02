@@ -41,6 +41,8 @@ function State.new(bufnr)
 	vim.api.nvim_buf_clear_namespace(bufnr, ns_id, 0, -1)
 	local state = setmetatable({ buf = bufnr, jobs = {} }, { __index = State })
 
+	-- NOTE: we match the whole block including `$$` because otherwise we get each line separately
+	-- for some reason
 	state.query = vim.treesitter.query.parse('markdown_inline', [[ (latex_block) @latex ]])
 	local md_inline_tree = vim.treesitter.get_parser(bufnr, "markdown")
 		:children()["markdown_inline"]
@@ -52,6 +54,7 @@ function State.new(bufnr)
 	md_inline_tree:register_cbs({
 		on_changedtree = function(_, tree)
 			vim.schedule(function()
+				-- HACK: idk what the index should be
 				state:_parse_and_render({ [1] = tree })
 			end)
 		end,
@@ -121,63 +124,23 @@ function State:update_conceal(node_id, start_row, end_row)
 				return
 			end
 
-			for _, x in ipairs(binding.ext_ids) do
-				assert(vim.api.nvim_buf_del_extmark(self.buf, ns_id, x))
+			local virt_lines = {}
+			for _, line in lines do
+				table.insert(virt_lines, { { line } })
 			end
 
-			local extmarks = {}
-			---@type integer?
-			local last_replaced_row
-			local function ext_opt(x)
-				x.virt_text_hide = true
-				x.conceal = ""
-				x.end_col = 999999 -- why -1 no work???
-				x.strict = false
-				x.invalidate = true
-				return x
-			end
-			for i, line in lines do
-				local row = start_row + i
-				last_replaced_row = row
-				if row ~= end_row then
-					table.insert(extmarks, vim.api.nvim_buf_set_extmark(self.buf, ns_id, row, 0, ext_opt {
-						virt_text = { { line } },
-						virt_text_pos = "overlay",
-						virt_text_hide = true,
-					}))
-				else
-					-- squash the rest into one big virt_lines
-					---@type string[][][]
-					local rest = { { { line } } }
-					for _, l in lines do
-						table.insert(rest, { { l } })
-					end
+			vim.api.nvim_buf_clear_namespace(self.buf, ns_id, start_row, end_row)
 
-					table.insert(extmarks, vim.api.nvim_buf_set_extmark(self.buf, ns_id, row, 0, ext_opt {
-						virt_lines = rest,
-						virt_text_pos = "overlay",
-						virt_lines_above = true,
-					}))
-				end
-			end
-
-			if last_replaced_row == nil then
-				for i = start_row, end_row do
-					table.insert(extmarks, vim.api.nvim_buf_set_extmark(self.buf, ns_id, i, 0, ext_opt {}))
-				end
-			elseif last_replaced_row < end_row then
-				for i = last_replaced_row + 1, end_row do
-					table.insert(extmarks, vim.api.nvim_buf_set_extmark(self.buf, ns_id, i, 0, ext_opt {}))
-				end
-			end
-
-			binding.ext_ids = extmarks
-			binding.running = nil
-			local params = binding.needs_rerun
-			if params then
-				binding.needs_rerun = nil
-				self:update_conceal(node_id, params.start, params.end_)
-			end
+			vim.api.nvim_buf_set_extmark(self.buf, ns_id, start_row, 0, {
+				invalidate = true,
+				conceal_lines = "",
+				end_row = end_row - 1,
+			})
+			vim.api.nvim_buf_set_extmark(self.buf, ns_id, end_row, 0, {
+				invalidate = true,
+				virt_lines = virt_lines,
+				virt_lines_above = true,
+			})
 		end)
 	end)
 end
