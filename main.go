@@ -175,7 +175,7 @@ func (m model) View() string {
 }
 
 func logf(s string, args ...interface{}) error {
-	_, err := fmt.Fprintf(os.Stderr, s, args)
+	_, err := fmt.Fprintf(os.Stderr, s, args...)
 	return err
 }
 
@@ -257,12 +257,12 @@ func main() {
 
 	e := initialModel(cliFlags, editorCfg, latex)
 
-	p := tea.NewProgram(e, tea.WithInputTTY())
+	p := tea.NewProgram(e, tea.WithInput(os.Stdout), tea.WithInputTTY(), tea.WithAltScreen())
 	if _, err := p.Run(); err != nil {
 		// log error
 	}
 
 	if *e.printStderr {
-		fmt.Println(e.latex())
+		fmt.Fprintln(os.Stderr, e.latex())
 	}
 }
