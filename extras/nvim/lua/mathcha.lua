@@ -131,7 +131,7 @@ function State:update_conceal()
 	local start_row, _, end_row, _ = node:range()
 	start_row = start_row + 1
 
-	self.running = vim.system({ './mathcha', '-render' }, {
+	self.running = vim.system({ 'mathcha', '-render' }, {
 		stdin = vim.api.nvim_buf_get_lines(self.buf, start_row, end_row, false)
 	}, function(obj)
 		self.running = nil
@@ -237,7 +237,7 @@ function State:open_editor()
 	}
 	local out_marker_found = false
 	local out_buf = {}
-	local editor_cmd = { "./mathcha", "-printout", "-f", in_path }
+	local editor_cmd = { "mathcha", "-printout", "-f", in_path }
 	local job
 	job, err = jobstart_in_floating_win(editor_cmd, {
 		term = true,
