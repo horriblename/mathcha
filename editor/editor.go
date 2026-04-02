@@ -897,7 +897,7 @@ func (e Editor) Update(msg tea.Msg) (Editor, tea.Cmd) {
 }
 
 // panics if the cursor is not in EDIT_COMMAND mode
-func (e Editor) realizeCommand() {
+func (e *Editor) realizeCommand() {
 	if e.GetState() != EDIT_COMMAND {
 		panic("realizeCommand called outside of command editing mode")
 	}
