@@ -279,22 +279,6 @@ function State:open_editor()
 	return true
 end
 
----@param key string
----@return function
-local function open_editor_or_fallback(key)
-	return function()
-		local state = M._states[vim.fn.bufnr()]
-		if state then
-			vim.notify("Is mathcha attached to this buffer?", vim.log.levels.WARN)
-		elseif state:open_editor() then
-			return
-		end
-
-		vim.api.nvim_feedkeys(
-			vim.api.nvim_replace_termcodes(key, true, false, true), 'n', false)
-	end
-end
-
 function M.attach(bufnr)
 	local buf = bufnr or vim.fn.bufnr()
 	if buf == -1 then
