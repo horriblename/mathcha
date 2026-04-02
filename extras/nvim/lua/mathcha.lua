@@ -29,7 +29,8 @@ end
 
 
 ---@param bufnr integer
----@return State?
+---@return State? state
+---@return string? error
 function State.new(bufnr)
 	vim.api.nvim_buf_clear_namespace(bufnr, ns_id, 0, -1)
 	local state = setmetatable({
@@ -38,14 +39,15 @@ function State.new(bufnr)
 		pending = {},
 	}, { __index = State })
 
+	local err
 	-- NOTE: we match the whole block including `$$` because otherwise we get each line separately
 	-- for some reason
-	state.query = vim.treesitter.query.parse('markdown_inline', [[ (latex_block) @latex ]])
+	state.query, err = vim.treesitter.query.parse('markdown_inline', [[ (latex_block) @latex ]])
 	local md_inline_tree = vim.treesitter.get_parser(bufnr, "markdown")
 		:children()["markdown_inline"]
 
 	if md_inline_tree == nil then
-		return nil
+		return nil, err
 	end
 
 	md_inline_tree:register_cbs({
@@ -61,16 +63,18 @@ function State.new(bufnr)
 		end
 	}, true)
 
-	md_inline_tree:parse(false, function(err, trees)
+	md_inline_tree:parse(false, function(e, trees)
 		if err ~= nil or trees == nil then
-			vim.notify_once(
-				("failed to parse markdown_inline: %s"):format(bufnr, err),
-				vim.log.levels.ERROR
-			)
-			return
+			err = ("failed to parse markdown_inline: %s"):format(e)
+		else
+			state:_parse_and_render(trees)
 		end
-		state:_parse_and_render(trees)
 	end)
+
+	if err ~= nil then
+		return nil, err
+	end
+
 	return state
 end
 
@@ -97,10 +101,7 @@ function State:update_conceal()
 	end
 
 	local start_row, _, end_row, _ = node:range()
-	local node_id = node:id()
 	start_row = start_row + 1
-
-	self.jobs[node_id] = { ext_ids = {} }
 
 	self.running = vim.system({ './mathcha', '-render' }, {
 		stdin = vim.api.nvim_buf_get_lines(self.buf, start_row, end_row, false)
@@ -147,7 +148,12 @@ function M.attach(bufnr)
 	end
 	-- TODO: cleanup state on buf delete
 	if not M._states[buf] then
-		M._states[buf] = State.new(buf)
+		local err
+		M._states[buf], err = State.new(buf)
+		if err then
+			vim.notify_once(err, vim.log.levels.ERROR)
+		end
+		return
 	end
 end
 
