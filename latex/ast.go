@@ -1,6 +1,7 @@
 package latex
 
 import (
+	"fmt"
 	"strings"
 )
 
@@ -173,6 +174,13 @@ type (
 		Elts     []Expr // list of composite elements; or nil
 	}
 
+	// An EnvExpr is a latex environment `\begin{...} ... \end{...}`
+	EnvExpr struct {
+		Name     EnvName
+		From, To Pos
+		Elts     [][]*UnboundCompExpr
+	}
+
 	// A SimpleOpLit node represents a simple operator literal
 	SimpleOpLit struct {
 		From, To Pos
@@ -252,6 +260,7 @@ func (x *TextContainer) Pos() Pos     { return x.CmdText }
 func (x *TextStringWrapper) Pos() Pos { return 0 }
 func (x *CompositeExpr) Pos() Pos     { return x.Lbrace }
 func (x *UnboundCompExpr) Pos() Pos   { return x.From }
+func (x *EnvExpr) Pos() Pos           { return x.From }
 func (x *ParenCompExpr) Pos() Pos     { return x.From }
 func (x RawRuneLit) Pos() Pos         { return 0 }
 func (x *SimpleOpLit) Pos() Pos       { return x.From }
@@ -270,6 +279,7 @@ func (x *TextContainer) End() Pos     { return x.To }
 func (x *TextStringWrapper) End() Pos { return 0 }
 func (x *CompositeExpr) End() Pos     { return x.Lbrace }
 func (x *UnboundCompExpr) End() Pos   { return x.To }
+func (x *EnvExpr) End() Pos           { return x.To }
 func (x *ParenCompExpr) End() Pos     { return x.To }
 func (x RawRuneLit) End() Pos         { return 0 }
 func (x *SimpleOpLit) End() Pos       { return x.To }
@@ -320,6 +330,25 @@ func (x *TextStringWrapper) Identifier() string { return "\\text" }
 func (x *CompositeExpr) Identifier() string     { return "{" }
 func (x *UnboundCompExpr) Identifier() string   { return "" }
 func (x *ParenCompExpr) Identifier() string     { return "" }
+
+func (x *EnvExpr) VisualizeTree() string {
+	tree := fmt.Sprintf("\\begin{%s}\n", x.Name)
+	for _, el := range x.Elts {
+		for _, expr := range el {
+			branch := expr.VisualizeTree()
+			splits := strings.Split(branch, "\n")
+			tree += "├───" + splits[0] + "\n"
+			if len(splits) == 1 {
+				continue
+			}
+			for _, line := range splits[1:] {
+				tree += "|   " + line + "\n"
+			}
+		}
+	}
+	tree += "\\end{}\n"
+	return tree
+}
 
 // FixedContainer methods
 func (x *TextContainer) Parameters() int { return 1 }
@@ -387,7 +416,8 @@ func (x *SimpleCmdLit) Command() LatexCmd  { return x.Type }
 func (x *Cmd1ArgExpr) Command() LatexCmd   { return x.Type }
 func (x *Cmd2ArgExpr) Command() LatexCmd   { return x.Type }
 
-//
+// ----------------------------------------------------------------------------
+// EnvExpr methods
 
 // ----------------------------------------------------------------------------
 // VisualizeTree, naive approach, only for debugging purposes

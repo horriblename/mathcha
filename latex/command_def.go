@@ -2,6 +2,8 @@
 // definitions are pulled from mathquill and pie-frameworks' extended version
 package latex
 
+import "fmt"
+
 // -----------------------------------------------------------------------------
 // Definitions for Supported Commands
 
@@ -10,6 +12,13 @@ package latex
 
 // Note on wierd indentation: it's to group them together
 type LatexCmd int
+
+type EnvName int
+
+const (
+	ENV_unknown EnvName = iota
+	ENV_matrix
+)
 
 const (
 	CMD_UNKNOWN  LatexCmd = iota
@@ -1057,6 +1066,26 @@ var acceptedCmds = map[string]LatexCmd{
 	"\\intersection":   CMD_cap,
 	"\\deg":            CMD_degree,
 	"\\ang":            CMD_angle,
+}
+
+var nameToEnvMap = map[string]EnvName{
+	"matrix": ENV_matrix,
+}
+
+func (n EnvName) String() string {
+	switch n {
+	case ENV_matrix:
+		return "matrix"
+	default:
+		panic(fmt.Sprintf("unrecognized EnvName: %d", n))
+	}
+}
+
+func GetEnvName(e string) EnvName {
+	if n, ok := nameToEnvMap[e]; ok {
+		return n
+	}
+	return ENV_unknown
 }
 
 // BUG map variables are unordered, this returns a different string everytime if multiple commands are available
