@@ -27,6 +27,22 @@ local function enumerate(iter)
 	end
 end
 
+local function jobstart_in_floating_win(cmd, opt, win_opt)
+	assert(opt.term, "jobstart_in_floating_win called with no term flag")
+	local buf = vim.api.nvim_create_buf(false, true)
+	if buf == 0 then
+		return nil, "could not create buffer"
+	end
+
+	local win = vim.api.nvim_open_win(buf, true, win_opt)
+	if win == 0 then
+		return nil, "could not create floating win"
+	end
+	vim.bo[buf].bufhidden = "wipe"
+	vim.wo[win][0].winfixbuf = true
+
+	return vim.fn.jobstart(cmd, opt)
+end
 
 ---@param bufnr integer
 ---@return State? state
@@ -40,9 +56,15 @@ function State.new(bufnr)
 	}, { __index = State })
 
 	local err
-	-- NOTE: we match the whole block including `$$` because otherwise we get each line separately
-	-- for some reason
+	-- NOTE: we match the whole block including `$$` because otherwise we get
+	-- each line separately for some reason.
+	--
+	-- It is also slightly annoying to match children of the latex_block, since
+	-- those belong to the injected latex tree (and I don't want to juggle that
+	-- many langs if I can avoid it), so manually skipping `$$` is the easiest
+	-- way rn
 	state.query, err = vim.treesitter.query.parse('markdown_inline', [[ (latex_block) @latex ]])
+	state.equation_query = vim.treesitter.query.parse('markdown_inline', [[]])
 	local md_inline_tree = vim.treesitter.get_parser(bufnr, "markdown")
 		:children()["markdown_inline"]
 
@@ -141,6 +163,109 @@ function State:reset_marks()
 	vim.api.nvim_buf_clear_namespace(self.buf, ns_id, 0, -1)
 end
 
+local function win_size()
+	local ui = vim.api.nvim_list_uis()[1]
+	local width = math.floor(ui.width * 0.9)
+	local height = math.floor(ui.height * 0.9)
+	return {
+		width = width,
+		height = height,
+		col = math.floor((ui.width - width) / 2),
+		row = math.floor((ui.height - height) / 2),
+	}
+end
+
+---@return boolean
+function State:open_editor()
+	local cursor = vim.api.nvim_win_get_cursor(0)
+	-- TODO: async?
+	vim.treesitter.get_parser(self.buf):parse({ cursor[1] - 1, cursor[1] })
+
+	local md_inline_tree = vim.treesitter.get_parser(self.buf, "markdown")
+		:children()["markdown_inline"]
+
+	local cur_range = { cursor[1] - 1, cursor[2], cursor[1] - 1, cursor[2] + 1 }
+	local latex_node = md_inline_tree:named_node_for_range(cur_range, {})
+
+	-- Note that "latex_block" is a leaf node, if this ever changes upstream
+	-- this will break
+	if not latex_node or latex_node:type() ~= "latex_block" then
+		vim.notify("No node at cursor", vim.log.levels.WARN)
+		return false
+	end
+
+	local start_row, start_col, end_row, _ = latex_node:range()
+	start_row = start_row + 1 -- skip "$$"
+	local latex_text = vim.api.nvim_buf_get_lines(self.buf, start_row, end_row, true)
+
+	-- HACK: sync IO bad; and I couldn't get both TUI and passing via stdin to work
+	-- at the same time
+	local in_path = vim.fn.tempname()
+	local fh, err = io.open(in_path, 'w')
+	if err then
+		vim.notify("could not open temp file: " .. err, vim.log.levels.ERROR)
+		return false
+	end
+	assert(fh)
+	_, err = fh:write(unpack(latex_text))
+	if err then
+		vim.notify("could not write to temp file: " .. err, vim.log.levels.ERROR)
+		return false
+	end
+	fh:close()
+
+	local sizes = win_size()
+	local win_opt = {
+		relative = "editor",
+		width = sizes.width,
+		height = sizes.height,
+		col = sizes.col,
+		row = sizes.row,
+		style = "minimal",
+		border = "rounded",
+	}
+	local stderr_buf = {}
+	local editor_cmd = { "./mathcha", "-print", "-f", in_path }
+	local job
+	job, err = jobstart_in_floating_win(editor_cmd, {
+		term = true,
+		on_exit = vim.schedule_wrap(function(_, code)
+			-- TODO is it better to use the TSNode for range + has_changes check
+			if code ~= 0 then
+				vim.notify("mathcha returned non-zero exit code " .. tostring(code), vim.log.levels.ERROR)
+			else
+				vim.api.nvim_buf_set_text(self.buf, start_row, start_col, end_row - 1, -1, stderr_buf)
+			end
+		end),
+		on_stderr = function(_, data)
+			stderr_buf = data
+		end,
+		stderr_buffered = true,
+	}, win_opt)
+
+	if not job or err then
+		vim.notify(assert(err), vim.log.levels.ERROR)
+	end
+
+	return true
+end
+
+---@param key string
+---@return function
+local function open_editor_or_fallback(key)
+	return function()
+		local state = M._states[vim.fn.bufnr()]
+		if state then
+			vim.notify("Is mathcha attached to this buffer?", vim.log.levels.WARN)
+		elseif state:open_editor() then
+			return
+		end
+
+		vim.api.nvim_feedkeys(
+			vim.api.nvim_replace_termcodes(key, true, false, true), 'n', false)
+	end
+end
+
 function M.attach(bufnr)
 	local buf = bufnr or vim.fn.bufnr()
 	if buf == -1 then
@@ -153,12 +278,23 @@ function M.attach(bufnr)
 		if err then
 			vim.notify_once(err, vim.log.levels.ERROR)
 		end
+	end
+
+	vim.keymap.set("n", "i", open_editor_or_fallback("i"), { buffer = buf })
+	vim.keymap.set("n", "a", open_editor_or_fallback("a"), { buffer = buf })
+end
+
+function M.open_editor()
+	local state = M._states[vim.fn.bufnr()]
+	if not state then
+		vim.notify("Is mathcha attached to this buffer?", vim.log.levels.WARN)
 		return
 	end
+	state:open_editor()
 end
 
 function M.instance(bufnr)
-	return M._states[vim.fn.bufnr(bufnr or 0)]
+	return M._states[vim.fn.bufnr(bufnr)]
 end
 
 -- for testing
@@ -167,6 +303,7 @@ function M.unload()
 		vim.treesitter.stop(buf)
 		vim.api.nvim_buf_clear_namespace(buf, ns_id, 0, -1)
 	end
+	M._states = {}
 end
 
 M.State = State
