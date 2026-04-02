@@ -242,6 +242,8 @@ function State:open_editor()
 	job, err = jobstart_in_floating_win(editor_cmd, {
 		term = true,
 		on_exit = vim.schedule_wrap(function(_, code)
+			-- TODO: sync bad
+			os.remove(in_path)
 			-- TODO is it better to use the TSNode for range + has_changes check
 			if code ~= 0 then
 				vim.notify("mathcha returned non-zero exit code " .. tostring(code), vim.log.levels.ERROR)
