@@ -4,15 +4,11 @@ M._states = {}
 
 ---@alias NodeID string
 
----@class NodeBinding
----@field ext_ids integer[]
----@field running vim.SystemObj?
----@field needs_rerun {start: integer, end_: integer}? used to indicate the running job is outdated and should be rerun
-
 ---@class State
 ---@field buf integer
----@field jobs table<NodeID, NodeBinding>
 ---@field query vim.treesitter.Query
+---@field pending TSNode[]
+---@field running vim.SystemObj?
 local State = {}
 
 local ns_id = vim.api.nvim_create_namespace("mathcha")
@@ -32,14 +28,15 @@ local function enumerate(iter)
 end
 
 
----@class MarkBlock
----@field
-
 ---@param bufnr integer
 ---@return State?
 function State.new(bufnr)
 	vim.api.nvim_buf_clear_namespace(bufnr, ns_id, 0, -1)
-	local state = setmetatable({ buf = bufnr, jobs = {} }, { __index = State })
+	local state = setmetatable({
+		buf = bufnr,
+		jobs = {},
+		pending = {},
+	}, { __index = State })
 
 	-- NOTE: we match the whole block including `$$` because otherwise we get each line separately
 	-- for some reason
@@ -80,56 +77,48 @@ end
 ---@param trees table<integer, TSTree>
 function State:_parse_and_render(trees)
 	for _, tree in pairs(trees) do
-		assert(tree.root and tree.copy)
 		for _, match, _ in self.query:iter_matches(tree:root(), self.buf, 0, -1) do
 			for _, nodes in pairs(match) do
-				for _, node in ipairs(nodes) do
-					local start_row, _, end_row, _ = node:range()
-					self:update_conceal(node:id(), start_row + 1, end_row)
-				end
+				vim.list_extend(self.pending, nodes)
 			end
 		end
 	end
+	self:update_conceal()
 end
 
----@param node_id NodeID
----@param start_row integer
----@param end_row integer
-function State:update_conceal(node_id, start_row, end_row)
-	assert(start_row < end_row,
-		string.format(
-			"invariant (start_row < end_row) violated: start_row=%d end_row=%d",
-			start_row, end_row
-		))
+function State:update_conceal()
+	local node = table.remove(self.pending, 1)
+	while node and node:has_changes() do
+		node = table.remove(self.pending, 1)
+	end
 
-	if self.jobs[node_id] and self.jobs[node_id].running then
-		self.jobs[node_id].needs_rerun = { start = start_row, end_ = end_row }
+	if node == nil then
 		return
 	end
 
+	local start_row, _, end_row, _ = node:range()
+	local node_id = node:id()
+	start_row = start_row + 1
+
 	self.jobs[node_id] = { ext_ids = {} }
 
-	self.jobs[node_id].running = vim.system({ './mathcha', '-render' }, {
+	self.running = vim.system({ './mathcha', '-render' }, {
 		stdin = vim.api.nvim_buf_get_lines(self.buf, start_row, end_row, false)
 	}, function(obj)
-		-- TODO: check exit code
-		if obj.code ~= 0 then
-			vim.notify("mathcha failed: " .. obj.stderr, vim.log.levels.ERROR)
-		end
+		self.running = nil
 		vim.schedule(function()
-			local lines = enumerate(vim.gsplit(obj.stdout, '\n', { plain = true }))
-			local binding = self.jobs[node_id]
-			if binding == nil then
-				-- deleted maybe? idk
-				return
+			if obj.code ~= 0 then
+				vim.notify("mathcha failed: " .. obj.stderr, vim.log.levels.ERROR)
 			end
+
+			local lines = enumerate(vim.gsplit(obj.stdout, '\n', { plain = true }))
 
 			local virt_lines = {}
 			for _, line in lines do
 				table.insert(virt_lines, { { line } })
 			end
 
-			vim.api.nvim_buf_clear_namespace(self.buf, ns_id, start_row, end_row)
+			vim.api.nvim_buf_clear_namespace(self.buf, ns_id, start_row, end_row + 1)
 
 			vim.api.nvim_buf_set_extmark(self.buf, ns_id, start_row, 0, {
 				invalidate = true,
@@ -141,6 +130,8 @@ function State:update_conceal(node_id, start_row, end_row)
 				virt_lines = virt_lines,
 				virt_lines_above = true,
 			})
+
+			self:update_conceal()
 		end)
 	end)
 end
