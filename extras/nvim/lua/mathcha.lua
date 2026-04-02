@@ -12,7 +12,6 @@ M._states = {}
 ---@class State
 ---@field buf integer
 ---@field jobs table<NodeID, NodeBinding>
----@field md_inline_tree vim.treesitter.LanguageTree
 ---@field query vim.treesitter.Query
 local State = {}
 
@@ -43,44 +42,51 @@ function State.new(bufnr)
 	local state = setmetatable({ buf = bufnr, jobs = {} }, { __index = State })
 
 	state.query = vim.treesitter.query.parse('markdown_inline', [[ (latex_block) @latex ]])
-	state.md_inline_tree = vim.treesitter.get_parser(bufnr, "markdown")
+	local md_inline_tree = vim.treesitter.get_parser(bufnr, "markdown")
 		:children()["markdown_inline"]
 
-	if state.md_inline_tree == nil then
+	if md_inline_tree == nil then
 		return nil
 	end
 
-	state.md_inline_tree:register_cbs({
-		on_changedtree = function(_changes, _tree)
+	md_inline_tree:register_cbs({
+		on_changedtree = function(_, tree)
 			vim.schedule(function()
-				state:reset_marks()
-				state:_parse_and_render()
+				state:_parse_and_render({ [1] = tree })
 			end)
 		end,
+		on_detach = function()
+			vim.api.nvim_buf_clear_namespace(bufnr, ns_id, 0, -1)
+			M._states[bufnr] = nil
+		end
 	}, true)
 
-	state:_parse_and_render()
+	md_inline_tree:parse(false, function(err, trees)
+		if err ~= nil or trees == nil then
+			vim.notify_once(
+				("failed to parse markdown_inline: %s"):format(bufnr, err),
+				vim.log.levels.ERROR
+			)
+			return
+		end
+		state:_parse_and_render(trees)
+	end)
 	return state
 end
 
-function State:_parse_and_render()
-	self.md_inline_tree:parse(false, function(err, trees)
-		if err ~= nil or trees == nil then
-			vim.notify_once(("failed to parse markdown_inline: %s"):format(self.buf, err), vim.log.levels.ERROR)
-			return
-		end
-
-		for _, tree in pairs(trees) do
-			for _, match, _ in self.query:iter_matches(tree:root(), self.buf, 0, -1) do
-				for _, nodes in pairs(match) do
-					for _, node in ipairs(nodes) do
-						local start_row, _, end_row, _ = node:range()
-						self:update_conceal(node:id(), start_row + 1, end_row)
-					end
+---@param trees table<integer, TSTree>
+function State:_parse_and_render(trees)
+	for _, tree in pairs(trees) do
+		assert(tree.root and tree.copy)
+		for _, match, _ in self.query:iter_matches(tree:root(), self.buf, 0, -1) do
+			for _, nodes in pairs(match) do
+				for _, node in ipairs(nodes) do
+					local start_row, _, end_row, _ = node:range()
+					self:update_conceal(node:id(), start_row + 1, end_row)
 				end
 			end
 		end
-	end)
+	end
 end
 
 ---@param node_id NodeID
@@ -109,9 +115,14 @@ function State:update_conceal(node_id, start_row, end_row)
 		end
 		vim.schedule(function()
 			local lines = enumerate(vim.gsplit(obj.stdout, '\n', { plain = true }))
+			local binding = self.jobs[node_id]
+			if binding == nil then
+				-- deleted maybe? idk
+				return
+			end
 
-			for _, x in ipairs(self.jobs[node_id].ext_ids) do
-				vim.api.nvim_buf_del_extmark(self.buf, ns_id, x)
+			for _, x in ipairs(binding.ext_ids) do
+				assert(vim.api.nvim_buf_del_extmark(self.buf, ns_id, x))
 			end
 
 			local extmarks = {}
@@ -173,10 +184,11 @@ function State:update_conceal(node_id, start_row, end_row)
 				end
 			end
 
-			self.jobs[node_id].running = nil
-			local params = self.jobs[node_id].needs_rerun
+			binding.ext_ids = extmarks
+			binding.running = nil
+			local params = binding.needs_rerun
 			if params then
-				self.jobs[node_id].needs_rerun = nil
+				binding.needs_rerun = nil
 				self:update_conceal(node_id, params.start, params.end_)
 			end
 		end)
@@ -200,6 +212,14 @@ end
 
 function M.instance(bufnr)
 	return M._states[vim.fn.bufnr(bufnr or 0)]
+end
+
+-- for testing
+function M.unload()
+	for buf, _ in pairs(M._states) do
+		vim.treesitter.stop(buf)
+		vim.api.nvim_buf_clear_namespace(buf, ns_id, 0, -1)
+	end
 end
 
 M.State = State
