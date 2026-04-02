@@ -257,7 +257,7 @@ func main() {
 
 	e := initialModel(cliFlags, editorCfg, latex)
 
-	p := tea.NewProgram(e)
+	p := tea.NewProgram(e, tea.WithInputTTY())
 	if _, err := p.Run(); err != nil {
 		// log error
 	}
