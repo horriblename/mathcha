@@ -105,6 +105,11 @@ func TestTokenizer(t *testing.T) {
 			output: []Token{},
 		},
 		{
+			desc:   "newline is skipped",
+			input:  "\n",
+			output: []Token{},
+		},
+		{
 			desc:  "comprehensive - mixed tokens",
 			input: "\\frac{1}{2} + x^2 * y_1 & z",
 			output: []Token{

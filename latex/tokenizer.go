@@ -131,7 +131,7 @@ func (t *Tokenizer) Init(stream string) {
 	t.symCmdRegex = re.MustCompile(`^\\[^a-zA-Z0-9]`)
 	t.numRegex = re.MustCompile("^[0-9]")    // FIXME do I really need regex here
 	t.alpRegex = re.MustCompile("^[a-zA-Z]") // FIXME "
-	t.spaceRegex = re.MustCompile("^ +")
+	t.spaceRegex = re.MustCompile(`^\s+`)
 
 	t.Eat()
 }
