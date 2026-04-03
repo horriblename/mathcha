@@ -30,7 +30,7 @@ type Node interface {
 
 type Expr interface {
 	Node
-	//exprNode()
+	DeepEq(other Expr) bool
 }
 
 // A branch in the syntax tree
@@ -264,6 +264,7 @@ func (x *EnvExpr) Pos() Pos           { return x.From }
 func (x *ParenCompExpr) Pos() Pos     { return x.From }
 func (x RawRuneLit) Pos() Pos         { return 0 }
 func (x *SimpleOpLit) Pos() Pos       { return x.From }
+func (x *IncompleteCmdLit) Pos() Pos  { return x.Backslash }
 func (x *UnknownCmdLit) Pos() Pos     { return x.Backslash }
 func (x *SimpleCmdLit) Pos() Pos      { return x.Backslash }
 func (x *SuperExpr) Pos() Pos         { return x.Symbol }
@@ -283,6 +284,7 @@ func (x *EnvExpr) End() Pos           { return x.To }
 func (x *ParenCompExpr) End() Pos     { return x.To }
 func (x RawRuneLit) End() Pos         { return 0 }
 func (x *SimpleOpLit) End() Pos       { return x.To }
+func (x *IncompleteCmdLit) End() Pos  { return x.To }
 func (x *UnknownCmdLit) End() Pos     { return x.To }
 func (x *SimpleCmdLit) End() Pos      { return x.To }
 func (x *SuperExpr) End() Pos         { return x.Close }
@@ -544,6 +546,7 @@ func (x *VarLit) VisualizeTree() string            { return "VarLit        " + x
 func (x *SimpleOpLit) VisualizeTree() string       { return "SimpleOpLit   " + x.Source }
 func (x *SimpleCmdLit) VisualizeTree() string      { return "SimpleCmdLit  " + x.Source }
 func (x *UnknownCmdLit) VisualizeTree() string     { return "UnknownCmdLit " + x.Source }
+func (x *IncompleteCmdLit) VisualizeTree() string  { return "IncompleteCmdLit " + x.Source }
 
 // utils
 // Slice manipulation utilities
