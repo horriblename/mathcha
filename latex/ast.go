@@ -457,6 +457,17 @@ func (e *EnvExpr) InsertCell(row int, cell int) *UnboundCompExpr {
 	return newCell
 }
 
+func (e *EnvExpr) InsertRow(row int) *UnboundCompExpr {
+	if row >= len(e.Elts) {
+		newRow := []*UnboundCompExpr{{}}
+		e.Elts = append(e.Elts, newRow)
+		return newRow[0]
+	}
+	newRow := []*UnboundCompExpr{{}}
+	e.Elts = append(e.Elts[:row+1], append([][]*UnboundCompExpr{newRow}, e.Elts[row+1:]...)...)
+	return newRow[0]
+}
+
 // ----------------------------------------------------------------------------
 // VisualizeTree, naive approach, only for debugging purposes
 func (x *UnboundCompExpr) VisualizeTree() string {

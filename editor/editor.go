@@ -930,7 +930,18 @@ func (e Editor) Update(msg tea.Msg) (Editor, tea.Cmd) {
 			case EDIT_TEXT:
 				e.exitParent(DIR_RIGHT)
 			case EDIT_EQUATION:
-				// TODO
+				if len(e.traceStack) < 2 {
+					break
+				}
+				if env, ok := e.traceStack[len(e.traceStack)-2].(*parser.EnvExpr); ok {
+					r, _ := env.FindCell(e.getParent().(*parser.UnboundCompExpr))
+					cell := env.InsertRow(r + 1)
+					idx := e.getCursorIdxInParent()
+					e.getParent().DeleteChildren(idx, idx)
+					e.popStack()
+					e.traceStack = append(e.traceStack, cell)
+					cell.AppendChildren(e.cursor)
+				}
 			}
 
 		case tea.KeyCtrlU:
