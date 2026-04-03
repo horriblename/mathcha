@@ -133,6 +133,8 @@ func (p *Parser) parseStringCmd() Expr {
 	var leaf Expr
 
 	switch {
+	case p.lit == "\\begin":
+		leaf = p.parseEnvExpr()
 	case kind.TakesRawStrArg():
 		leaf = p.parseTextCommand(kind)
 	case kind.IsVanillaSym():
@@ -309,6 +311,55 @@ func (p *Parser) parseCmdEnclosing(kind LatexCmd) Expr {
 	node.Right = p.lit
 	p.next()
 	p.dropExpect("\\right")
+	p.exprLev--
+	return node
+}
+
+func (p *Parser) parseEnvExpr() Expr {
+	from := p.tokenizer.Cursor
+	p.exprLev++
+	p.next() // skip "\begin"
+
+	if p.tok != LBRACE {
+		p.eh.AddErr(ERR_MISSING_OPEN, fmt.Sprintf("expected '{' after \\begin, got %s", p.tok.String()))
+		p.exprLev--
+		return &BadExpr{}
+	}
+
+	envNameStr := p.tokenizer.SkipToDelimiter("}")
+	envName := GetEnvName(envNameStr)
+	p.next() // skip "}"
+
+	node := &EnvExpr{Name: envName, From: from}
+
+	p.next() // move to first token of environment content
+
+	for !p.IsEOF() && p.tok != CMDSTR && p.lit != `\end` {
+		var cell []*UnboundCompExpr
+		row := new(UnboundCompExpr)
+		for !p.IsEOF() && p.tok != AMPERSAND && p.lit != `\end` && p.tok != NEWLINE {
+			row.AppendChildren(p.parseGenericOnce())
+		}
+		cell = append(cell, row)
+
+		for p.tok == AMPERSAND {
+			p.next() // skip "&"
+			col := new(UnboundCompExpr)
+			for !p.IsEOF() && p.tok != AMPERSAND && p.lit != `\end` && p.tok != NEWLINE {
+				col.AppendChildren(p.parseGenericOnce())
+			}
+			cell = append(cell, col)
+		}
+		node.Elts = append(node.Elts, cell)
+
+		if p.tok == NEWLINE {
+			p.next() // skip "\\"
+		}
+	}
+
+	node.To = p.tokenizer.Cursor
+
+	p.dropExpect("\\end")
 	p.exprLev--
 	return node
 }

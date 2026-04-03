@@ -44,6 +44,7 @@ const (
 	CARET      // ^
 	UNDERSCORE // _
 	AMPERSAND  // &
+	NEWLINE    // \\ for row breaks in environments
 	operator_end
 
 	command_beg
@@ -72,6 +73,7 @@ var tokens = [...]string{
 	CARET:      "^",
 	UNDERSCORE: "_",
 	AMPERSAND:  "&",
+	NEWLINE:    "\\\\",
 
 	CMDSTR: "CMDSTR", // control sequence `\text`, `\frac`, `\pi` etc.
 	CMDSYM: "CMDSYM", // control symbols, `\^`, `\\` etc.
@@ -96,8 +98,6 @@ type Tokenizer struct {
 	alpRegex    *re.Regexp
 	spaceRegex  *re.Regexp // used to remove whitespaces
 }
-
-var ()
 
 func (tok Token) String() string {
 	s := ""
@@ -166,6 +166,12 @@ func (t *Tokenizer) Eat() string {
 		t.Cursor = Pos(int(t.Cursor) + length)
 		//fmt.Printf("stream '\x1b[31m%s\x1b[0m%s'\n", t.curr, stream[length:])
 	}()
+
+	if strings.HasPrefix(stream, `\\`) {
+		length = 2
+		tok = NEWLINE
+		return curr
+	}
 
 	if temp := t.strCmdRegex.FindStringIndex(stream); temp != nil {
 		length = temp[1]

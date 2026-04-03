@@ -97,7 +97,7 @@ func TestTokenizer(t *testing.T) {
 		{
 			desc:   "CMDSYM - backslash escape (or newline, I still have not checked what this does)",
 			input:  "\\\\",
-			output: []Token{CMDSYM},
+			output: []Token{NEWLINE},
 		},
 		{
 			desc:   "EOF - empty input",

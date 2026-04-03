@@ -8,12 +8,14 @@ const (
 	ERR_TOKEN           = iota
 	ERR_MISSING_CLOSE   // A Closing expression is missing e.g. "}" or "\right"
 	ERR_UNMATCHED_CLOSE // Unmatched Closing expression e.g. "}" or "\right"
+	ERR_MISSING_OPEN    // A Opening expression is missing e.g. "{"
 )
 
 var errType = [...]string{
 	ERR_TOKEN:           "ERR_TOKEN",
 	ERR_MISSING_CLOSE:   "ERR_MISSING_CLOSE",
 	ERR_UNMATCHED_CLOSE: "ERR_UNMATCHED_CLOSING",
+	ERR_MISSING_OPEN:    "ERR_MISSING_OPEN",
 }
 
 func (e ErrCode) String() string { return errType[e] }
