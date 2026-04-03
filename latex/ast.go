@@ -302,6 +302,18 @@ func (x *ParenCompExpr) Children() []Expr     { return x.Elts }
 func (x *Cmd1ArgExpr) Children() []Expr { return []Expr{x.Arg1} }
 func (x *Cmd2ArgExpr) Children() []Expr { return []Expr{x.Arg1, x.Arg2} }
 
+// PERF: this might slow things down since Children() is called so often
+// I haven't checked
+func (x *EnvExpr) Children() []Expr {
+	var result []Expr
+	for _, row := range x.Elts {
+		for _, cell := range row {
+			result = append(result, cell)
+		}
+	}
+	return result
+}
+
 // FlexContainer methods
 func (x *TextStringWrapper) AppendChildren(children ...Expr) { x.Runes = append(x.Runes, children...) } // TODO check children type?
 func (x *CompositeExpr) AppendChildren(children ...Expr)     { x.Elts = append(x.Elts, children...) }
