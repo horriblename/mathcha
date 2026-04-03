@@ -77,7 +77,12 @@ func (r *Renderer) Prerender(node parser.Expr) (out string, baseLevel int) {
 			rowStr := JoinHorizontal(cellBaseLines, cells...)
 			rows = append(rows, rowStr)
 		}
-		return lipgloss.JoinVertical(lipgloss.Top, rows...), 0
+
+		body := lipgloss.JoinVertical(lipgloss.Top, rows...)
+		left := constructParenLike(len(rows), "⎡", "⎢", "⎣")
+		right := constructParenLike(len(rows), "⎤", "⎥", "⎦")
+
+		return JoinHorizontal([]int{0, 0, 0}, left, body, right), 0
 
 	case parser.CmdContainer:
 		switch n.Command() {
@@ -103,8 +108,8 @@ func (r *Renderer) Prerender(node parser.Expr) (out string, baseLevel int) {
 		content, baseLine := r.PrerenderFlexContainer(n)
 		if n.Left == "(" && n.Right == ")" && lipgloss.Height(content) >= 2 {
 			height := lipgloss.Height(content)
-			left := "⎛\n" + strings.Repeat("⎜\n", height-2) + "⎝"
-			right := "⎞\n" + strings.Repeat("⎟\n", height-2) + "⎠"
+			left := constructParenLike(height, "⎛", "⎜", "⎝")
+			right := constructParenLike(height, "⎞", "⎟", "⎠")
 			return JoinHorizontal([]int{baseLine, baseLine, baseLine}, left, content, right), baseLine
 		}
 		return JoinHorizontal([]int{0, baseLine, 0}, n.Left, content, n.Right), baseLine
@@ -269,4 +274,11 @@ func (r *Renderer) PrerenderCmdSqrt(node parser.CmdContainer) (output string, ba
 	root := strings.Repeat("⎟\n", height-1) + `⎷`
 
 	return JoinHorizontal([]int{baseLevel, baseLevel}, root, block), baseLevel
+}
+
+func constructParenLike(height int, top, mid, bot string) string {
+	if height == 1 {
+		return mid
+	}
+	return top + "\n" + strings.Repeat(mid+"\n", height-2) + bot
 }
