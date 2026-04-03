@@ -8,6 +8,7 @@ import (
 	"flag"
 	"fmt"
 	"io"
+	"log"
 	"os"
 	"os/exec"
 	"strings"
@@ -36,6 +37,7 @@ type model struct {
 type cliFlags struct {
 	helpText *string
 	printOut *bool
+	logFile  *string
 }
 
 func (m model) Init() tea.Cmd {
@@ -212,12 +214,23 @@ func main() {
 	file := flag.String("f", "", "Read initial formula from file; use '-' to read from stdin")
 	cliFlags.helpText = flag.String("helptext", defaultHelpText, "Help text to print below the editor")
 	cliFlags.printOut = flag.Bool("printout", false, "Internal flag for communicating with the nvim plugin")
+	cliFlags.logFile = flag.String("logfile", "", "Print debug logs to file")
 	flag.Parse()
 
 	editorCfg := ed.EditorConfig{
 		LatexCfg: renderer.LatexSourceConfig{
 			UseUnicode: useUnicode,
 		},
+	}
+
+	if *cliFlags.logFile != "" {
+		f, err := os.OpenFile(*cliFlags.logFile, os.O_CREATE|os.O_APPEND, 0o644)
+		if err != nil {
+			println("could not create/open log file:", err.Error())
+			return
+		}
+		defer f.Close()
+		editorCfg.Logger = log.New(f, "", log.LstdFlags)
 	}
 
 	var latex string

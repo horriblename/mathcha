@@ -3,6 +3,7 @@
 package editor
 
 import (
+	"log"
 	"unicode"
 
 	tea "github.com/charmbracelet/bubbletea"
@@ -34,6 +35,7 @@ type Editor struct {
 }
 
 type EditorConfig struct {
+	*log.Logger
 	LatexCfg render.LatexSourceConfig
 }
 
