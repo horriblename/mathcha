@@ -60,6 +60,25 @@ func (r *Renderer) Prerender(node parser.Expr) (out string, baseLevel int) {
 		}
 		return n.BuildString(), 0
 
+	case *parser.EnvExpr:
+		var rows []string
+		for _, row := range n.Elts {
+			var cells []string
+			cellBaseLines := make([]int, len(row)*2-1)
+			for i, cell := range row {
+				if i != 0 {
+					cells = append(cells, " ")
+					cellBaseLines[i*2-1] = 0
+				}
+				cellStr, baseLine := r.Prerender(cell)
+				cells = append(cells, cellStr)
+				cellBaseLines[i*2] = baseLine
+			}
+			rowStr := JoinHorizontal(cellBaseLines, cells...)
+			rows = append(rows, rowStr)
+		}
+		return lipgloss.JoinVertical(lipgloss.Top, rows...), 0
+
 	case parser.CmdContainer:
 		switch n.Command() {
 		case parser.CMD_overline:
