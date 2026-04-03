@@ -246,7 +246,8 @@ func (e *Editor) exitParent(direction Direction) {
 	e.getParent().DeleteChildren(idx, idx)
 	var exitFrom parser.Container
 	exitFrom = e.popStack()
-	if _, ok := e.getLastOnStack().(parser.FixedContainer); ok {
+	switch e.getLastOnStack().(type) {
+	case parser.FixedContainer, *parser.EnvExpr:
 		exitFrom = e.popStack()
 	}
 	for i, c := range e.getParent().Children() {
@@ -467,6 +468,21 @@ func (e *Editor) InsertCmd(cmd string) {
 	kind := parser.MatchLatexCmd(cmd)
 	idx := e.getCursorIdxInParent()
 	switch {
+	case cmd == "\\begin":
+		envNameStr := "matrix" // TODO
+		envName := parser.GetEnvName(envNameStr)
+		cell := &parser.UnboundCompExpr{}
+		node := &parser.EnvExpr{
+			Name: envName,
+			Elts: [][]*parser.UnboundCompExpr{
+				{cell},
+			},
+		}
+		e.getParent().DeleteChildren(idx, idx)
+		e.getParent().InsertChildren(idx, node)
+		e.traceStack = append(e.traceStack, node)
+		cell.AppendChildren(e.cursor)
+		e.traceStack = append(e.traceStack, cell)
 	case kind.IsTextCmd():
 		node := &parser.TextContainer{Text: &parser.TextStringWrapper{}}
 		e.getParent().DeleteChildren(idx, idx)
@@ -524,8 +540,15 @@ func (e *Editor) InsertFrac(detectNumerator bool) {
 }
 
 // delete the parent container and possibly the parent's FixedContainer
-// and insert the parent's children to the node one level above
-// x + \frac{2y}{3} --[flatten '\frac']-> x + 2y3
+// and insert the parent's children to the node one level above:
+//
+//	x + \frac{2y}{3} --[flatten '\frac']-> x + 2y3
+//
+// In an EnvExpr, newlines and column alignment `&` can be erased:
+//
+//	\begin{matrix} a & b & c \end{matrix}
+//	--[flatten at b]->
+//	\begin{matrix} ab & c \end{matrix}
 func (e *Editor) flattenDeleteParent() {
 	idx := e.getCursorIdxInParent()
 	if forest, ok := e.traceStack[len(e.traceStack)-2].(parser.FixedContainer); ok {
@@ -538,6 +561,32 @@ func (e *Editor) flattenDeleteParent() {
 				e.getParent().InsertChildren(idx+1, c.Children()...)
 			} else {
 				e.getParent().InsertChildren(idx+1, c)
+			}
+		}
+	} else if forest, ok := e.traceStack[len(e.traceStack)-2].(*parser.EnvExpr); ok {
+		oldCell := e.getParent()
+		// let's hope nobody has ridiculously big matrices :p
+		for r, row := range forest.Elts {
+			for c, cell := range row {
+				if cell == oldCell {
+					if c == 0 {
+						forest.Elts[r-1] = append(forest.Elts[r-1], row...)
+						for r1 := r; r < len(forest.Elts); r1++ {
+							forest.Elts[r1] = forest.Elts[r1+1]
+						}
+						forest.Elts = forest.Elts[:len(forest.Elts)-1]
+					} else {
+						idx := e.getCursorIdxInParent()
+						oldCell.DeleteChildren(idx, idx)
+						row[c-1].AppendChildren(e.cursor)
+						row[c-1].AppendChildren(row[c].Elts...)
+						for col := c; col < len(row); col++ {
+							row[col] = row[col+1]
+						}
+						forest.Elts[r] = row[:len(row)-1]
+					}
+					return
+				}
 			}
 		}
 	} else {
