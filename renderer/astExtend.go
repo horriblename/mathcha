@@ -19,6 +19,10 @@ func (c *Cursor) End() parser.Pos { return parser.Pos(0) }
 
 func (c *Cursor) VisualizeTree() string { return "Cursor" + c.Symbol }
 func (c *Cursor) Content() string       { return c.Symbol }
+func (c *Cursor) DeepEq(other parser.Expr) bool {
+	_, ok := other.(*Cursor)
+	return ok
+}
 
 func (x *LatexCmdInput) Pos() parser.Pos         { return 0 }
 func (x *LatexCmdInput) End() parser.Pos         { return 0 }
@@ -36,3 +40,9 @@ func (x *LatexCmdInput) SetArg(index int, expr parser.Expr) {
 	}
 }
 func (x *LatexCmdInput) VisualizeTree() string { return "TextContainer " + x.Text.VisualizeTree() }
+func (x *LatexCmdInput) DeepEq(other parser.Expr) bool {
+	if o, ok := other.(*LatexCmdInput); ok {
+		return x.Text == o.Text
+	}
+	return false
+}

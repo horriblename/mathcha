@@ -26,11 +26,11 @@ type Node interface {
 	Pos() Pos
 	End() Pos
 	VisualizeTree() string
+	DeepEq(other Expr) bool
 }
 
 type Expr interface {
 	Node
-	DeepEq(other Expr) bool
 }
 
 // A branch in the syntax tree
