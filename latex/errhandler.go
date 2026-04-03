@@ -9,6 +9,7 @@ const (
 	ERR_MISSING_CLOSE   // A Closing expression is missing e.g. "}" or "\right"
 	ERR_UNMATCHED_CLOSE // Unmatched Closing expression e.g. "}" or "\right"
 	ERR_MISSING_OPEN    // A Opening expression is missing e.g. "{"
+	ERR_MISSING_END     // A \end{} command is missing
 )
 
 var errType = [...]string{
@@ -16,6 +17,7 @@ var errType = [...]string{
 	ERR_MISSING_CLOSE:   "ERR_MISSING_CLOSE",
 	ERR_UNMATCHED_CLOSE: "ERR_UNMATCHED_CLOSING",
 	ERR_MISSING_OPEN:    "ERR_MISSING_OPEN",
+	ERR_MISSING_END:     "ERR_MISSING_END",
 }
 
 func (e ErrCode) String() string { return errType[e] }

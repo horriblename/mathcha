@@ -29,7 +29,7 @@ const (
 	// basic type literals
 	NUM     // numbers
 	VARLIT  // variable string literal, contains only alphabets
-	TEXTSTR // string in \text, can be anything: symbols, numbers, letters...
+	TEXTSTR // TODO: not currently in use, remove
 	SYM     // symbols: non-alphabet characters that have no special grammar
 	literal_end
 

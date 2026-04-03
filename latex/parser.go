@@ -127,6 +127,14 @@ func (p *Parser) parseGenericOnce() Expr {
 	return &BadExpr{}
 }
 
+// like [Parser.parseGenericOnce] but returns nil if the next token is `&` or `\\` or `\end`
+func (p *Parser) parseInEnvOnce() Expr {
+	if p.tok == AMPERSAND || p.tok == NEWLINE || p.tok == CMDSTR && p.lit == `\end` {
+		return nil
+	}
+	return p.parseGenericOnce()
+}
+
 func (p *Parser) parseStringCmd() Expr {
 	kind := MatchLatexCmd(p.lit)
 
@@ -332,34 +340,60 @@ func (p *Parser) parseEnvExpr() Expr {
 
 	node := &EnvExpr{Name: envName, From: from}
 
-	p.next() // move to first token of environment content
+	table := [][]*UnboundCompExpr{}
+	row := []*UnboundCompExpr{}
+	cell := &UnboundCompExpr{From: p.pos, Elts: []Expr{}}
 
-	for !p.IsEOF() && p.tok != CMDSTR && p.lit != `\end` {
-		var cell []*UnboundCompExpr
-		row := new(UnboundCompExpr)
-		for !p.IsEOF() && p.tok != AMPERSAND && p.lit != `\end` && p.tok != NEWLINE {
-			row.AppendChildren(p.parseGenericOnce())
-		}
-		cell = append(cell, row)
-
-		for p.tok == AMPERSAND {
-			p.next() // skip "&"
-			col := new(UnboundCompExpr)
-			for !p.IsEOF() && p.tok != AMPERSAND && p.lit != `\end` && p.tok != NEWLINE {
-				col.AppendChildren(p.parseGenericOnce())
+loop:
+	for {
+		switch p.tok {
+		case AMPERSAND:
+			cell.To = p.pos
+			row = append(row, cell)
+			p.next()
+			cell = &UnboundCompExpr{From: p.pos, Elts: []Expr{}}
+		case NEWLINE:
+			cell.To = p.pos
+			row = append(row, cell)
+			table = append(table, row)
+			row = []*UnboundCompExpr{}
+			p.next()
+			cell = &UnboundCompExpr{From: p.pos, Elts: []Expr{}}
+		case CMDSTR:
+			if p.lit == `\end` {
+				cell.To = p.pos
+				row = append(row, cell)
+				table = append(table, row)
+				break loop
 			}
-			cell = append(cell, col)
+		case EOF:
+			p.eh.AddErr(ERR_MISSING_CLOSE,
+				fmt.Sprintf(`expecting \end{%s}, got EOF`, envNameStr))
+			node.To = p.pos
+			node.Elts = table
 		}
-		node.Elts = append(node.Elts, cell)
 
-		if p.tok == NEWLINE {
-			p.next() // skip "\\"
+		cell.AppendChildren(p.parseGenericOnce())
+	}
+
+	if p.tok == CMDSTR && p.lit == `\end` {
+		p.next() // skip "\end"
+		// consume \end{name}
+		if p.tok == LBRACE {
+			p.next() // skip "{"
+			for !p.IsEOF() && p.tok != RBRACE {
+				p.next()
+			}
+			if p.tok == RBRACE {
+				p.next() // skip "}"
+			}
 		}
+	} else {
 	}
 
 	node.To = p.tokenizer.Cursor
+	node.Elts = table
 
-	p.dropExpect("\\end")
 	p.exprLev--
 	return node
 }
