@@ -433,6 +433,30 @@ func (x *Cmd2ArgExpr) Command() LatexCmd   { return x.Type }
 // ----------------------------------------------------------------------------
 // EnvExpr methods
 
+func (e *EnvExpr) FindCell(cell0 *UnboundCompExpr) (row int, cell int) {
+	for r, row := range e.Elts {
+		for c, cell := range row {
+			if cell == cell0 {
+				return r, c
+			}
+		}
+	}
+	panic("EnvExpr.FindCell called with cell with no relation to the EnvExpr")
+}
+
+func (e *EnvExpr) InsertCell(row int, cell int) *UnboundCompExpr {
+	if row >= len(e.Elts) {
+		e.Elts = append(e.Elts, make([][]*UnboundCompExpr, row-len(e.Elts)+1)...)
+	}
+	if cell >= len(e.Elts[row]) {
+		e.Elts[row] = append(e.Elts[row], make([]*UnboundCompExpr, cell-len(e.Elts[row])+1)...)
+	}
+	newCell := &UnboundCompExpr{}
+	copy(e.Elts[row][cell+1:], e.Elts[row][cell:])
+	e.Elts[row][cell] = newCell
+	return newCell
+}
+
 // ----------------------------------------------------------------------------
 // VisualizeTree, naive approach, only for debugging purposes
 func (x *UnboundCompExpr) VisualizeTree() string {

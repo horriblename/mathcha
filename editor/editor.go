@@ -565,7 +565,6 @@ func (e *Editor) flattenDeleteParent() {
 		}
 	} else if forest, ok := e.traceStack[len(e.traceStack)-2].(*parser.EnvExpr); ok {
 		oldCell := e.getParent()
-		// let's hope nobody has ridiculously big matrices :p
 		for r, row := range forest.Elts {
 			for c, cell := range row {
 				if cell == oldCell {
@@ -701,6 +700,33 @@ func (e *Editor) handleRest(char rune) {
 
 			e.markSelect = nil
 			return
+		case '&':
+			if len(e.traceStack) < 2 {
+				break // TODO
+			}
+			// TODO
+			// if env, ok := e.traceStack[len(e.traceStack)-2].(*parser.EnvExpr); ok {
+			// 	r, c := env.FindCell(e.getParent().(*parser.UnboundCompExpr))
+			// 	idx := e.getCursorIdxInParent()
+			// 	mark := e.getSelectionIdxInParent()
+			// 	if mark < idx {
+			// 		mark, idx = idx, mark
+			// 	}
+			// 	oldCell := e.getParent()
+			// 	cell := env.InsertCell(r, c+1)
+			//
+			// 	el := oldCell.Children()[idx+1 : mark]
+			// 	cell.AppendChildren(e.cursor)
+			// 	cell.AppendChildren(el...)
+			//
+			// 	e.getParent().DeleteChildren(idx, idx)
+			// 	e.deleteSelection()
+			// 	e.popStack()
+			//
+			// 	e.traceStack = append(e.traceStack, cell)
+			// 	cell.AppendChildren(e.cursor)
+			// 	return
+			// }
 		case '(', ')':
 			mark := e.getSelectionIdxInParent()
 			block := parser.ParenCompExpr{Left: "(", Right: ")"}
@@ -757,6 +783,23 @@ func (e *Editor) handleRest(char rune) {
 
 			e.traceStack = append(e.traceStack, field, field.Text)
 			e.getParent().AppendChildren(e.cursor)
+
+		case '&':
+			if len(e.traceStack) < 2 {
+				break // TODO
+			}
+			if env, ok := e.traceStack[len(e.traceStack)-2].(*parser.EnvExpr); ok {
+				r, c := env.FindCell(e.getParent().(*parser.UnboundCompExpr))
+				idx := e.getCursorIdxInParent()
+				cell := env.InsertCell(r, c+1)
+
+				e.getParent().DeleteChildren(idx, idx)
+				cell.AppendChildren(e.cursor)
+
+				e.popStack()
+				e.traceStack = append(e.traceStack, cell)
+				return
+			}
 
 		case '/':
 			e.InsertFrac(true)
