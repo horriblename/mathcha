@@ -334,7 +334,7 @@ func (x *UnboundCompExpr) Identifier() string   { return "" }
 func (x *ParenCompExpr) Identifier() string     { return "" }
 
 func (x *EnvExpr) VisualizeTree() string {
-	tree := fmt.Sprintf("\\begin{%s}\n", x.Name)
+	tree := fmt.Sprintf("\\begin{%s}[%d:%d]\n", x.Name, x.From, x.To)
 	for _, el := range x.Elts {
 		for _, expr := range el {
 			branch := expr.VisualizeTree()
@@ -348,7 +348,7 @@ func (x *EnvExpr) VisualizeTree() string {
 			}
 		}
 	}
-	tree += "\\end{}\n"
+	tree += fmt.Sprintf("\\end{%s}\n", x.Name)
 	return tree
 }
 
@@ -536,17 +536,31 @@ func (x *Cmd2ArgExpr) VisualizeTree() string {
 	return tree
 }
 
-func (x *TextContainer) VisualizeTree() string     { return "TextContainer " + x.Text.VisualizeTree() }
+func (x *TextContainer) VisualizeTree() string {
+	return fmt.Sprintf("TextContainer[%d:%d] %s", x.From, x.To, x.Text.VisualizeTree())
+}
 func (x *TextStringWrapper) VisualizeTree() string { return x.BuildString() }
-func (x *BadExpr) VisualizeTree() string           { return "BadExpr" }
-func (x *EmptyExpr) VisualizeTree() string         { return "EmptyExpr" }
+func (x *BadExpr) VisualizeTree() string           { return fmt.Sprintf("BadExpr[%d:%d]", x.From, x.To) }
+func (x *EmptyExpr) VisualizeTree() string         { return fmt.Sprintf("EmptyExpr[%d:%d]", x.From, x.To) }
 func (x RawRuneLit) VisualizeTree() string         { return x.Content() }
-func (x *NumberLit) VisualizeTree() string         { return "NumberLit     " + x.Source }
-func (x *VarLit) VisualizeTree() string            { return "VarLit        " + x.Source }
-func (x *SimpleOpLit) VisualizeTree() string       { return "SimpleOpLit   " + x.Source }
-func (x *SimpleCmdLit) VisualizeTree() string      { return "SimpleCmdLit  " + x.Source }
-func (x *UnknownCmdLit) VisualizeTree() string     { return "UnknownCmdLit " + x.Source }
-func (x *IncompleteCmdLit) VisualizeTree() string  { return "IncompleteCmdLit " + x.Source }
+func (x *NumberLit) VisualizeTree() string {
+	return fmt.Sprintf("NumberLit[%d:%d] %s", x.From, x.To, x.Source)
+}
+func (x *VarLit) VisualizeTree() string {
+	return fmt.Sprintf("VarLit[%d:%d] %s", x.From, x.To, x.Source)
+}
+func (x *SimpleOpLit) VisualizeTree() string {
+	return fmt.Sprintf("SimpleOpLit[%d:%d] %s", x.From, x.To, x.Source)
+}
+func (x *SimpleCmdLit) VisualizeTree() string {
+	return fmt.Sprintf("SimpleCmdLit[%d:%d] %s", x.Backslash, x.To, x.Source)
+}
+func (x *UnknownCmdLit) VisualizeTree() string {
+	return fmt.Sprintf("UnknownCmdLit[%d:%d] %s", x.Backslash, x.To, x.Source)
+}
+func (x *IncompleteCmdLit) VisualizeTree() string {
+	return fmt.Sprintf("IncompleteCmdLit[%d:%d] %s", x.Backslash, x.To, x.Source)
+}
 
 // utils
 // Slice manipulation utilities
