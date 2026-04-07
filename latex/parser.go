@@ -265,12 +265,21 @@ func (p *Parser) parseTextCommand(kind LatexCmd) Expr {
 	return node
 }
 
+// Wrap with [CompositeExpr] if not already one
+func maybeWrapWithCompositeExpr(e Expr) *CompositeExpr {
+	if c, ok := e.(*CompositeExpr); ok {
+		return c
+	} else {
+		return &CompositeExpr{Elts: []Expr{e}}
+	}
+}
+
 // parse a Command that takes one arguement
 func (p *Parser) parseCmd1Arg(kind LatexCmd) Expr {
 	p.exprLev++
 	p.next() // skip command
 	node := &Cmd1ArgExpr{Type: kind}
-	node.Arg1 = p.parseGenericOnce()
+	node.Arg1 = maybeWrapWithCompositeExpr(p.parseGenericOnce())
 
 	p.exprLev--
 	return node
@@ -281,8 +290,8 @@ func (p *Parser) parseCmd2Arg(kind LatexCmd) Expr {
 	p.exprLev++
 	p.next() // skip "\command"
 	node := &Cmd2ArgExpr{Type: kind}
-	node.Arg1 = p.parseGenericOnce()
-	node.Arg2 = p.parseGenericOnce()
+	node.Arg1 = maybeWrapWithCompositeExpr(p.parseGenericOnce())
+	node.Arg2 = maybeWrapWithCompositeExpr(p.parseGenericOnce())
 
 	p.exprLev--
 	return node
