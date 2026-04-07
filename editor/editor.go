@@ -204,6 +204,24 @@ func (e *Editor) NavigateLeft() bool {
 	if idx == 0 {
 		if len(e.traceStack) <= 1 {
 			return true
+		} else if 2 <= len(e.traceStack) {
+			if env, ok := e.traceStack[len(e.traceStack)-2].(*parser.EnvExpr); ok {
+				row, col := env.FindCell(e.getParent().(*parser.UnboundCompExpr))
+				var targetCell *parser.UnboundCompExpr
+				if col > 0 {
+					targetCell = env.Elts[row][col-1]
+				} else if row > 0 {
+					targetCell = env.Elts[row-1][len(env.Elts[row-1])-1]
+				} else {
+					e.exitParent(DIR_LEFT)
+					return true
+				}
+				idx := e.getCursorIdxInParent()
+				e.getParent().DeleteChildren(idx, idx)
+				targetCell.AppendChildren(e.cursor)
+				e.traceStack[len(e.traceStack)-1] = targetCell
+				return true
+			}
 		}
 		e.exitParent(DIR_LEFT)
 	} else if prev, ok := e.getParent().Children()[idx-1].(parser.Container); ok {
@@ -227,6 +245,24 @@ func (e *Editor) NavigateRight() bool {
 	if idx+1 >= len(e.getParent().Children()) {
 		if len(e.traceStack) <= 1 {
 			return true
+		} else if 2 <= len(e.traceStack) {
+			if env, ok := e.traceStack[len(e.traceStack)-2].(*parser.EnvExpr); ok {
+				row, col := env.FindCell(e.getParent().(*parser.UnboundCompExpr))
+				var targetCell *parser.UnboundCompExpr
+				if col < len(env.Elts[row])-1 {
+					targetCell = env.Elts[row][col+1]
+				} else if row < len(env.Elts)-1 {
+					targetCell = env.Elts[row+1][0]
+				} else {
+					e.exitParent(DIR_RIGHT)
+					return true
+				}
+				idx := e.getCursorIdxInParent()
+				e.getParent().DeleteChildren(idx, idx)
+				targetCell.InsertChildren(0, e.cursor)
+				e.traceStack[len(e.traceStack)-1] = targetCell
+				return true
+			}
 		}
 		e.exitParent(DIR_RIGHT)
 	} else if next, ok := e.getParent().Children()[idx+1].(parser.Container); ok {
@@ -239,7 +275,7 @@ func (e *Editor) NavigateRight() bool {
 }
 
 // Convenience function for exiting a Container to the left or right
-// Exits a FlexContainer plus a lingering FixedContainer, if any.
+// Exits a FlexContainer plus a lingering FixedContainer/EnvExpr, if any.
 // Cursor cleanup is taken care of
 // Make sure we're not exiting from the root node, no error handling for this
 func (e *Editor) exitParent(direction Direction) {
