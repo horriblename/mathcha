@@ -330,8 +330,8 @@ func (e *Editor) containerGetSiblingRow(container parser.Container, cursorLoc pa
 	return nil
 }
 
-// Navigate cursor downwards
-func (e *Editor) NavigateDown() {
+// Navigate cursor vertically (up or down)
+func (e *Editor) navigateVertical(up bool) {
 	var targetContainer parser.Container
 	var targetRow parser.FlexContainer
 
@@ -339,7 +339,7 @@ func (e *Editor) NavigateDown() {
 	for ; stackIdx > 0; stackIdx = e.findEnclosingVerticallyNavigableCommand(stackIdx - 1) {
 		targetContainer = e.traceStack[stackIdx]
 		cursorLoc := e.traceStack[stackIdx+1]
-		targetRow = e.containerGetSiblingRow(targetContainer, cursorLoc, false)
+		targetRow = e.containerGetSiblingRow(targetContainer, cursorLoc, up)
 		if targetRow != nil {
 			break
 		}
@@ -359,34 +359,8 @@ func (e *Editor) NavigateDown() {
 	e.enterContainerFromLeft(targetRow)
 }
 
-// Navigate cursor upwards
-func (e *Editor) NavigateUp() {
-	var targetContainer parser.Container
-	var targetRow parser.FlexContainer
-
-	stackIdx := e.findEnclosingVerticallyNavigableCommand(len(e.traceStack) - 1)
-	for ; stackIdx > 0; stackIdx = e.findEnclosingVerticallyNavigableCommand(stackIdx - 1) {
-		targetContainer = e.traceStack[stackIdx]
-		cursorLoc := e.traceStack[stackIdx+1]
-		targetRow = e.containerGetSiblingRow(targetContainer, cursorLoc, true)
-		if targetRow != nil {
-			break
-		}
-	}
-
-	if targetRow == nil {
-		return
-	}
-
-	idx := e.getCursorIdxInParent()
-	e.getParent().DeleteChildren(idx, idx)
-	for i := stackIdx + 1; i < len(e.traceStack); i++ {
-		e.traceStack[i] = nil
-	}
-	e.traceStack = e.traceStack[:stackIdx+1]
-
-	e.enterContainerFromLeft(targetRow)
-}
+func (e *Editor) NavigateDown() { e.navigateVertical(false) }
+func (e *Editor) NavigateUp()   { e.navigateVertical(true) }
 
 // Moves cursor to before the previous sibling
 // Returns false if no previous node
