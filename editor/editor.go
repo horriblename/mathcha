@@ -7,6 +7,7 @@ import (
 	"unicode"
 
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/lipgloss"
 	parser "github.com/horriblename/mathcha/latex"
 	render "github.com/horriblename/mathcha/renderer"
 )
@@ -32,6 +33,7 @@ type Editor struct {
 	markSelect *render.Cursor
 	focus      bool
 	config     *EditorConfig
+	banner     string // a line of text appearing below the renderer, for debugging
 }
 
 type EditorConfig struct {
@@ -422,8 +424,12 @@ func (e *Editor) enterContainerFromRight(target parser.Container) {
 		}
 	case parser.FlexContainer:
 		parent = t
+	case *parser.EnvExpr:
+		lastRow := len(t.Elts) - 1
+		parent = t.Elts[lastRow][len(t.Elts[lastRow])-1]
+		e.traceStack = append(e.traceStack, t)
 	default:
-		panic("Editor attempted to enter a non Fixed- or FlexContainer")
+		panic("Editor attempted to enter a non EnvExpr or Fixed- or FlexContainer")
 	}
 	parent.AppendChildren(e.cursor) // TODO use e.moveCursorTo instead?
 	e.traceStack = append(e.traceStack, parent)
@@ -444,8 +450,11 @@ func (e *Editor) enterContainerFromLeft(target parser.Container) {
 		}
 	case parser.FlexContainer:
 		parent = t
+	case *parser.EnvExpr:
+		parent = t.Elts[0][0]
+		e.traceStack = append(e.traceStack, t)
 	default:
-		panic("Editor attempted to enter a non Fixed- or FlexContainer")
+		panic("Editor attempted to enter a non EnvExpr or Fixed- or FlexContainer")
 	}
 
 	parent.InsertChildren(0, e.cursor)
@@ -1020,7 +1029,7 @@ func (e *Editor) realizeCommand() {
 }
 
 func (e Editor) View() string {
-	return e.renderer.View()
+	return lipgloss.JoinVertical(lipgloss.Left, e.renderer.View(), e.banner)
 }
 
 // Search the tree for any FixedContainer type that has children that is
