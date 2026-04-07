@@ -51,6 +51,22 @@ func (cfg *LatexSourceConfig) ProduceLatex(node parser.Expr) string {
 			latex += cfg.ProduceLatex(c)
 		}
 		return latex
+	case *parser.EnvExpr:
+		b := strings.Builder{}
+		b.WriteString(`\begin{`)
+		b.WriteString(n.Name.String())
+		b.WriteString("}\n")
+		for _, row := range n.Elts {
+			for _, cell := range row {
+				b.WriteString(cfg.ProduceLatex(cell))
+				b.WriteString(" & ")
+			}
+			b.WriteString(`\\` + "\n")
+		}
+		b.WriteString(`\end{`)
+		b.WriteString(n.Name.String())
+		b.WriteString("}\n")
+		return b.String()
 	case parser.CmdLiteral:
 		if cfg.UseUnicode {
 			renderedString := GetVanillaString(n.Command())
