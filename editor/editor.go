@@ -586,30 +586,27 @@ func (e *Editor) flattenDeleteParent() {
 			}
 		}
 	} else if forest, ok := e.traceStack[len(e.traceStack)-2].(*parser.EnvExpr); ok {
-		oldCell := e.getParent()
-		for r, row := range forest.Elts {
-			for c, cell := range row {
-				if cell == oldCell {
-					if c == 0 {
-						forest.Elts[r-1] = append(forest.Elts[r-1], row...)
-						for r1 := r; r < len(forest.Elts); r1++ {
-							forest.Elts[r1] = forest.Elts[r1+1]
-						}
-						forest.Elts = forest.Elts[:len(forest.Elts)-1]
-					} else {
-						idx := e.getCursorIdxInParent()
-						oldCell.DeleteChildren(idx, idx)
-						row[c-1].AppendChildren(e.cursor)
-						row[c-1].AppendChildren(row[c].Elts...)
-						for col := c; col < len(row); col++ {
-							row[col] = row[col+1]
-						}
-						forest.Elts[r] = row[:len(row)-1]
-					}
-					return
-				}
+		oldCell := e.getParent().(*parser.UnboundCompExpr)
+		r, c := forest.FindCell(oldCell)
+		row := forest.Elts[r]
+		if c == 0 {
+			forest.Elts[r-1] = append(forest.Elts[r-1], row...)
+			for r1 := r; r < len(forest.Elts); r1++ {
+				forest.Elts[r1] = forest.Elts[r1+1]
 			}
+			forest.Elts = forest.Elts[:len(forest.Elts)-1]
+		} else {
+			idx := e.getCursorIdxInParent()
+			oldCell.DeleteChildren(idx, idx)
+			row[c-1].AppendChildren(e.cursor)
+			row[c-1].AppendChildren(row[c].Elts...)
+			for col := c; col < len(row)-1; col++ {
+				row[col] = row[col+1]
+			}
+			forest.Elts[r] = row[:len(row)-1]
+			e.traceStack[len(e.traceStack)-1] = row[c-1]
 		}
+		return
 	} else {
 		deleting := e.getParent()
 		e.exitParent(DIR_LEFT)
