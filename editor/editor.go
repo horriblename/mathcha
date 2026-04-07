@@ -303,88 +303,89 @@ func (e *Editor) exitParent(direction Direction) {
 	e.getParent().InsertChildren(idx, e.cursor)
 }
 
+// May return nil if out of range (for last or first row).
+//
+// cursorLoc is the child of container that contains the cursor as a descendant.
+//
+// Panics if container is a [parser.FlexContainer] or [parser.Cmd1ArgExpr].
+func (e *Editor) containerGetSiblingRow(container parser.Container, cursorLoc parser.Container, up bool) parser.FlexContainer {
+	switch n := container.(type) {
+	case *parser.Cmd2ArgExpr:
+		if up && n.Arg2 == cursorLoc {
+			return n.Arg1.(parser.FlexContainer)
+		} else if !up && n.Arg1 == cursorLoc {
+			return n.Arg2.(parser.FlexContainer)
+		}
+		return nil
+	case *parser.EnvExpr:
+		row, col := n.FindCell(cursorLoc.(*parser.UnboundCompExpr))
+		if up && row > 0 {
+			last := len(n.Elts[row-1]) - 1
+			return n.Elts[row-1][min(col, last)]
+		} else if !up && row < len(n.Elts)-1 {
+			last := len(n.Elts[row+1]) - 1
+			return n.Elts[row+1][min(col, last)]
+		}
+	}
+	return nil
+}
+
 // Navigate cursor downwards
 func (e *Editor) NavigateDown() {
-	//cursorLoc := e.getParent()
 	var targetContainer parser.Container
-	var cursorIdx int // index, in targetContainer.Children(), of the child containing the cursor
+	var targetRow parser.FlexContainer
+
 	stackIdx := e.findEnclosingVerticallyNavigableCommand(len(e.traceStack) - 1)
-LookForContainerBelow:
 	for ; stackIdx > 0; stackIdx = e.findEnclosingVerticallyNavigableCommand(stackIdx - 1) {
-
 		targetContainer = e.traceStack[stackIdx]
-		cursorLoc := e.traceStack[stackIdx+1] // in current implementation all vertical navigable containers have FlexContainer as Children
-
-		for j := 0; j < len(targetContainer.Children())-1; j++ {
-			if targetContainer.Children()[j] == cursorLoc {
-				cursorIdx = j
-				break LookForContainerBelow
-			}
+		cursorLoc := e.traceStack[stackIdx+1]
+		targetRow = e.containerGetSiblingRow(targetContainer, cursorLoc, false)
+		if targetRow != nil {
+			break
 		}
 	}
 
-	if stackIdx <= 0 {
+	if targetRow == nil {
 		return
 	}
 
-	if n, ok := targetContainer.Children()[cursorIdx+1].(parser.Container); ok {
-		idx := e.getCursorIdxInParent()
-		// Clean up traceStack
-		// move to dedicated function?
-		e.getParent().DeleteChildren(idx, idx)
-		for i := stackIdx + 1; i < len(e.traceStack); i++ {
-			e.traceStack[i] = nil
-		}
-		e.traceStack = e.traceStack[:stackIdx+1]
-
-		e.enterContainerFromLeft(n)
-	} else {
-		panic("NavigateDown: next row does not seem to be a Container type")
+	idx := e.getCursorIdxInParent()
+	e.getParent().DeleteChildren(idx, idx)
+	for i := stackIdx + 1; i < len(e.traceStack); i++ {
+		e.traceStack[i] = nil
 	}
+	e.traceStack = e.traceStack[:stackIdx+1]
+
+	e.enterContainerFromLeft(targetRow)
 }
 
 // Navigate cursor upwards
 func (e *Editor) NavigateUp() {
-	//cursorLoc := e.getParent()
 	var targetContainer parser.Container
-	var cursorIdx int // index, in targetContainer.Children(), of the child containing the cursor
+	var targetRow parser.FlexContainer
+
 	stackIdx := e.findEnclosingVerticallyNavigableCommand(len(e.traceStack) - 1)
-LookForContainerAbove:
 	for ; stackIdx > 0; stackIdx = e.findEnclosingVerticallyNavigableCommand(stackIdx - 1) {
-
 		targetContainer = e.traceStack[stackIdx]
-		cursorLoc := e.traceStack[stackIdx+1] // in current implementation all vertical navigable containers have FlexContainer as Children
-
-		if targetContainer.Children()[0] == cursorLoc {
-			continue LookForContainerAbove
-		}
-
-		for j := 1; j < len(targetContainer.Children()); j++ {
-			if targetContainer.Children()[j] == cursorLoc {
-				cursorIdx = j
-				break LookForContainerAbove
-			}
+		cursorLoc := e.traceStack[stackIdx+1]
+		targetRow = e.containerGetSiblingRow(targetContainer, cursorLoc, true)
+		if targetRow != nil {
+			break
 		}
 	}
 
-	if stackIdx <= 0 {
+	if targetRow == nil {
 		return
 	}
 
-	if n, ok := targetContainer.Children()[cursorIdx-1].(parser.Container); ok {
-		idx := e.getCursorIdxInParent()
-		// Clean up traceStack
-		// move to dedicated function?
-		e.getParent().DeleteChildren(idx, idx)
-		for i := stackIdx + 1; i < len(e.traceStack); i++ {
-			e.traceStack[i] = nil
-		}
-		e.traceStack = e.traceStack[:stackIdx+1]
-
-		e.enterContainerFromLeft(n)
-	} else {
-		panic("NavigateDown: next row does not seem to be a Container type")
+	idx := e.getCursorIdxInParent()
+	e.getParent().DeleteChildren(idx, idx)
+	for i := stackIdx + 1; i < len(e.traceStack); i++ {
+		e.traceStack[i] = nil
 	}
+	e.traceStack = e.traceStack[:stackIdx+1]
+
+	e.enterContainerFromLeft(targetRow)
 }
 
 // Moves cursor to before the previous sibling
@@ -904,11 +905,14 @@ func (e *Editor) findEnclosingVerticallyNavigableCommand(searchFrom int) (index 
 		searchFrom = len(e.traceStack)
 	}
 	for ; searchFrom > 0; searchFrom-- {
-		if n, ok := e.traceStack[searchFrom].(*parser.Cmd2ArgExpr); ok {
+		switch n := e.traceStack[searchFrom].(type) {
+		case *parser.Cmd2ArgExpr:
 			switch n.Command() { // TODO
 			case parser.CMD_frac, parser.CMD_binom:
 				return searchFrom
 			}
+		case *parser.EnvExpr:
+			return searchFrom
 		}
 	}
 	return -1
@@ -1091,4 +1095,11 @@ func formatLatexTree(tree parser.Expr) {
 
 func (e Editor) LatexSource() string {
 	return e.config.LatexCfg.ProduceLatex(e.renderer.LatexTree)
+}
+
+func min(a int, b int) int {
+	if a < b {
+		return a
+	}
+	return b
 }
