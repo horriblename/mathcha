@@ -589,7 +589,10 @@ func (e *Editor) flattenDeleteParent() {
 		oldCell := e.getParent().(*parser.UnboundCompExpr)
 		r, c := forest.FindCell(oldCell)
 		row := forest.Elts[r]
-		if c == 0 {
+		if c == 0 && r == 0 {
+			// TODO: what should I do here?
+			return
+		} else if c == 0 {
 			forest.Elts[r-1] = append(forest.Elts[r-1], row...)
 			for r1 := r; r < len(forest.Elts); r1++ {
 				forest.Elts[r1] = forest.Elts[r1+1]
