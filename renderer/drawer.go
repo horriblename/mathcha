@@ -22,7 +22,7 @@ var (
 
 	docStyle       = lipgloss.NewStyle().Foreground(fg)
 	focusStyle     = lipgloss.NewStyle().Foreground(accent).Background(accentBg)
-	highlightStyle = focusStyle.Copy().Background(highlight).Foreground(fg)
+	highlightStyle = focusStyle.Background(highlight).Foreground(fg)
 
 	// underlineStyle = lipgloss.NewStyle().Underline(true)
 	variableStyle = lipgloss.NewStyle().Italic(true)
@@ -61,18 +61,43 @@ func (r *Renderer) Prerender(node parser.Expr) (out string, baseLevel int) {
 		return n.BuildString(), 0
 
 	case *parser.EnvExpr:
-		var rows []string
+		numCols := 0
 		for _, row := range n.Elts {
+			if len(row) > numCols {
+				numCols = len(row)
+			}
+		}
+
+		colWidths := make([]int, numCols)
+		rendered := make([][]string, len(n.Elts))
+		baseLines := make([][]int, len(n.Elts))
+		for rowIdx, row := range n.Elts {
+			rendered[rowIdx] = make([]string, len(row))
+			baseLines[rowIdx] = make([]int, len(row))
+			for colIdx, cell := range row {
+				cellStr, baseLine := r.Prerender(cell)
+				rendered[rowIdx][colIdx] = cellStr
+				baseLines[rowIdx][colIdx] = baseLine
+				width := lipgloss.Width(cellStr)
+				if width > colWidths[colIdx] {
+					colWidths[colIdx] = width
+				}
+			}
+		}
+
+		var rows []string
+		for rowIdx, row := range n.Elts {
 			var cells []string
 			cellBaseLines := make([]int, len(row)*2-1)
-			for i, cell := range row {
+			for i := range row {
+				cellStr := rendered[rowIdx][i]
+				cellStr = cellStr + strings.Repeat(" ", colWidths[i]-lipgloss.Width(cellStr))
 				if i != 0 {
 					cells = append(cells, " ")
 					cellBaseLines[i*2-1] = 0
 				}
-				cellStr, baseLine := r.Prerender(cell)
 				cells = append(cells, cellStr)
-				cellBaseLines[i*2] = baseLine
+				cellBaseLines[i*2] = baseLines[rowIdx][i]
 			}
 			rowStr := JoinHorizontal(cellBaseLines, cells...)
 			rows = append(rows, rowStr)
