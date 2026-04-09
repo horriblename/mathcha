@@ -129,8 +129,14 @@ func TestParser(t *testing.T) {
 					&Cmd1ArgExpr{
 						Type:      CMD_superscript,
 						Backslash: 0,
-						Arg1:      &NumberLit{From: 0, To: 0, Source: "2"},
-						To:        0,
+						Arg1: &CompositeExpr{
+							Lbrace: 0,
+							Elts: []Expr{
+								&NumberLit{From: 0, To: 0, Source: "2"},
+							},
+							Rbrace: 0,
+						},
+						To: 0,
 					},
 				},
 			},
@@ -144,8 +150,14 @@ func TestParser(t *testing.T) {
 					&Cmd1ArgExpr{
 						Type:      CMD_subscript,
 						Backslash: 0,
-						Arg1:      &NumberLit{From: 0, To: 0, Source: "1"},
-						To:        0,
+						Arg1: &CompositeExpr{
+							Lbrace: 0,
+							Elts: []Expr{
+								&NumberLit{From: 0, To: 0, Source: "1"},
+							},
+							Rbrace: 0,
+						},
+						To: 0,
 					},
 				},
 			},
