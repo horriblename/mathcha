@@ -27,6 +27,7 @@ type Node interface {
 	End() Pos
 	VisualizeTree() string
 	DeepEq(other Expr) bool
+	DeepEqWith(other Expr, cfg DeepEqCfg) bool
 }
 
 type Expr interface {

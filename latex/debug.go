@@ -1,6 +1,14 @@
 package latex
 
+type DeepEqCfg struct {
+	SkipPos bool
+}
+
 func (x *BadExpr) DeepEq(other Expr) bool {
+	return x.DeepEqWith(other, DeepEqCfg{})
+}
+
+func (x *BadExpr) DeepEqWith(other Expr, cfg DeepEqCfg) bool {
 	if other == nil {
 		return false
 	}
@@ -8,10 +16,19 @@ func (x *BadExpr) DeepEq(other Expr) bool {
 	if !ok {
 		return false
 	}
-	return x.source == o.source && x.From == o.From && x.To == o.To
+	if !cfg.SkipPos {
+		if x.From != o.From || x.To != o.To {
+			return false
+		}
+	}
+	return x.source == o.source
 }
 
 func (x *EmptyExpr) DeepEq(other Expr) bool {
+	return x.DeepEqWith(other, DeepEqCfg{})
+}
+
+func (x *EmptyExpr) DeepEqWith(other Expr, cfg DeepEqCfg) bool {
 	if other == nil {
 		return false
 	}
@@ -19,10 +36,19 @@ func (x *EmptyExpr) DeepEq(other Expr) bool {
 	if !ok {
 		return false
 	}
-	return x.From == o.From && x.To == o.To && x.Type == o.Type
+	if !cfg.SkipPos {
+		if x.From != o.From || x.To != o.To {
+			return false
+		}
+	}
+	return x.Type == o.Type
 }
 
 func (x *NumberLit) DeepEq(other Expr) bool {
+	return x.DeepEqWith(other, DeepEqCfg{})
+}
+
+func (x *NumberLit) DeepEqWith(other Expr, cfg DeepEqCfg) bool {
 	if other == nil {
 		return false
 	}
@@ -30,10 +56,19 @@ func (x *NumberLit) DeepEq(other Expr) bool {
 	if !ok {
 		return false
 	}
-	return x.Source == o.Source && x.From == o.From && x.To == o.To
+	if !cfg.SkipPos {
+		if x.From != o.From || x.To != o.To {
+			return false
+		}
+	}
+	return x.Source == o.Source
 }
 
 func (x *VarLit) DeepEq(other Expr) bool {
+	return x.DeepEqWith(other, DeepEqCfg{})
+}
+
+func (x *VarLit) DeepEqWith(other Expr, cfg DeepEqCfg) bool {
 	if other == nil {
 		return false
 	}
@@ -41,10 +76,19 @@ func (x *VarLit) DeepEq(other Expr) bool {
 	if !ok {
 		return false
 	}
-	return x.Source == o.Source && x.From == o.From && x.To == o.To
+	if !cfg.SkipPos {
+		if x.From != o.From || x.To != o.To {
+			return false
+		}
+	}
+	return x.Source == o.Source
 }
 
 func (x *CompositeExpr) DeepEq(other Expr) bool {
+	return x.DeepEqWith(other, DeepEqCfg{})
+}
+
+func (x *CompositeExpr) DeepEqWith(other Expr, cfg DeepEqCfg) bool {
 	if other == nil {
 		return false
 	}
@@ -59,7 +103,7 @@ func (x *CompositeExpr) DeepEq(other Expr) bool {
 		return false
 	}
 	for i, el := range x.Elts {
-		if !el.DeepEq(o.Elts[i]) {
+		if !el.DeepEqWith(o.Elts[i], cfg) {
 			return false
 		}
 	}
@@ -67,6 +111,10 @@ func (x *CompositeExpr) DeepEq(other Expr) bool {
 }
 
 func (x *UnboundCompExpr) DeepEq(other Expr) bool {
+	return x.DeepEqWith(other, DeepEqCfg{})
+}
+
+func (x *UnboundCompExpr) DeepEqWith(other Expr, cfg DeepEqCfg) bool {
 	if other == nil {
 		return false
 	}
@@ -74,14 +122,16 @@ func (x *UnboundCompExpr) DeepEq(other Expr) bool {
 	if !ok {
 		return false
 	}
-	if x.From != o.From || x.To != o.To {
-		return false
+	if !cfg.SkipPos {
+		if x.From != o.From || x.To != o.To {
+			return false
+		}
 	}
 	if len(x.Elts) != len(o.Elts) {
 		return false
 	}
 	for i, el := range x.Elts {
-		if !el.DeepEq(o.Elts[i]) {
+		if !el.DeepEqWith(o.Elts[i], cfg) {
 			return false
 		}
 	}
@@ -89,6 +139,10 @@ func (x *UnboundCompExpr) DeepEq(other Expr) bool {
 }
 
 func (x *ParenCompExpr) DeepEq(other Expr) bool {
+	return x.DeepEqWith(other, DeepEqCfg{})
+}
+
+func (x *ParenCompExpr) DeepEqWith(other Expr, cfg DeepEqCfg) bool {
 	if other == nil {
 		return false
 	}
@@ -96,14 +150,19 @@ func (x *ParenCompExpr) DeepEq(other Expr) bool {
 	if !ok {
 		return false
 	}
-	if x.From != o.From || x.To != o.To || x.Left != o.Left || x.Right != o.Right {
+	if !cfg.SkipPos {
+		if x.From != o.From || x.To != o.To {
+			return false
+		}
+	}
+	if x.Left != o.Left || x.Right != o.Right {
 		return false
 	}
 	if len(x.Elts) != len(o.Elts) {
 		return false
 	}
 	for i, el := range x.Elts {
-		if !el.DeepEq(o.Elts[i]) {
+		if !el.DeepEqWith(o.Elts[i], cfg) {
 			return false
 		}
 	}
@@ -111,6 +170,10 @@ func (x *ParenCompExpr) DeepEq(other Expr) bool {
 }
 
 func (x *EnvExpr) DeepEq(other Expr) bool {
+	return x.DeepEqWith(other, DeepEqCfg{})
+}
+
+func (x *EnvExpr) DeepEqWith(other Expr, cfg DeepEqCfg) bool {
 	if other == nil {
 		return false
 	}
@@ -118,7 +181,12 @@ func (x *EnvExpr) DeepEq(other Expr) bool {
 	if !ok {
 		return false
 	}
-	if x.Name != o.Name || x.From != o.From || x.To != o.To {
+	if !cfg.SkipPos {
+		if x.From != o.From || x.To != o.To {
+			return false
+		}
+	}
+	if x.Name != o.Name {
 		return false
 	}
 	if len(x.Elts) != len(o.Elts) {
@@ -129,7 +197,7 @@ func (x *EnvExpr) DeepEq(other Expr) bool {
 			return false
 		}
 		for j, cell := range row {
-			if !cell.DeepEq(o.Elts[i][j]) {
+			if !cell.DeepEqWith(o.Elts[i][j], cfg) {
 				return false
 			}
 		}
@@ -138,6 +206,10 @@ func (x *EnvExpr) DeepEq(other Expr) bool {
 }
 
 func (x *SimpleOpLit) DeepEq(other Expr) bool {
+	return x.DeepEqWith(other, DeepEqCfg{})
+}
+
+func (x *SimpleOpLit) DeepEqWith(other Expr, cfg DeepEqCfg) bool {
 	if other == nil {
 		return false
 	}
@@ -145,10 +217,19 @@ func (x *SimpleOpLit) DeepEq(other Expr) bool {
 	if !ok {
 		return false
 	}
-	return x.Source == o.Source && x.From == o.From && x.To == o.To
+	if !cfg.SkipPos {
+		if x.From != o.From || x.To != o.To {
+			return false
+		}
+	}
+	return x.Source == o.Source
 }
 
 func (x *IncompleteCmdLit) DeepEq(other Expr) bool {
+	return x.DeepEqWith(other, DeepEqCfg{})
+}
+
+func (x *IncompleteCmdLit) DeepEqWith(other Expr, cfg DeepEqCfg) bool {
 	if other == nil {
 		return false
 	}
@@ -156,10 +237,19 @@ func (x *IncompleteCmdLit) DeepEq(other Expr) bool {
 	if !ok {
 		return false
 	}
-	return x.Backslash == o.Backslash && x.Source == o.Source && x.To == o.To
+	if cfg.SkipPos {
+		if x.To != o.To {
+			return false
+		}
+	}
+	return x.Backslash == o.Backslash && x.Source == o.Source
 }
 
 func (x *UnknownCmdLit) DeepEq(other Expr) bool {
+	return x.DeepEqWith(other, DeepEqCfg{})
+}
+
+func (x *UnknownCmdLit) DeepEqWith(other Expr, cfg DeepEqCfg) bool {
 	if other == nil {
 		return false
 	}
@@ -167,10 +257,19 @@ func (x *UnknownCmdLit) DeepEq(other Expr) bool {
 	if !ok {
 		return false
 	}
-	return x.Backslash == o.Backslash && x.Source == o.Source && x.To == o.To
+	if cfg.SkipPos {
+		if x.To != o.To {
+			return false
+		}
+	}
+	return x.Backslash == o.Backslash && x.Source == o.Source
 }
 
 func (x RawRuneLit) DeepEq(other Expr) bool {
+	return x.DeepEqWith(other, DeepEqCfg{})
+}
+
+func (x RawRuneLit) DeepEqWith(other Expr, _ DeepEqCfg) bool {
 	if other == nil {
 		return false
 	}
@@ -182,6 +281,10 @@ func (x RawRuneLit) DeepEq(other Expr) bool {
 }
 
 func (x *SimpleCmdLit) DeepEq(other Expr) bool {
+	return x.DeepEqWith(other, DeepEqCfg{})
+}
+
+func (x *SimpleCmdLit) DeepEqWith(other Expr, cfg DeepEqCfg) bool {
 	if other == nil {
 		return false
 	}
@@ -189,10 +292,19 @@ func (x *SimpleCmdLit) DeepEq(other Expr) bool {
 	if !ok {
 		return false
 	}
-	return x.Backslash == o.Backslash && x.Source == o.Source && x.Type == o.Type && x.To == o.To
+	if cfg.SkipPos {
+		if x.Backslash != o.Backslash || x.To != o.To {
+			return false
+		}
+	}
+	return x.Source == o.Source && x.Type == o.Type
 }
 
 func (x *SuperExpr) DeepEq(other Expr) bool {
+	return x.DeepEqWith(other, DeepEqCfg{})
+}
+
+func (x *SuperExpr) DeepEqWith(other Expr, cfg DeepEqCfg) bool {
 	if other == nil {
 		return false
 	}
@@ -209,10 +321,14 @@ func (x *SuperExpr) DeepEq(other Expr) bool {
 	if x.X == nil || o.X == nil {
 		return false
 	}
-	return x.X.DeepEq(o.X)
+	return x.X.DeepEqWith(o.X, cfg)
 }
 
 func (x *SubExpr) DeepEq(other Expr) bool {
+	return x.DeepEqWith(other, DeepEqCfg{})
+}
+
+func (x *SubExpr) DeepEqWith(other Expr, cfg DeepEqCfg) bool {
 	if other == nil {
 		return false
 	}
@@ -229,10 +345,14 @@ func (x *SubExpr) DeepEq(other Expr) bool {
 	if x.X == nil || o.X == nil {
 		return false
 	}
-	return x.X.DeepEq(o.X)
+	return x.X.DeepEqWith(o.X, cfg)
 }
 
 func (x *Cmd1ArgExpr) DeepEq(other Expr) bool {
+	return x.DeepEqWith(other, DeepEqCfg{})
+}
+
+func (x *Cmd1ArgExpr) DeepEqWith(other Expr, cfg DeepEqCfg) bool {
 	if other == nil {
 		return false
 	}
@@ -240,7 +360,12 @@ func (x *Cmd1ArgExpr) DeepEq(other Expr) bool {
 	if !ok {
 		return false
 	}
-	if x.Type != o.Type || x.Backslash != o.Backslash || x.To != o.To {
+	if cfg.SkipPos {
+		if x.Backslash != o.Backslash || x.To != o.To {
+			return false
+		}
+	}
+	if x.Type != o.Type {
 		return false
 	}
 	if x.Arg1 == nil && o.Arg1 == nil {
@@ -249,10 +374,14 @@ func (x *Cmd1ArgExpr) DeepEq(other Expr) bool {
 	if x.Arg1 == nil || o.Arg1 == nil {
 		return false
 	}
-	return x.Arg1.DeepEq(o.Arg1)
+	return x.Arg1.DeepEqWith(o.Arg1, cfg)
 }
 
 func (x *Cmd2ArgExpr) DeepEq(other Expr) bool {
+	return x.DeepEqWith(other, DeepEqCfg{})
+}
+
+func (x *Cmd2ArgExpr) DeepEqWith(other Expr, cfg DeepEqCfg) bool {
 	if other == nil {
 		return false
 	}
@@ -260,7 +389,12 @@ func (x *Cmd2ArgExpr) DeepEq(other Expr) bool {
 	if !ok {
 		return false
 	}
-	if x.Type != o.Type || x.Backslash != o.Backslash || x.To != o.To {
+	if cfg.SkipPos {
+		if x.Backslash != o.Backslash || x.To != o.To {
+			return false
+		}
+	}
+	if x.Type != o.Type {
 		return false
 	}
 	if (x.Arg1 == nil) != (o.Arg1 == nil) {
@@ -269,16 +403,20 @@ func (x *Cmd2ArgExpr) DeepEq(other Expr) bool {
 	if (x.Arg2 == nil) != (o.Arg2 == nil) {
 		return false
 	}
-	if x.Arg1 != nil && !x.Arg1.DeepEq(o.Arg1) {
+	if x.Arg1 != nil && !x.Arg1.DeepEqWith(o.Arg1, cfg) {
 		return false
 	}
-	if x.Arg2 != nil && !x.Arg2.DeepEq(o.Arg2) {
+	if x.Arg2 != nil && !x.Arg2.DeepEqWith(o.Arg2, cfg) {
 		return false
 	}
 	return true
 }
 
 func (x *TextContainer) DeepEq(other Expr) bool {
+	return x.DeepEqWith(other, DeepEqCfg{})
+}
+
+func (x *TextContainer) DeepEqWith(other Expr, cfg DeepEqCfg) bool {
 	if other == nil {
 		return false
 	}
@@ -286,7 +424,12 @@ func (x *TextContainer) DeepEq(other Expr) bool {
 	if !ok {
 		return false
 	}
-	if x.CmdText != o.CmdText || x.Type != o.Type || x.From != o.From || x.To != o.To {
+	if cfg.SkipPos {
+		if x.CmdText != o.CmdText || x.From != o.From || x.To != o.To {
+			return false
+		}
+	}
+	if x.Type != o.Type {
 		return false
 	}
 	if x.Text == nil && o.Text == nil {
@@ -295,10 +438,14 @@ func (x *TextContainer) DeepEq(other Expr) bool {
 	if x.Text == nil || o.Text == nil {
 		return false
 	}
-	return x.Text.DeepEq(o.Text)
+	return x.Text.DeepEqWith(o.Text, cfg)
 }
 
 func (x *TextStringWrapper) DeepEq(other Expr) bool {
+	return x.DeepEqWith(other, DeepEqCfg{})
+}
+
+func (x *TextStringWrapper) DeepEqWith(other Expr, cfg DeepEqCfg) bool {
 	if other == nil {
 		return false
 	}
@@ -310,7 +457,7 @@ func (x *TextStringWrapper) DeepEq(other Expr) bool {
 		return false
 	}
 	for i, r := range x.Runes {
-		if !r.DeepEq(o.Runes[i]) {
+		if !r.DeepEqWith(o.Runes[i], cfg) {
 			return false
 		}
 	}

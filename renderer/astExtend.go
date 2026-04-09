@@ -24,6 +24,11 @@ func (c *Cursor) DeepEq(other parser.Expr) bool {
 	return ok
 }
 
+func (c *Cursor) DeepEqWith(other parser.Expr, _ parser.DeepEqCfg) bool {
+	_, ok := other.(*Cursor)
+	return ok
+}
+
 func (x *LatexCmdInput) Pos() parser.Pos         { return 0 }
 func (x *LatexCmdInput) End() parser.Pos         { return 0 }
 func (x *LatexCmdInput) Children() []parser.Expr { return []parser.Expr{x.Text} }
@@ -41,6 +46,13 @@ func (x *LatexCmdInput) SetArg(index int, expr parser.Expr) {
 }
 func (x *LatexCmdInput) VisualizeTree() string { return "TextContainer " + x.Text.VisualizeTree() }
 func (x *LatexCmdInput) DeepEq(other parser.Expr) bool {
+	if o, ok := other.(*LatexCmdInput); ok {
+		return x.Text == o.Text
+	}
+	return false
+}
+
+func (x *LatexCmdInput) DeepEqWith(other parser.Expr, _ parser.DeepEqCfg) bool {
 	if o, ok := other.(*LatexCmdInput); ok {
 		return x.Text == o.Text
 	}
