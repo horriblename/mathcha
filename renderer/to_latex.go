@@ -56,16 +56,20 @@ func (cfg *LatexSourceConfig) ProduceLatex(node parser.Expr) string {
 		b.WriteString(`\begin{`)
 		b.WriteString(n.Name.String())
 		b.WriteString("}\n")
-		for _, row := range n.Elts {
-			for _, cell := range row {
+		for rowIdx, row := range n.Elts {
+			for colIdx, cell := range row {
 				b.WriteString(cfg.ProduceLatex(cell))
-				b.WriteString(" & ")
+				if colIdx < len(row)-1 {
+					b.WriteString(" & ")
+				}
 			}
-			b.WriteString(`\\` + "\n")
+			if rowIdx < len(n.Elts)-1 {
+				b.WriteString(`\\` + "\n")
+			}
 		}
 		b.WriteString(`\end{`)
 		b.WriteString(n.Name.String())
-		b.WriteString("}\n")
+		b.WriteString("}")
 		return b.String()
 	case parser.CmdLiteral:
 		if cfg.UseUnicode {
