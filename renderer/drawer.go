@@ -104,8 +104,9 @@ func (r *Renderer) Prerender(node parser.Expr) (out string, baseLevel int) {
 		}
 
 		body := lipgloss.JoinVertical(lipgloss.Top, rows...)
-		left := constructParenLike(len(rows), "⎡", "⎢", "⎣")
-		right := constructParenLike(len(rows), "⎤", "⎥", "⎦")
+		height := lipgloss.Height(body)
+		left := constructParenLike(height, "⎡", "⎢", "⎣")
+		right := constructParenLike(height, "⎤", "⎥", "⎦")
 
 		return JoinHorizontal([]int{0, 0, 0}, left, body, right), 0
 
