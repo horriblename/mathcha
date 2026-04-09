@@ -9,6 +9,7 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 	parser "github.com/horriblename/mathcha/latex"
+	"github.com/horriblename/mathcha/renderer"
 	render "github.com/horriblename/mathcha/renderer"
 )
 
@@ -82,6 +83,10 @@ func (e *Editor) Read(latex string) {
 	e.traceStack = []parser.Container{e.renderer.LatexTree}
 
 	e.renderer.Sync(e.getLastOnStack(), false)
+}
+
+func (e *Editor) Renderer() *renderer.Renderer {
+	return e.renderer
 }
 
 func (e *Editor) popStack() parser.Container {
