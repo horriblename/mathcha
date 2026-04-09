@@ -35,9 +35,10 @@ type model struct {
 
 // some CLI flags are not present here cuz they don't matter to model init
 type cliFlags struct {
-	helpText *string
-	printOut *bool
-	logFile  *string
+	helpText  *string
+	printOut  *bool
+	logFile   *string
+	debugTree *bool
 }
 
 func (m model) Init() tea.Cmd {
@@ -168,11 +169,17 @@ func (m model) View() string {
 		}
 	}
 
+	tree := ""
+	if *m.debugTree {
+		tree = m.editors[0].Renderer().LatexTree.VisualizeTree()
+	}
+
 	return fmt.Sprintf(
-		"\n%s\n\n%s\n%s",
+		"\n%s\n\n%s\n%s\n%s",
 		strings.Join(editorsView, "\n"),
 		compDisplay.String(),
 		m.helpSection(),
+		tree,
 	) + "\n"
 }
 
@@ -215,6 +222,7 @@ func main() {
 	cliFlags.helpText = flag.String("helptext", defaultHelpText, "Help text to print below the editor")
 	cliFlags.printOut = flag.Bool("printout", false, "Internal flag for communicating with the nvim plugin")
 	cliFlags.logFile = flag.String("logfile", "", "Print debug logs to file")
+	cliFlags.debugTree = flag.Bool("debugtree", false, "Print AST representation")
 	flag.Parse()
 
 	editorCfg := ed.EditorConfig{
