@@ -67,7 +67,7 @@ func (cfg *LatexSourceConfig) ProduceLatex(node parser.Expr) string {
 				b.WriteString(`\\` + "\n")
 			}
 		}
-		b.WriteString(`\end{`)
+		b.WriteString("\n\\end{")
 		b.WriteString(n.Name.String())
 		b.WriteString("}")
 		return b.String()
