@@ -43,7 +43,7 @@ func (r *Renderer) Prerender(node parser.Expr) (out string, baseLevel int) {
 		return r.Prerender(n.Text)
 	case *LatexCmdInput:
 		str, baseLevel := r.Prerender(n.Text)
-		return "\\" + str, baseLevel
+		return n.Prefix + str, baseLevel
 	case *parser.TextStringWrapper:
 		if CONF_RENDER_EMPTY_COMP_EXPR {
 			var builder strings.Builder

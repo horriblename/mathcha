@@ -11,7 +11,8 @@ type Cursor struct {
 }
 
 type LatexCmdInput struct {
-	Text *parser.TextStringWrapper
+	Prefix string
+	Text   *parser.TextStringWrapper
 }
 
 func (c *Cursor) Pos() parser.Pos { return parser.Pos(0) } // FIXME remove

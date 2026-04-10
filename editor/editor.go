@@ -4,6 +4,7 @@ package editor
 
 import (
 	"log"
+	"strings"
 	"unicode"
 
 	tea "github.com/charmbracelet/bubbletea"
@@ -496,7 +497,18 @@ func (e *Editor) InsertCmd(cmd string) {
 	idx := e.getCursorIdxInParent()
 	switch {
 	case cmd == "\\begin":
-		envNameStr := "matrix" // TODO
+		field := &render.LatexCmdInput{
+			Prefix: `\begin:`,
+			Text:   new(parser.TextStringWrapper),
+		}
+		e.getParent().DeleteChildren(idx, idx)
+		e.getParent().InsertChildren(idx, field)
+		e.traceStack = append(e.traceStack, field, field.Text)
+		e.getParent().AppendChildren(e.cursor)
+	case strings.HasPrefix(cmd, `\begin{`):
+		start := strings.Index(cmd, "{")
+		end := strings.Index(cmd, "}")
+		envNameStr := cmd[start+1 : end]
 		envName := parser.GetEnvName(envNameStr)
 		cell := &parser.UnboundCompExpr{}
 		node := &parser.EnvExpr{
@@ -510,6 +522,7 @@ func (e *Editor) InsertCmd(cmd string) {
 		e.traceStack = append(e.traceStack, node)
 		cell.AppendChildren(e.cursor)
 		e.traceStack = append(e.traceStack, cell)
+
 	case kind.IsTextCmd():
 		node := &parser.TextContainer{Text: &parser.TextStringWrapper{}}
 		e.getParent().DeleteChildren(idx, idx)
@@ -526,11 +539,25 @@ func (e *Editor) InsertCmd(cmd string) {
 		e.getParent().InsertChildren(idx, node)
 		e.enterContainerFromRight(node)
 	case kind.TakesRawStrArg():
+		node := &parser.TextContainer{Text: &parser.TextStringWrapper{}}
+		e.getParent().DeleteChildren(idx, idx)
+		e.getParent().InsertChildren(idx, node)
+		e.enterContainerFromRight(node)
 	case kind.IsVanillaSym():
 		node := &parser.SimpleCmdLit{Type: kind, Source: cmd}
 		e.getParent().InsertChildren(idx, node)
 
 	case kind.IsEnclosing():
+		switch kind {
+		case parser.CMD_left:
+			node := &parser.ParenCompExpr{Left: "(", Right: ")"}
+			e.getParent().DeleteChildren(idx, idx)
+			e.getParent().InsertChildren(idx, node)
+			e.traceStack = append(e.traceStack, node)
+			e.enterContainerFromRight(node)
+		case parser.CMD_right:
+			e.exitParent(DIR_RIGHT)
+		}
 	default:
 		node := &parser.UnknownCmdLit{Source: cmd}
 		e.getParent().InsertChildren(idx, node)
@@ -804,7 +831,10 @@ func (e *Editor) handleRest(char rune) {
 			e.enterContainerFromRight(block)
 
 		case '\\':
-			field := &render.LatexCmdInput{Text: new(parser.TextStringWrapper)}
+			field := &render.LatexCmdInput{
+				Prefix: `\`,
+				Text:   new(parser.TextStringWrapper),
+			}
 			e.getParent().DeleteChildren(idx, idx)
 			e.getParent().InsertChildren(idx, field)
 
@@ -1035,16 +1065,27 @@ func (e *Editor) realizeCommand() {
 		panic("realizeCommand called outside of command editing mode")
 	}
 
-	if n, ok := e.getLastOnStack().(*parser.TextStringWrapper); ok {
-		cmd := "\\" + n.BuildString()
-		e.exitParent(DIR_RIGHT)
-		idx := e.getCursorIdxInParent() // TODO error handling for idx == 0?
-		e.getParent().DeleteChildren(idx-1, idx-1)
-		if len(cmd) <= 1 {
-			cmd += " "
-		}
-		e.InsertCmd(cmd)
+	cmdInput, ok := e.traceStack[len(e.traceStack)-2].(*render.LatexCmdInput)
+	if !ok {
+		panic("realizeCommand cdalled outside of command editing mode")
 	}
+
+	n := cmdInput.Text
+	var cmd string
+	switch cmdInput.Prefix {
+	case `\`:
+		cmd = "\\" + n.BuildString()
+	case `\begin:`:
+		cmd = "\\begin{" + n.BuildString() + "}"
+	}
+
+	e.exitParent(DIR_RIGHT)
+	idx := e.getCursorIdxInParent() // TODO error handling for idx == 0?
+	e.getParent().DeleteChildren(idx-1, idx-1)
+	if len(cmd) <= 1 {
+		cmd += " "
+	}
+	e.InsertCmd(cmd)
 }
 
 func (e Editor) View() string {
