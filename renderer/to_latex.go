@@ -20,7 +20,7 @@ func (cfg *LatexSourceConfig) ProduceLatex(node parser.Expr) string {
 	suffix := ""
 	switch n := node.(type) {
 	case *parser.TextContainer: // TODO CmdContainer subtype
-		return "\\text {" + n.Text.BuildString() + "}"
+		return "\\text{" + n.Text.BuildString() + "}"
 	case *parser.ParenCompExpr: // TODO FlexContainer subtype
 		builder := strings.Builder{}
 		builder.WriteString("\\left" + n.Left)
