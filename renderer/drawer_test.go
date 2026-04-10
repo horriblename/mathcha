@@ -1,10 +1,13 @@
 package renderer
 
 import (
+	"strings"
 	"testing"
 
 	parser "github.com/horriblename/mathcha/latex"
 )
+
+func join(x ...string) string { return strings.Join(x, "\n") }
 
 func TestPrerender(t *testing.T) {
 	testCases := []struct {
@@ -123,15 +126,21 @@ func TestPrerender(t *testing.T) {
 	1 & 2 & 3 & 4 & 5\\
 	a &   &   &   & d
 \end{matrix}`,
-			expect: "⎡1 2 3 4 5⎤\n⎣a       d⎦",
+			expect: join(
+				"⎡1 2 3 4 5⎤",
+				"⎣a       d⎦",
+			),
 		},
 		{
 			desc: "EnvExpr - empty cells with uneven columns align correctly",
 			input: `\begin{matrix}
-	1 & 2 & 3 & 4 & 5\\
-	a &  & d
+	1111 & 2b & 3 & 4 & 5\\
+	a & & d
 \end{matrix}`,
-			expect: "⎡1 2 3 4 5⎤\n⎣a d      ⎦",
+			expect: join(
+				"⎡1111 2b 3 4 5⎤",
+				"⎣a       d    ⎦",
+			),
 		},
 		{
 			desc:   "Combined - simple expression",
