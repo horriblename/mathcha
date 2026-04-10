@@ -17,6 +17,7 @@ type EnvName int
 
 const (
 	ENV_unknown EnvName = iota
+	ENV_align
 	ENV_matrix
 )
 
@@ -1069,6 +1070,7 @@ var acceptedCmds = map[string]LatexCmd{
 }
 
 var nameToEnvMap = map[string]EnvName{
+	"align":  ENV_align,
 	"matrix": ENV_matrix,
 }
 
@@ -1076,6 +1078,8 @@ func (n EnvName) String() string {
 	switch n {
 	case ENV_matrix:
 		return "matrix"
+	case ENV_align:
+		return "align"
 	default:
 		panic(fmt.Sprintf("unrecognized EnvName: %d", n))
 	}

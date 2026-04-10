@@ -105,12 +105,10 @@ func (r *Renderer) Prerender(node parser.Expr) (out string, baseLevel int) {
 
 		body := lipgloss.JoinVertical(lipgloss.Top, rows...)
 		height := lipgloss.Height(body)
-		left := "["
-		right := "]"
-		if height != 1 {
-			left = constructParenLike(height, "⎡", "⎢", "⎣")
-			right = constructParenLike(height, "⎤", "⎥", "⎦")
-		}
+		s, t, m, b := envLeft(n.Name)
+		left := constructParenLike(height, s, t, m, b)
+		s, t, m, b = envRight(n.Name)
+		right := constructParenLike(height, s, t, m, b)
 
 		return JoinHorizontal([]int{0, 0, 0}, left, body, right), -height / 2
 
@@ -138,8 +136,8 @@ func (r *Renderer) Prerender(node parser.Expr) (out string, baseLevel int) {
 		content, baseLine := r.PrerenderFlexContainer(n)
 		if n.Left == "(" && n.Right == ")" && lipgloss.Height(content) >= 2 {
 			height := lipgloss.Height(content)
-			left := constructParenLike(height, "⎛", "⎜", "⎝")
-			right := constructParenLike(height, "⎞", "⎟", "⎠")
+			left := constructParenLike(height, "(", "⎛", "⎜", "⎝")
+			right := constructParenLike(height, ")", "⎞", "⎟", "⎠")
 			return JoinHorizontal([]int{baseLine, baseLine, baseLine}, left, content, right), baseLine
 		}
 		return JoinHorizontal([]int{0, baseLine, 0}, n.Left, content, n.Right), baseLine
@@ -306,9 +304,31 @@ func (r *Renderer) PrerenderCmdSqrt(node parser.CmdContainer) (output string, ba
 	return JoinHorizontal([]int{baseLevel, baseLevel}, root, block), baseLevel
 }
 
-func constructParenLike(height int, top, mid, bot string) string {
+func envLeft(name parser.EnvName) (single, top, mid, bot string) {
+	switch name {
+	case parser.ENV_align:
+		return "", "", "", ""
+	case parser.ENV_matrix:
+		return "[", "⎡", "⎢", "⎣"
+	default:
+		return "?", " ", "?", " "
+	}
+}
+
+func envRight(name parser.EnvName) (single, top, mid, bot string) {
+	switch name {
+	case parser.ENV_align:
+		return "", "", "", ""
+	case parser.ENV_matrix:
+		return "]", "⎤", "⎥", "⎦"
+	default:
+		return "?", " ", "?", " "
+	}
+}
+
+func constructParenLike(height int, single, top, mid, bot string) string {
 	if height == 1 {
-		return mid
+		return single
 	}
 	return top + "\n" + strings.Repeat(mid+"\n", height-2) + bot
 }
