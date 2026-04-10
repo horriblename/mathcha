@@ -850,8 +850,10 @@ func (e *Editor) handleRest(char rune) {
 				idx := e.getCursorIdxInParent()
 				cell := env.InsertCell(r, c+1)
 
-				e.getParent().DeleteChildren(idx, idx)
-				cell.AppendChildren(e.cursor)
+				children := e.getParent().Children()
+				afterCursor := children[idx:]
+				cell.AppendChildren(afterCursor...)
+				e.getParent().DeleteChildren(idx, len(children)-1)
 
 				e.popStack()
 				e.traceStack = append(e.traceStack, cell)
