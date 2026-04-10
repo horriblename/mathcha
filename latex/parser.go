@@ -47,10 +47,6 @@ func (p *Parser) next() {
 	// 	" depth:", p.exprLev)
 }
 
-// the tokenizer is always one token ahead, we can use its tok value
-// to look ahead
-func (p *Parser) lookahead() Token { return p.tokenizer.Peek() }
-
 // Note that the parser's EOF is separate from the tokenizer's.
 // the Parser's EOF should arrive one iteration of Parser.next()
 // later than the tokenizer
@@ -127,14 +123,6 @@ func (p *Parser) parseGenericOnce() Expr {
 	return &BadExpr{}
 }
 
-// like [Parser.parseGenericOnce] but returns nil if the next token is `&` or `\\` or `\end`
-func (p *Parser) parseInEnvOnce() Expr {
-	if p.tok == AMPERSAND || p.tok == NEWLINE || p.tok == CMDSTR && p.lit == `\end` {
-		return nil
-	}
-	return p.parseGenericOnce()
-}
-
 func (p *Parser) parseStringCmd() Expr {
 	kind := MatchLatexCmd(p.lit)
 
@@ -153,7 +141,7 @@ func (p *Parser) parseStringCmd() Expr {
 	case kind.TakesTwoArg():
 		leaf = p.parseCmd2Arg(kind)
 	case kind.IsEnclosing():
-		leaf = p.parseCmdEnclosing(kind)
+		leaf = p.parseCmdEnclosing()
 	case kind == CMD_UNKNOWN:
 		leaf = &(UnknownCmdLit{Source: p.lit})
 		p.next()
@@ -220,27 +208,6 @@ func (p *Parser) parseCompositeExpr() Expr {
 	return node
 }
 
-// TODO remove
-func (p *Parser) parseSuperExpr() Expr {
-	p.exprLev++
-	p.next() // skip "^"
-	node := new(SuperExpr)
-	node.X = p.parseGenericOnce()
-	p.exprLev--
-	return node
-}
-
-// this should be merged with parseSuperExpr(), and maybe even parseFuncCmd1
-func (p *Parser) parseSubExpr() Expr {
-	p.exprLev++
-	p.next() // skip "_"
-	node := new(SubExpr)
-	node.X = p.parseGenericOnce()
-
-	p.exprLev--
-	return node
-}
-
 func (p *Parser) parseTextCommand(kind LatexCmd) Expr {
 	p.exprLev++
 	p.next() // skip command
@@ -297,7 +264,7 @@ func (p *Parser) parseCmd2Arg(kind LatexCmd) Expr {
 	return node
 }
 
-func (p *Parser) parseCmdEnclosing(kind LatexCmd) Expr {
+func (p *Parser) parseCmdEnclosing() Expr {
 	p.exprLev++
 	p.expect("\\right")
 	p.next() // skip "\left"
