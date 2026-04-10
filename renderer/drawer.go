@@ -112,7 +112,7 @@ func (r *Renderer) Prerender(node parser.Expr) (out string, baseLevel int) {
 			right = constructParenLike(height, "⎤", "⎥", "⎦")
 		}
 
-		return JoinHorizontal([]int{0, 0, 0}, left, body, right), 0
+		return JoinHorizontal([]int{0, 0, 0}, left, body, right), -height / 2
 
 	case parser.CmdContainer:
 		switch n.Command() {
