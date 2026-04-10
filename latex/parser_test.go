@@ -351,6 +351,26 @@ func TestParser(t *testing.T) {
 			},
 		},
 		{
+			desc:  "EnvExpr - empty cells not skipped",
+			input: `\begin{matrix} x & & z \end{matrix}`,
+			expect: &UnboundCompExpr{
+				Elts: []Expr{
+					&EnvExpr{
+						Name: ENV_matrix,
+						From: 7,
+						To:   35,
+						Elts: [][]*UnboundCompExpr{
+							{
+								{Elts: []Expr{&VarLit{From: 0, To: 0, Source: "x"}}},
+								{Elts: []Expr{}},
+								{Elts: []Expr{&VarLit{From: 0, To: 0, Source: "z"}}},
+							},
+						},
+					},
+				},
+			},
+		},
+		{
 			desc:  "Combined - simple expression",
 			input: "x + 1",
 			expect: &UnboundCompExpr{
