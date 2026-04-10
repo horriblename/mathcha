@@ -328,6 +328,7 @@ loop:
 			row = append(row, cell)
 			p.next()
 			cell = &UnboundCompExpr{From: p.pos, Elts: []Expr{}}
+			continue
 		case NEWLINE:
 			cell.To = p.pos
 			row = append(row, cell)
@@ -335,6 +336,7 @@ loop:
 			row = []*UnboundCompExpr{}
 			p.next()
 			cell = &UnboundCompExpr{From: p.pos, Elts: []Expr{}}
+			continue
 		case CMDSTR:
 			if p.lit == `\end` {
 				cell.To = p.pos
