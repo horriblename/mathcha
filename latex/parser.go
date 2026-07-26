@@ -158,8 +158,10 @@ func (p *Parser) parseStringCmd() Expr {
 
 // FIXME merge into parseStringCmd?
 func (p *Parser) parseSymbolCmd() Expr {
+	kind := MatchLatexCmd(p.lit)
 	leaf := SimpleCmdLit{
 		Source: p.lit,
+		Type:   kind,
 	}
 	p.next()
 	return &leaf

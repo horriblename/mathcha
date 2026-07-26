@@ -279,8 +279,8 @@ const (
 	CMD_lceil
 	CMD_rceil
 	CMD_slash
-	CMD_opencurlybrace
-	CMD_closecurlybrace
+	CMD_lbrace
+	CMD_rbrace
 
 	CMD_caret
 	CMD_underscore
@@ -706,8 +706,8 @@ var latexCmds = map[string]LatexCmd{
 	"\\lceil":              CMD_lceil,
 	"\\rceil":              CMD_rceil,
 	"\\slash":              CMD_slash,
-	"\\opencurlybrace":     CMD_opencurlybrace,
-	"\\closecurlybrace":    CMD_closecurlybrace,
+	"\\opencurlybrace":     CMD_lbrace,
+	"\\closecurlybrace":    CMD_rbrace,
 	"\\caret":              CMD_caret,
 	"\\underscore":         CMD_underscore,
 	"\\backslash":          CMD_backslash,
@@ -909,6 +909,10 @@ var latexCmds = map[string]LatexCmd{
 
 // cmds that are accepted during editing/input, but will be outputed as something else
 var acceptedCmds = map[string]LatexCmd{
+	`\{`:               CMD_lbrace,
+	`\lbrace`:          CMD_lbrace,
+	`\}`:               CMD_rbrace,
+	`\rbrace`:          CMD_rbrace,
 	`\subscript`:       CMD_subscript,
 	`\superscript`:     CMD_superscript,
 	`\dfrac`:           CMD_frac,
