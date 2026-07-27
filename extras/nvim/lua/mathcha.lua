@@ -8,7 +8,7 @@ M._states = {}
 ---@field buf integer
 ---@field query vim.treesitter.Query
 ---@field pending TSNode[]
----@field running vim.SystemObj?
+---@field conceal_job vim.SystemObj?
 local State = {}
 
 local ns_id = vim.api.nvim_create_namespace("mathcha")
@@ -119,6 +119,10 @@ function State:_parse_and_render(trees)
 end
 
 function State:update_conceal()
+	if self.conceal_job then
+		return
+	end
+
 	local node = table.remove(self.pending, 1)
 	while node and node:has_changes() do
 		node = table.remove(self.pending, 1)
@@ -131,10 +135,10 @@ function State:update_conceal()
 	local start_row, _, end_row, _ = node:range()
 	start_row = start_row + 1
 
-	self.running = vim.system({ 'mathcha', '-render' }, {
+	self.conceal_job = vim.system({ 'mathcha', '-render' }, {
 		stdin = vim.api.nvim_buf_get_lines(self.buf, start_row, end_row, false)
 	}, function(obj)
-		self.running = nil
+		self.conceal_job = nil
 		vim.schedule(function()
 			if obj.code ~= 0 then
 				vim.notify("mathcha failed: " .. obj.stderr, vim.log.levels.ERROR)
@@ -294,6 +298,18 @@ function M.attach(bufnr)
 			vim.notify_once(err, vim.log.levels.ERROR)
 		end
 	end
+
+	local augroup = vim.api.nvim_create_augroup("mathcha_buf_cleanup_" .. bufnr, { clear = true })
+	vim.api.nvim_create_autocmd("BufWipeout", {
+		group = augroup,
+		callback = function(ev)
+			local s = M._states[ev.buf]
+			if s then
+				s:reset_marks()
+				M._states[ev.buf] = nil
+			end
+		end,
+	})
 
 	vim.keymap.set("n", "<localleader>i", M.open_editor, { buffer = buf })
 end
