@@ -285,27 +285,43 @@ function State:open_editor()
 	return true
 end
 
+function State:_get_augroup()
+	if self.augroup then
+		return self.augroup
+	end
+
+	self.augroup = vim.api.nvim_create_augroup("mathcha_buf_" .. self.buf, {
+		clear = true
+	})
+	return self.augroup
+end
+
+---@return string? err
 function M.attach(bufnr)
 	local buf = bufnr or vim.fn.bufnr()
 	if buf == -1 then
-		error("invalid bufnr " .. tostring(bufnr))
+		return "invalid bufnr " .. tostring(bufnr)
 	end
 	-- TODO: cleanup state on buf delete
-	if not M._states[buf] then
+	if M._states[buf] == nil then
 		local err
 		M._states[buf], err = State.new(buf)
 		if err then
 			vim.notify_once(err, vim.log.levels.ERROR)
+			return "attaching to buf " .. buf .. ": " .. err
 		end
 	end
 
-	local augroup = vim.api.nvim_create_augroup("mathcha_buf_cleanup_" .. bufnr, { clear = true })
+	local augroup = M._states[buf]:_get_augroup()
 	vim.api.nvim_create_autocmd("BufWipeout", {
 		group = augroup,
 		callback = function(ev)
 			local s = M._states[ev.buf]
 			if s then
 				s:reset_marks()
+				if s.augroup then
+					pcall(vim.api.nvim_clear_autocmds, s.augroup)
+				end
 				M._states[ev.buf] = nil
 			end
 		end,
@@ -329,8 +345,11 @@ end
 
 -- for testing
 function M.unload()
-	for buf, _ in pairs(M._states) do
-		vim.treesitter.stop(buf)
+	for buf, state in pairs(M._states) do
+		if state.augroup then
+			-- don't error if it doesn't exist
+			pcall(vim.api.nvim_del_augroup_by_id, state.augroup)
+		end
 		vim.api.nvim_buf_clear_namespace(buf, ns_id, 0, -1)
 	end
 	M._states = {}
