@@ -77,7 +77,6 @@ function State.new(bufnr)
 			(latex_span_delimiter) @_delimiter
 			(#eq? @_delimiter "$$")
 		) @latex ]])
-	state.equation_query = vim.treesitter.query.parse('markdown_inline', [[]])
 	local md_inline_tree = vim.treesitter.get_parser(bufnr, "markdown")
 		:children()["markdown_inline"]
 
