@@ -72,7 +72,11 @@ function State.new(bufnr)
 	-- those belong to the injected latex tree (and I don't want to juggle that
 	-- many langs if I can avoid it), so manually skipping `$$` is the easiest
 	-- way rn
-	state.query, err = vim.treesitter.query.parse('markdown_inline', [[ (latex_block) @latex ]])
+	state.query, err = vim.treesitter.query.parse('markdown_inline', [[
+		(latex_block
+			(latex_span_delimiter) @_delimiter
+			(#eq? @_delimiter "$$")
+		) @latex ]])
 	state.equation_query = vim.treesitter.query.parse('markdown_inline', [[]])
 	local md_inline_tree = vim.treesitter.get_parser(bufnr, "markdown")
 		:children()["markdown_inline"]
