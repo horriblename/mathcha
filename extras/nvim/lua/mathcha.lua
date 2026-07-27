@@ -298,9 +298,10 @@ function State:_get_augroup()
 	return self.augroup
 end
 
+---@param bufnr integer|string? Same as usage in |bufname()|
 ---@return string? err
 function M.attach(bufnr)
-	local buf = bufnr or vim.fn.bufnr()
+	local buf = vim.fn.bufnr(bufnr)
 	if buf == -1 then
 		return "invalid bufnr " .. tostring(bufnr)
 	end
