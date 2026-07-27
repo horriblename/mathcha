@@ -305,7 +305,6 @@ function M.attach(bufnr)
 	if buf == -1 then
 		return "invalid bufnr " .. tostring(bufnr)
 	end
-	-- TODO: cleanup state on buf delete
 	if M._states[buf] == nil then
 		local err
 		M._states[buf], err = State.new(buf)
