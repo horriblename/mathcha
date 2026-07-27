@@ -8,8 +8,12 @@ M._states = {}
 ---@field buf integer
 ---@field query vim.treesitter.Query
 ---@field pending TSNode[]
+---@field augroup integer?
 ---@field conceal_job vim.SystemObj?
 local State = {}
+
+local HlMathchaTexMarker = "Special"
+local HlMathchaVirtualLines = "TablineSel"
 
 local ns_id = vim.api.nvim_create_namespace("mathcha")
 
@@ -146,18 +150,13 @@ function State:update_conceal()
 
 			local lines = enumerate(vim.gsplit(obj.stdout, '\n', { plain = true }))
 
-			local virt_lines = {}
+			local virt_lines = { { { "", HlMathchaTexMarker } } }
 			for _, line in lines do
-				table.insert(virt_lines, { { line } })
+				table.insert(virt_lines, { { line, HlMathchaVirtualLines } })
 			end
 
 			vim.api.nvim_buf_clear_namespace(self.buf, ns_id, start_row, end_row + 1)
 
-			vim.api.nvim_buf_set_extmark(self.buf, ns_id, start_row, 0, {
-				invalidate = true,
-				conceal_lines = "",
-				end_row = end_row - 1,
-			})
 			vim.api.nvim_buf_set_extmark(self.buf, ns_id, end_row, 0, {
 				invalidate = true,
 				virt_lines = virt_lines,
