@@ -1,4 +1,7 @@
--- TODO: should I check vim.b.did_load_ftplugin
+if vim.b.did_mathcha == 1 then
+	return
+end
+vim.b.did_mathcha = 1
 
 local err = require('mathcha').attach(vim.fn.bufnr())
 if err then
