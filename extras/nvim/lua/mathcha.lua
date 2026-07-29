@@ -159,15 +159,19 @@ function State:update_conceal()
 	}, function(obj)
 		self.conceal_job = nil
 		vim.schedule(function()
+			local virt_lines
 			if obj.code ~= 0 then
-				vim.notify("mathcha failed: " .. obj.stderr, vim.log.levels.ERROR)
-			end
-
-			local lines = enumerate(vim.gsplit(obj.stdout, '\n', { plain = true }))
-
-			local virt_lines = { { { "", HlMathchaTexMarker } } }
-			for _, line in lines do
-				table.insert(virt_lines, { { line, HlMathchaVirtualLines } })
+				local lines = enumerate(vim.gsplit(obj.stderr, '\n', { plain = true }))
+				virt_lines = { { { "mathcha failed", "WarningMsg" } } }
+				for _, line in lines do
+					table.insert(virt_lines, { { line, "Error" } })
+				end
+			else
+				local lines = enumerate(vim.gsplit(obj.stdout, '\n', { plain = true }))
+				virt_lines = { { { "", HlMathchaTexMarker } } }
+				for _, line in lines do
+					table.insert(virt_lines, { { line, HlMathchaVirtualLines } })
+				end
 			end
 
 			vim.api.nvim_buf_clear_namespace(self.buf, ns_id, start_row, end_row + 1)
