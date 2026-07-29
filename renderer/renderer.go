@@ -5,35 +5,38 @@ import (
 )
 
 type Renderer struct {
-	Color        bool
-	Buffer       string
-	LatexTree    parser.FlexContainer
-	FocusOn      parser.Container // the container in which the cursor is, a better implementation would be letting Render functions return a 'focused' flag when cursor is found
-	HasSelection bool             // whether there is a selection in FocusOn
-	Focus        bool             // whether the widget itself is focused
+	Color                bool
+	UnicodeSuperscript   bool
+	Buffer               string
+	LatexTree            parser.FlexContainer
+	FocusOn              parser.Container
+	HasSelection         bool
+	Focus                bool
 }
 
-func New(color bool) Renderer {
+func New(color bool, unicodeSuperscript bool) Renderer {
 	root := &parser.UnboundCompExpr{}
 	return Renderer{
-		Color:        color,
-		Buffer:       "",
-		LatexTree:    root,
-		FocusOn:      root,
-		HasSelection: false,
-		Focus:        false,
+		Color:              color,
+		UnicodeSuperscript: unicodeSuperscript,
+		Buffer:             "",
+		LatexTree:          root,
+		FocusOn:            root,
+		HasSelection:       false,
+		Focus:              false,
 	}
 }
 
-func FromFormula(formula string, color bool) *Renderer {
+func FromFormula(formula string, color bool, unicodeSuperscript bool) *Renderer {
 	root := parser.Parse(formula)
 	return &Renderer{
-		Color:        color,
-		Buffer:       "",
-		LatexTree:    root,
-		FocusOn:      root,
-		HasSelection: false,
-		Focus:        false,
+		Color:              color,
+		UnicodeSuperscript: unicodeSuperscript,
+		Buffer:             "",
+		LatexTree:          root,
+		FocusOn:            root,
+		HasSelection:       false,
+		Focus:              false,
 	}
 }
 

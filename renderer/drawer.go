@@ -121,11 +121,13 @@ func (r *Renderer) Prerender(node parser.Expr) (out string, baseLevel int) {
 		case parser.CMD_frac:
 			return r.PrerenderCmdFrac(n)
 		case parser.CMD_superscript:
-			rawText, ok := extractSimpleText(n.Children()[0])
-			if ok {
-				sup, allConverted := tryConvertToSuperscript(rawText)
-				if allConverted {
-					return sup, 0
+			if r.UnicodeSuperscript {
+				rawText, ok := extractSimpleText(n.Children()[0])
+				if ok {
+					sup, allConverted := tryConvertToSuperscript(rawText)
+					if allConverted {
+						return sup, 0
+					}
 				}
 			}
 			str, _ := r.Prerender(n.Children()[0])

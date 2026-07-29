@@ -9,7 +9,8 @@ import (
 )
 
 type LatexSourceConfig struct {
-	UseUnicode bool
+	UseUnicode           bool
+	UnicodeSuperscript   bool
 }
 
 // possible optimisation: pass the strings.Builder object by reference into the recursive

@@ -174,7 +174,7 @@ func TestPrerender(t *testing.T) {
 		},
 	}
 
-	r := New(false)
+	r := New(false, true)
 	for _, tC := range testCases {
 		t.Run(tC.desc, func(t *testing.T) {
 			tree := parser.Parse(tC.input)

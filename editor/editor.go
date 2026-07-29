@@ -45,7 +45,7 @@ type EditorConfig struct {
 
 func New(formula string) *Editor {
 	// TODO: detect color from tty
-	renderer := render.FromFormula(formula, true)
+	renderer := render.FromFormula(formula, true, true)
 	cursor := render.Cursor{Symbol: "\x1b[7m \x1b[27m"}
 	renderer.LatexTree.AppendChildren(&cursor)
 	return &Editor{
@@ -56,7 +56,8 @@ func New(formula string) *Editor {
 		focus:      false,
 		config: &EditorConfig{
 			LatexCfg: render.LatexSourceConfig{
-				UseUnicode: true,
+				UseUnicode:         true,
+				UnicodeSuperscript: true,
 			},
 		},
 	}
@@ -65,6 +66,7 @@ func New(formula string) *Editor {
 func NewWithConfig(cfg EditorConfig, formula string) *Editor {
 	editor := New(formula)
 	editor.config = &cfg
+	editor.renderer.UnicodeSuperscript = cfg.LatexCfg.UnicodeSuperscript
 	return editor
 }
 
@@ -73,7 +75,8 @@ func (e *Editor) Read(latex string) {
 	if latex != "" {
 		ast := parser.Parse(latex)
 		// e.renderer.Load(p.GetTree()) // FIXME why doesn't this work
-		e.renderer = &render.Renderer{LatexTree: ast}
+		unicodeSup := e.renderer.UnicodeSuperscript
+		e.renderer = &render.Renderer{LatexTree: ast, UnicodeSuperscript: unicodeSup}
 		// p (Parser object) can be discarded now
 	} else {
 		e.renderer.Load(&parser.UnboundCompExpr{})
