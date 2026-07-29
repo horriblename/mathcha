@@ -77,38 +77,50 @@ function State.new(bufnr)
 			(latex_span_delimiter) @_delimiter
 			(#eq? @_delimiter "$$")
 		) @latex ]])
-	local md_inline_tree = vim.treesitter.get_parser(bufnr, "markdown")
-		:children()["markdown_inline"]
-
-	if md_inline_tree == nil then
+	if err then
 		return nil, err
 	end
 
-	md_inline_tree:register_cbs({
-		on_changedtree = function(_, tree)
-			vim.schedule(function()
-				-- FIXME: this forces a reload on all renders, I need to
-				-- listen to on_bytes or nvim_buf_attach
-				state:_parse_and_render({ [1] = tree })
-			end)
-		end,
-		on_detach = function()
-			vim.api.nvim_buf_clear_namespace(bufnr, ns_id, 0, -1)
-			M._states[bufnr] = nil
-		end
-	}, true)
+	local md_parser = vim.treesitter.get_parser(bufnr, "markdown")
+	if md_parser == nil then
+		return nil, "No markdown parser found"
+	end
 
-	md_inline_tree:parse(false, function(e, trees)
-		if err ~= nil or trees == nil then
-			err = ("failed to parse markdown_inline: %s"):format(e)
-		else
-			state:_parse_and_render(trees)
+	md_parser:parse(true, function(err1)
+		if err1 then
+			vim.notify_once(err1, vim.log.levels.ERROR)
+			return
 		end
+
+		local md_inline_tree = md_parser
+			:children()["markdown_inline"]
+		if md_inline_tree == nil then
+			vim.notify_once("No markdown_inline tree found, did you install the parser?", vim.log.levels.ERROR)
+			return
+		end
+
+		md_inline_tree:register_cbs({
+			on_changedtree = function(_, tree)
+				vim.schedule(function()
+					-- FIXME: this forces a reload on all renders, I need to
+					-- listen to on_bytes or nvim_buf_attach
+					state:_parse_and_render({ [1] = tree })
+				end)
+			end,
+			on_detach = function()
+				vim.api.nvim_buf_clear_namespace(bufnr, ns_id, 0, -1)
+				M._states[bufnr] = nil
+			end
+		}, true)
+
+		md_inline_tree:parse(false, function(err2, trees)
+			if err2 ~= nil or trees == nil then
+				vim.notify_once("failed to parse markdown_inline: " .. err2, vim.log.levels.ERROR)
+			else
+				state:_parse_and_render(trees)
+			end
+		end)
 	end)
-
-	if err ~= nil then
-		return nil, err
-	end
 
 	return state
 end
