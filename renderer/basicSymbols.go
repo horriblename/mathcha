@@ -439,6 +439,51 @@ var VanillaToUnicode = map[parser.LatexCmd]string{
 	parser.CMD_boxdot:           `⊡`,
 }
 
+// asciiToSuperscript maps ASCII characters to their Unicode superscript equivalents.
+// Only characters with superscript equivalents in Unicode are included.
+var asciiToSuperscript = map[rune]rune{
+	'0': '⁰',
+	'1': '¹',
+	'2': '²',
+	'3': '³',
+	'4': '⁴',
+	'5': '⁵',
+	'6': '⁶',
+	'7': '⁷',
+	'8': '⁸',
+	'9': '⁹',
+	'a': 'ᵃ',
+	'b': 'ᵇ',
+	'c': 'ᶜ',
+	'd': 'ᵈ',
+	'e': 'ᵉ',
+	'f': 'ᶠ',
+	'g': 'ᵍ',
+	'h': 'ʰ',
+	'i': 'ⁱ',
+	'j': 'ʲ',
+	'k': 'ᵏ',
+	'l': 'ˡ',
+	'm': 'ᵐ',
+	'n': 'ⁿ',
+	'o': 'ᵒ',
+	'p': 'ᵖ',
+	'r': 'ʳ',
+	's': 'ˢ',
+	't': 'ᵗ',
+	'u': 'ᵘ',
+	'v': 'ᵛ',
+	'w': 'ʷ',
+	'x': 'ˣ',
+	'y': 'ʸ',
+	'z': 'ᶻ',
+	'+': '⁺',
+	'-': '⁻',
+	'=': '⁼',
+	'(': '⁽',
+	')': '⁾',
+}
+
 func GetVanillaString(cmd parser.LatexCmd) string {
 	return VanillaToUnicode[cmd]
 }

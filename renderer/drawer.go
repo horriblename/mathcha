@@ -121,6 +121,13 @@ func (r *Renderer) Prerender(node parser.Expr) (out string, baseLevel int) {
 		case parser.CMD_frac:
 			return r.PrerenderCmdFrac(n)
 		case parser.CMD_superscript:
+			rawText, ok := extractSimpleText(n.Children()[0])
+			if ok {
+				sup, allConverted := tryConvertToSuperscript(rawText)
+				if allConverted {
+					return sup, 0
+				}
+			}
 			str, _ := r.Prerender(n.Children()[0])
 			return str, 1
 		case parser.CMD_subscript:
@@ -331,4 +338,66 @@ func constructParenLike(height int, single, top, mid, bot string) string {
 		return single
 	}
 	return top + "\n" + strings.Repeat(mid+"\n", height-2) + bot
+}
+
+// extractSimpleText walks a simple AST tree and returns the raw text content.
+// Returns false if the tree contains non-trivial nodes (commands, containers, etc.)
+func extractSimpleText(expr parser.Expr) (string, bool) {
+	switch n := expr.(type) {
+	case *parser.NumberLit:
+		return n.Content(), true
+	case *parser.VarLit:
+		return n.Content(), true
+	case *parser.SimpleOpLit:
+		return n.Content(), true
+	case *parser.CompositeExpr:
+		var b strings.Builder
+		for _, child := range n.Elts {
+			text, ok := extractSimpleText(child)
+			if !ok {
+				return "", false
+			}
+			b.WriteString(text)
+		}
+		return b.String(), true
+	case *parser.UnboundCompExpr:
+		var b strings.Builder
+		for _, child := range n.Elts {
+			text, ok := extractSimpleText(child)
+			if !ok {
+				return "", false
+			}
+			b.WriteString(text)
+		}
+		return b.String(), true
+	case *parser.TextStringWrapper:
+		var b strings.Builder
+		for _, child := range n.Runes {
+			text, ok := extractSimpleText(child)
+			if !ok {
+				return "", false
+			}
+			b.WriteString(text)
+		}
+		return b.String(), true
+	case parser.RawRuneLit:
+		return string(n), true
+	default:
+		return "", false
+	}
+}
+
+// tryConvertToSuperscript converts each ASCII rune in s to its Unicode superscript
+// equivalent. Returns false if any rune has no superscript mapping.
+func tryConvertToSuperscript(s string) (string, bool) {
+	var b strings.Builder
+	b.Grow(len(s))
+	for _, r := range s {
+		if sup, ok := asciiToSuperscript[r]; ok {
+			b.WriteRune(sup)
+		} else {
+			return "", false
+		}
+	}
+	return b.String(), true
 }

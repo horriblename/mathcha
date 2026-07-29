@@ -66,9 +66,34 @@ func TestPrerender(t *testing.T) {
 			expect: "a + b",
 		},
 		{
-			desc:   "SuperExpr - superscript",
+			desc:   "SuperExpr - superscript digit to unicode",
 			input:  "x^2",
-			expect: " 2\nx ",
+			expect: "x²",
+		},
+		{
+			desc:   "SuperExpr - superscript multiple digits",
+			input:  "x^{12}",
+			expect: "x¹²",
+		},
+		{
+			desc:   "SuperExpr - superscript letters",
+			input:  "x^{abc}",
+			expect: "xᵃᵇᶜ",
+		},
+		{
+			desc:   "SuperExpr - superscript with operators",
+			input:  "x^{n+1}",
+			expect: "xⁿ⁺¹",
+		},
+		{
+			desc:   "SuperExpr - superscript single letter",
+			input:  "x^n",
+			expect: "xⁿ",
+		},
+		{
+			desc:   "SuperExpr - superscript nested braces",
+			input:  "x^{{ab}}",
+			expect: "xᵃᵇ",
 		},
 		{
 			desc:   "SubExpr - subscript",
