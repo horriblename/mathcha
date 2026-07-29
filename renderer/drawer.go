@@ -133,6 +133,15 @@ func (r *Renderer) Prerender(node parser.Expr) (out string, baseLevel int) {
 			str, _ := r.Prerender(n.Children()[0])
 			return str, 1
 		case parser.CMD_subscript:
+			if r.UnicodeSuperscript {
+				rawText, ok := extractSimpleText(n.Children()[0])
+				if ok {
+					sub, allConverted := tryConvertToSubscript(rawText)
+					if allConverted {
+						return sub, 0
+					}
+				}
+			}
 			str, _ := r.Prerender(n.Children()[0])
 			return str, -lipgloss.Height(str)
 		case parser.CMD_sqrt:
@@ -392,11 +401,23 @@ func extractSimpleText(expr parser.Expr) (string, bool) {
 // tryConvertToSuperscript converts each ASCII rune in s to its Unicode superscript
 // equivalent. Returns false if any rune has no superscript mapping.
 func tryConvertToSuperscript(s string) (string, bool) {
+	return convertRunes(s, asciiToSuperscript)
+}
+
+// tryConvertToSubscript converts each ASCII rune in s to its Unicode subscript
+// equivalent. Returns false if any rune has no subscript mapping.
+func tryConvertToSubscript(s string) (string, bool) {
+	return convertRunes(s, asciiToSubscript)
+}
+
+// convertRunes maps each rune in s through the provided table.
+// Returns false if any rune has no mapping.
+func convertRunes(s string, table map[rune]rune) (string, bool) {
 	var b strings.Builder
 	b.Grow(len(s))
 	for _, r := range s {
-		if sup, ok := asciiToSuperscript[r]; ok {
-			b.WriteRune(sup)
+		if mapped, ok := table[r]; ok {
+			b.WriteRune(mapped)
 		} else {
 			return "", false
 		}

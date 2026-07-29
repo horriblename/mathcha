@@ -96,9 +96,29 @@ func TestPrerender(t *testing.T) {
 			expect: "xᵃᵇ",
 		},
 		{
-			desc:   "SubExpr - subscript",
+			desc:   "SubExpr - subscript digit to unicode",
 			input:  "x_1",
-			expect: "x \n 1",
+			expect: "x₁",
+		},
+		{
+			desc:   "SubExpr - subscript multiple digits",
+			input:  "x_{12}",
+			expect: "x₁₂",
+		},
+		{
+			desc:   "SubExpr - subscript letters",
+			input:  "x_{in}",
+			expect: "xᵢₙ",
+		},
+		{
+			desc:   "SubExpr - subscript with operators",
+			input:  "x_{i+1}",
+			expect: "xᵢ₊₁",
+		},
+		{
+			desc:   "SubExpr - subscript single letter",
+			input:  "x_n",
+			expect: "xₙ",
 		},
 		{
 			desc:   "Cmd1ArgExpr - sqrt",
