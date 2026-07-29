@@ -243,7 +243,7 @@ function State:open_editor()
 	}
 	local out_marker_found = false
 	local out_buf = {}
-	local editor_cmd = { "mathcha", "-printout", "-f", in_path }
+	local editor_cmd = { "mathcha", "-printout", "-f", in_path, "-symbols" }
 	local job
 	job, err = jobstart_in_floating_win(editor_cmd, {
 		term = true,
