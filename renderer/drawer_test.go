@@ -179,6 +179,66 @@ func TestPrerender(t *testing.T) {
 			expect: "[x]",
 		},
 		{
+			desc:   "ParenCompExpr - curly braces single-line",
+			input:  "\\left\\{ x \\right\\}",
+			expect: "{x}",
+		},
+		{
+			desc:   "ParenCompExpr - multi-line parentheses",
+			input:  "\\left( \\frac{a}{b} \\right)",
+			expect: join(
+				"⎛a⎞",
+				"⎜─⎟",
+				"⎝b⎠",
+			),
+		},
+		{
+			desc:   "ParenCompExpr - multi-line brackets",
+			input:  "\\left[ \\frac{a}{b} \\right]",
+			expect: join(
+				"⎡a⎤",
+				"⎢─⎥",
+				"⎣b⎦",
+			),
+		},
+		{
+			desc:   "ParenCompExpr - multi-line curly braces",
+			input:  "\\left\\{ \\frac{a}{b} \\right\\}",
+			expect: join(
+				"⎧a⎫",
+				"⎨─⎬",
+				"⎩b⎭",
+			),
+		},
+		{
+			desc:   "ParenCompExpr - invisible delimiters",
+			input:  "\\left. x \\right.",
+			expect: "x",
+		},
+		{
+			desc:   "ParenCompExpr - vertical bar single-line",
+			input:  "\\left| x \\right|",
+			expect: "|x|",
+		},
+		{
+			desc:   "ParenCompExpr - vertical bar multi-line",
+			input:  "\\left| \\frac{a}{b} \\right|",
+			expect: join(
+				"│a│",
+				"│─│",
+				"│b│",
+			),
+		},
+		{
+			desc:   "ParenCompExpr - mismatched left paren right bar multi-line",
+			input:  "\\left( \\frac{a}{b} \\right|",
+			expect: join(
+				"⎛a│",
+				"⎜─│",
+				"⎝b│",
+			),
+		},
+		{
 			desc:   "TextContainer - text command",
 			input:  "\\text{hello}",
 			expect: "hello",

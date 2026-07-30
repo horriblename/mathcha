@@ -144,13 +144,34 @@ func (r *Renderer) Prerender(node parser.Expr) (out string, baseLevel int) {
 
 	case *parser.ParenCompExpr:
 		content, baseLine := r.PrerenderFlexContainer(n)
-		if n.Left == "(" && n.Right == ")" && lipgloss.Height(content) >= 2 {
-			height := lipgloss.Height(content)
-			left := constructParenLike(height, "(", "⎛", "⎜", "⎝")
-			right := constructParenLike(height, ")", "⎞", "⎟", "⎠")
-			return JoinHorizontal([]int{baseLine, baseLine, baseLine}, left, content, right), baseLine
+		leftDisplay, rightDisplay := displayParen(n.Left, n.Right)
+
+		if leftDisplay == "" && rightDisplay == "" {
+			return content, baseLine
 		}
-		return JoinHorizontal([]int{0, baseLine, 0}, n.Left, content, n.Right), baseLine
+
+		height := lipgloss.Height(content)
+		if height >= 2 {
+			left := scaleParen(height, leftDisplay)
+			right := scaleParen(height, rightDisplay)
+			if left != "" || right != "" {
+				return JoinHorizontal([]int{baseLine, baseLine, baseLine}, left, content, right), baseLine
+			}
+		}
+
+		parts := []string{}
+		bls := []int{}
+		if leftDisplay != "" {
+			parts = append(parts, leftDisplay)
+			bls = append(bls, 0)
+		}
+		parts = append(parts, content)
+		bls = append(bls, baseLine)
+		if rightDisplay != "" {
+			parts = append(parts, rightDisplay)
+			bls = append(bls, 0)
+		}
+		return JoinHorizontal(bls, parts...), baseLine
 	case parser.FlexContainer:
 		return r.PrerenderFlexContainer(n)
 	case *parser.UnknownCmdLit: // FIXME subcase of CmdLiteral, what to do with UnknownCmdLit?
@@ -378,6 +399,52 @@ func constructParenLike(height int, single, top, mid, bot string) string {
 		return single
 	}
 	return top + "\n" + strings.Repeat(mid+"\n", height-2) + bot
+}
+
+// displayParen returns the display characters for a \left \right bracket pair.
+// Maps LaTeX escape sequences to their visual characters.
+// Returns empty string for invisible delimiters (.).
+func displayParen(left, right string) (string, string) {
+	if left == "." {
+		left = ""
+	}
+	if right == "." {
+		right = ""
+	}
+	if left == "\\{" {
+		left = "{"
+	}
+	if right == "\\}" {
+		right = "}"
+	}
+	return left, right
+}
+
+// scaleParen returns the character scaled to fit the given height using
+// multi-line Unicode bracket extensions. Returns empty string if no
+// multi-line representation exists for the character.
+func scaleParen(height int, char string) string {
+	var single, top, mid, bot string
+	switch char {
+	case "(":
+		single, top, mid, bot = "(", "⎛", "⎜", "⎝"
+	case ")":
+		single, top, mid, bot = ")", "⎞", "⎟", "⎠"
+	case "[":
+		single, top, mid, bot = "[", "⎡", "⎢", "⎣"
+	case "]":
+		single, top, mid, bot = "]", "⎤", "⎥", "⎦"
+	case "{":
+		single, top, mid, bot = "{", "⎧", "⎨", "⎩"
+	case "}":
+		single, top, mid, bot = "}", "⎫", "⎬", "⎭"
+	case "|":
+		single, top, mid, bot = "|", "│", "│", "│"
+	}
+	if single == "" {
+		return ""
+	}
+	return constructParenLike(height, single, top, mid, bot)
 }
 
 // extractSimpleText walks a simple AST tree and returns the raw text content.
