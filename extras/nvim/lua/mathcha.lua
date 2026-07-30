@@ -76,6 +76,7 @@ function State.new(bufnr)
 		(latex_block
 			(latex_span_delimiter) @_delimiter
 			(#eq? @_delimiter "$$")
+			.
 		) @latex ]])
 	if err then
 		return nil, err
