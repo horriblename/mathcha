@@ -271,13 +271,8 @@ func (p *Parser) parseCmdEnclosing() Expr {
 	p.expect("\\right")
 	p.next() // skip "\left"
 	node := new(ParenCompExpr)
-	switch p.lit {
-	case "(", "[", "\\{":
-	default:
-		panic("\\left expected '(', '[' or '\\{' but got " + p.lit)
-	}
 	node.Left = p.lit
-	p.next() // skip left parenthesis e.g. "("
+	p.next() // skip left delimiter
 	for !p.IsEOF() && p.lit != "\\right" {
 		node.AppendChildren(p.parseGenericOnce())
 	}
@@ -286,14 +281,6 @@ func (p *Parser) parseCmdEnclosing() Expr {
 		panic("expecting `\\right` got EOF")
 	}
 	p.next() // skip "\right"
-	switch {
-	case node.Left == "(" && p.lit != ")":
-		panic("\\right expected ')' but got " + p.lit)
-	case node.Left == "[" && p.lit != "]":
-		panic("\\right expected ']' but got " + p.lit)
-	case node.Left == "\\{" && p.lit != "\\}":
-		panic("\\right expected '\\}' but got " + p.lit)
-	}
 	node.Right = p.lit
 	p.next()
 	p.dropExpect("\\right")
