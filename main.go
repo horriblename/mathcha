@@ -218,8 +218,8 @@ func main() {
 	cliFlags := cliFlags{}
 	flag.BoolVar(&useUnicode, "symbols", false, `Use unicode symbols in latex output wherever possible. e.g. output "α" in place of "\alpha"`)
 	flag.BoolVar(&useUnicode, "s", false, `Use unicode symbols in latex output wherever possible. e.g. output "α" in place of "\alpha"`)
-	flag.BoolVar(&useUnicodeSuperscript, "superscript", true, `Use unicode superscript/subscript characters for simple scripts (e.g. x², x₁ instead of baseline-raised)`)
-	flag.BoolVar(&useUnicodeSuperscript, "S", true, `Use unicode superscript/subscript characters for simple scripts (e.g. x², x₁ instead of baseline-raised)`)
+	flag.BoolVar(&useUnicodeSuperscript, "superscript", true, `Only valid with -render: use unicode superscript/subscript characters for simple scripts (e.g. x², x₁ instead of baseline-raised)`)
+	flag.BoolVar(&useUnicodeSuperscript, "S", true, `Only valid with -render: use unicode superscript/subscript characters for simple scripts (e.g. x², x₁ instead of baseline-raised)`)
 	render := flag.Bool("render", false, `Render equation and exit`)
 	file := flag.String("f", "", "Read initial formula from file; use '-' to read from stdin")
 	cliFlags.helpText = flag.String("helptext", defaultHelpText, "Help text to print below the editor")
@@ -228,10 +228,14 @@ func main() {
 	cliFlags.debugTree = flag.Bool("debugtree", false, "Print AST representation")
 	flag.Parse()
 
+	if useUnicodeSuperscript && !*render {
+		logf("warning: -superscript flag has no effect without -render\n")
+	}
+
 	editorCfg := ed.EditorConfig{
 		LatexCfg: renderer.LatexSourceConfig{
 			UseUnicode:         useUnicode,
-			UnicodeSuperscript: useUnicodeSuperscript,
+			UnicodeSuperscript: false, // editor doesn't handle editing unicode scripts
 		},
 	}
 

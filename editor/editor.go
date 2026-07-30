@@ -45,7 +45,7 @@ type EditorConfig struct {
 
 func New(formula string) *Editor {
 	// TODO: detect color from tty
-	renderer := render.FromFormula(formula, true, true)
+	renderer := render.FromFormula(formula, true, false)
 	cursor := render.Cursor{Symbol: "\x1b[7m \x1b[27m"}
 	renderer.LatexTree.AppendChildren(&cursor)
 	return &Editor{
@@ -57,7 +57,7 @@ func New(formula string) *Editor {
 		config: &EditorConfig{
 			LatexCfg: render.LatexSourceConfig{
 				UseUnicode:         true,
-				UnicodeSuperscript: true,
+				UnicodeSuperscript: false,
 			},
 		},
 	}
