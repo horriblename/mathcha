@@ -239,6 +239,17 @@ func TestPrerender(t *testing.T) {
 			),
 		},
 		{
+			desc:   "ParenCompExpr - tall curly braces use extension piece",
+			input:  "\\left\\{ \\frac{1}{\\frac{2}{3}} \\right\\}",
+			expect: join(
+				"⎧1⎫",
+				"⎨─⎬",
+				"⎪2⎪",
+				"⎪─⎪",
+				"⎩3⎭",
+			),
+		},
+		{
 			desc:   "TextContainer - text command",
 			input:  "\\text{hello}",
 			expect: "hello",

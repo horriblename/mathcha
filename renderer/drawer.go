@@ -152,8 +152,8 @@ func (r *Renderer) Prerender(node parser.Expr) (out string, baseLevel int) {
 
 		height := lipgloss.Height(content)
 		if height >= 2 {
-			left := scaleParen(height, leftDisplay)
-			right := scaleParen(height, rightDisplay)
+			left := scaleParen(height, baseLine, leftDisplay)
+			right := scaleParen(height, baseLine, rightDisplay)
 			if left != "" || right != "" {
 				return JoinHorizontal([]int{baseLine, baseLine, baseLine}, left, content, right), baseLine
 			}
@@ -423,7 +423,7 @@ func displayParen(left, right string) (string, string) {
 // scaleParen returns the character scaled to fit the given height using
 // multi-line Unicode bracket extensions. Returns empty string if no
 // multi-line representation exists for the character.
-func scaleParen(height int, char string) string {
+func scaleParen(height, baseLine int, char string) string {
 	var single, top, mid, bot string
 	switch char {
 	case "(":
@@ -435,9 +435,9 @@ func scaleParen(height int, char string) string {
 	case "]":
 		single, top, mid, bot = "]", "⎤", "⎥", "⎦"
 	case "{":
-		single, top, mid, bot = "{", "⎧", "⎨", "⎩"
+		return constructBraceLike(height, baseLine, "{", "⎧", "⎨", "⎩", "⎪")
 	case "}":
-		single, top, mid, bot = "}", "⎫", "⎬", "⎭"
+		return constructBraceLike(height, baseLine, "}", "⎫", "⎬", "⎭", "⎪")
 	case "|":
 		single, top, mid, bot = "|", "│", "│", "│"
 	}
@@ -445,6 +445,42 @@ func scaleParen(height int, char string) string {
 		return ""
 	}
 	return constructParenLike(height, single, top, mid, bot)
+}
+
+// constructBraceLike builds a multi-line brace with the mid piece placed at the
+// baseline position and extension pieces filling the remaining middle lines.
+func constructBraceLike(height, baseLine int, single, top, mid, bot, ext string) string {
+	if height == 1 {
+		return single
+	}
+	midLine := height - 1 + baseLine
+	if midLine < 1 {
+		midLine = 1
+	}
+	if midLine > height-2 {
+		midLine = height - 2
+	}
+	var sb strings.Builder
+	if midLine == 0 {
+		sb.WriteString(mid)
+	} else {
+		sb.WriteString(top)
+	}
+	for i := 1; i < height-1; i++ {
+		sb.WriteByte('\n')
+		if i == midLine {
+			sb.WriteString(mid)
+		} else {
+			sb.WriteString(ext)
+		}
+	}
+	sb.WriteByte('\n')
+	if midLine == height-1 {
+		sb.WriteString(mid)
+	} else {
+		sb.WriteString(bot)
+	}
+	return sb.String()
 }
 
 // extractSimpleText walks a simple AST tree and returns the raw text content.
