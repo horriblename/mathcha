@@ -214,10 +214,12 @@ func (m model) helpSection() string {
 
 func main() {
 	var useUnicode bool
+	var useUnicodeSuperscript bool
 	cliFlags := cliFlags{}
 	flag.BoolVar(&useUnicode, "symbols", false, `Use unicode symbols in latex output wherever possible. e.g. output "α" in place of "\alpha"`)
 	flag.BoolVar(&useUnicode, "s", false, `Use unicode symbols in latex output wherever possible. e.g. output "α" in place of "\alpha"`)
-	useUnicodeScripts := flag.Bool("unicode-scripts", false, `When rendering, Use unicode superscript and subscript characters if possible (e.g. x² instead of baseline-raised 2)`)
+	flag.BoolVar(&useUnicodeSuperscript, "superscript", true, `Use unicode superscript/subscript characters for simple scripts (e.g. x², x₁ instead of baseline-raised)`)
+	flag.BoolVar(&useUnicodeSuperscript, "S", true, `Use unicode superscript/subscript characters for simple scripts (e.g. x², x₁ instead of baseline-raised)`)
 	render := flag.Bool("render", false, `Render equation and exit`)
 	file := flag.String("f", "", "Read initial formula from file; use '-' to read from stdin")
 	cliFlags.helpText = flag.String("helptext", defaultHelpText, "Help text to print below the editor")
@@ -229,7 +231,7 @@ func main() {
 	editorCfg := ed.EditorConfig{
 		LatexCfg: renderer.LatexSourceConfig{
 			UseUnicode:         useUnicode,
-			UnicodeSuperscript: *useUnicodeScripts,
+			UnicodeSuperscript: useUnicodeSuperscript,
 		},
 	}
 
@@ -272,7 +274,7 @@ func main() {
 
 	if *render {
 		// TODO: detect color from tty
-		r := renderer.FromFormula(latex, false, useUnicodeScripts)
+		r := renderer.FromFormula(latex, false, useUnicodeSuperscript)
 		r.Sync(nil, false)
 		fmt.Print(r.Buffer)
 		return

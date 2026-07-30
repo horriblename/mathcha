@@ -220,11 +220,18 @@ func (r *Renderer) PrerenderFlexContainer(node parser.FlexContainer) (output str
 			switch c.Command() {
 			// stack neighboring superscripts and subscripts onto each other
 			case parser.CMD_subscript:
-				var sup, sub string
 				if vertJoinQueue != nil {
 					if vertJoinQueue.Command() == parser.CMD_superscript {
-						sup = renderedChildren[index-1]
-						sub, baseLines[index] = r.Prerender(c)
+						sup := renderedChildren[index-1]
+						supBase := baseLines[index-1]
+						sub, subBase := r.Prerender(c)
+						if supBase == 0 && subBase == 0 {
+							renderedChildren[index] = sub + sup
+							baseLines[index] = 0
+							renderedChildren[index-1] = ""
+							continue
+						}
+						baseLines[index] = subBase
 						renderedChildren[index] = lipgloss.JoinVertical(lipgloss.Left, sup, " ", sub)
 						// println(renderedChildren[index])
 						renderedChildren[index-1] = ""
@@ -234,12 +241,18 @@ func (r *Renderer) PrerenderFlexContainer(node parser.FlexContainer) (output str
 
 				vertJoinQueue = c
 			case parser.CMD_superscript: // TODO merge above
-				var sup, sub string
 				if vertJoinQueue != nil {
 					if vertJoinQueue.Command() == parser.CMD_subscript {
-						sub = renderedChildren[index-1]
-						sup, _ = r.Prerender(c)
-						baseLines[index] = baseLines[index-1]
+						sub := renderedChildren[index-1]
+						subBase := baseLines[index-1]
+						sup, supBase := r.Prerender(c)
+						if supBase == 0 && subBase == 0 {
+							renderedChildren[index] = sub + sup
+							baseLines[index] = 0
+							renderedChildren[index-1] = ""
+							continue
+						}
+						baseLines[index] = subBase
 						renderedChildren[index] = lipgloss.JoinVertical(lipgloss.Left, sup, " ", sub)
 						renderedChildren[index-1] = ""
 						continue

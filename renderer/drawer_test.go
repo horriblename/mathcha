@@ -121,6 +121,16 @@ func TestPrerender(t *testing.T) {
 			expect: "xₙ",
 		},
 		{
+			desc:   "SubSup - subscript with superscript stacked (both unicode)",
+			input:  "\\Sigma_a^b",
+			expect: "Σₐᵇ",
+		},
+		{
+			desc:   "SubSup - superscript with subscript stacked (both unicode)",
+			input:  "\\Sigma^b_a",
+			expect: "Σₐᵇ",
+		},
+		{
 			desc:   "Cmd1ArgExpr - sqrt",
 			input:  "\\sqrt{x}",
 			expect: "⎷x",
