@@ -18,16 +18,16 @@ import (
 )
 
 const (
-	flagHelpSymbols     = "Use unicode symbols in output wherever possible"
-	flagHelpSuperscript = "Use unicode superscript/subscript characters for simple scripts"
-	flagHelpFile        = "Read initial formula from file; '-' for stdin"
-	flagHelpHelptext    = "Help text to print below the editor"
-	flagHelpPrintout    = "Internal flag for communicating with the nvim plugin"
-	flagHelpLogfile     = "Print debug logs to file"
-	flagHelpDebugtree   = "Print AST representation"
+	flagHelpSymbols       = "Use unicode symbols in output wherever possible"
+	flagHelpNoSuperscript = "Do not use unicode superscript/subscript characters for simple scripts"
+	flagHelpFile          = "Read initial formula from file; '-' for stdin"
+	flagHelpHelptext      = "Help text to print below the editor"
+	flagHelpPrintout      = "Internal flag for communicating with the nvim plugin"
+	flagHelpLogfile       = "Print debug logs to file"
+	flagHelpDebugtree     = "Print AST representation"
 
 	flagHelpAliasSymbols     = "Alias to -symbols"
-	flagHelpAliasSuperscript = "Alias to -superscript"
+	flagHelpAliasSuperscript = "Alias to -nosuperscript"
 )
 
 type model struct {
@@ -318,13 +318,13 @@ func runRender(args []string) {
 	fs := flag.NewFlagSet("render", flag.ExitOnError)
 
 	var useUnicode bool
-	var useUnicodeSuperscript bool
+	var noUnicodeSuperscript bool
 	var file string
 
 	fs.BoolVar(&useUnicode, "symbols", false, flagHelpSymbols)
 	fs.BoolVar(&useUnicode, "s", false, flagHelpAliasSymbols)
-	fs.BoolVar(&useUnicodeSuperscript, "superscript", true, flagHelpSuperscript)
-	fs.BoolVar(&useUnicodeSuperscript, "S", true, flagHelpAliasSuperscript)
+	fs.BoolVar(&noUnicodeSuperscript, "nosuperscript", false, flagHelpNoSuperscript)
+	fs.BoolVar(&noUnicodeSuperscript, "S", false, flagHelpAliasSuperscript)
 	fs.StringVar(&file, "f", "", flagHelpFile)
 
 	err := fs.Parse(args)
@@ -342,7 +342,7 @@ func runRender(args []string) {
 		formula = string(l)
 	}
 
-	r := renderer.FromFormula(formula, false, useUnicodeSuperscript)
+	r := renderer.FromFormula(formula, false, !noUnicodeSuperscript)
 	r.Sync(nil, false)
 	fmt.Print(r.Buffer)
 }
