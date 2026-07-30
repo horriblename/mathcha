@@ -187,6 +187,11 @@ const (
 	CMD_quad
 	CMD_emsp
 	CMD_qquad
+	CMD_thinsp
+	CMD_medsp
+	CMD_thicksp
+	CMD_negsp
+	CMD_enspace
 
 	CMD_diamond
 	CMD_bigtriangleup
@@ -620,6 +625,11 @@ var latexCmds = map[string]LatexCmd{
 	"\\quad":               CMD_quad,
 	"\\emsp":               CMD_emsp,
 	"\\qquad":              CMD_qquad,
+	"\\,":                  CMD_thinsp,
+	"\\:":                  CMD_medsp,
+	"\\;":                  CMD_thicksp,
+	"\\!":                  CMD_negsp,
+	"\\enspace":            CMD_enspace,
 	"\\diamond":            CMD_diamond,
 	"\\bigtriangleup":      CMD_bigtriangleup,
 	"\\ominus":             CMD_ominus,
