@@ -1,12 +1,43 @@
 package renderer
 
 import (
+	"math"
+	"strings"
+
 	parser "github.com/horriblename/mathcha/latex"
 )
 
+// columnsPerEm approximates how many character columns equal 1 em in a
+// terminal. Most monospace fonts have a character advance width of roughly
+// 0.6 em, so 1 em ≈ 1/0.6 ≈ 1.6 columns.
+const columnsPerEm = 1.6
+
+// spaces returns a string of space characters whose width in columns best
+// approximates the given em value using the columnsPerEm ratio.
+func spaces(em float64) string {
+	if em <= 0 {
+		return ""
+	}
+	n := int(math.Round(em * columnsPerEm))
+	if n < 1 {
+		n = 1
+	}
+	return strings.Repeat(" ", n)
+}
+
+func init() {
+	VanillaToUnicode[parser.CMD_SPACE] = spaces(1.0 / 3.0)
+	VanillaToUnicode[parser.CMD_quad] = spaces(1.0)
+	VanillaToUnicode[parser.CMD_emsp] = spaces(1.0)
+	VanillaToUnicode[parser.CMD_qquad] = spaces(2.0)
+	VanillaToUnicode[parser.CMD_thinsp] = spaces(3.0 / 18.0)
+	VanillaToUnicode[parser.CMD_medsp] = spaces(4.0 / 18.0)
+	VanillaToUnicode[parser.CMD_thicksp] = spaces(5.0 / 18.0)
+	VanillaToUnicode[parser.CMD_negsp] = spaces(-3.0 / 18.0)
+	VanillaToUnicode[parser.CMD_enspace] = spaces(0.5)
+}
+
 var VanillaToUnicode = map[parser.LatexCmd]string{
-	// escaped symbols
-	parser.CMD_SPACE: ` `,
 	// vanilla symbols
 	parser.CMD_alpha: `α`,
 	parser.CMD_beta:  `β`,
@@ -128,10 +159,6 @@ var VanillaToUnicode = map[parser.LatexCmd]string{
 	parser.CMD_Reals:   `ℝ`,
 	parser.CMD_Complex: `ℂ`,
 	parser.CMD_H:       `ℍ`,
-
-	parser.CMD_quad:  `    `,
-	parser.CMD_emsp:  `    `,
-	parser.CMD_qquad: `        `,
 
 	parser.CMD_diamond:         `◇`,
 	parser.CMD_bigtriangleup:   `△`,
