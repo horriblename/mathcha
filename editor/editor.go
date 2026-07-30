@@ -556,7 +556,6 @@ func (e *Editor) InsertCmd(cmd string) {
 			node := &parser.ParenCompExpr{Left: "(", Right: ")"}
 			e.getParent().DeleteChildren(idx, idx)
 			e.getParent().InsertChildren(idx, node)
-			e.traceStack = append(e.traceStack, node)
 			e.enterContainerFromRight(node)
 		case parser.CMD_right:
 			e.exitParent(DIR_RIGHT)
