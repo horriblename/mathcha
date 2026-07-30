@@ -2,9 +2,6 @@
 package main
 
 import (
-	// tea "github.com/charmbracelet/bubbletea"
-	// parser "github.com/horriblename/mathcha/latex"
-	// render "github.com/horriblename/mathcha/renderer"
 	"flag"
 	"fmt"
 	"io"
@@ -16,9 +13,21 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/derekparker/trie"
 	"github.com/horriblename/mathcha/editor"
-	ed "github.com/horriblename/mathcha/editor"
 	"github.com/horriblename/mathcha/latex"
 	"github.com/horriblename/mathcha/renderer"
+)
+
+const (
+	flagHelpSymbols     = "Use unicode symbols in output wherever possible"
+	flagHelpSuperscript = "Use unicode superscript/subscript characters for simple scripts"
+	flagHelpFile        = "Read initial formula from file; '-' for stdin"
+	flagHelpHelptext    = "Help text to print below the editor"
+	flagHelpPrintout    = "Internal flag for communicating with the nvim plugin"
+	flagHelpLogfile     = "Print debug logs to file"
+	flagHelpDebugtree   = "Print AST representation"
+
+	flagHelpAliasSymbols     = "Alias to -symbols"
+	flagHelpAliasSuperscript = "Alias to -superscript"
 )
 
 type model struct {
@@ -26,10 +35,10 @@ type model struct {
 
 	// current editor in focus
 	focus        int
-	editors      []ed.Editor
+	editors      []editor.Editor
 	compList     *trie.Trie
 	compMatches  []string
-	editorConfig *ed.EditorConfig
+	editorConfig *editor.EditorConfig
 	showHelp     bool
 }
 
@@ -45,13 +54,13 @@ func (m model) Init() tea.Cmd {
 	return nil
 }
 
-func initialModel(c cliFlags, editorCfg ed.EditorConfig, initFormula string) model {
-	editor := ed.NewWithConfig(editorCfg, initFormula)
-	editor.SetFocus(true)
+func initialModel(c cliFlags, editorCfg editor.EditorConfig, initFormula string) model {
+	e := editor.NewWithConfig(editorCfg, initFormula)
+	e.SetFocus(true)
 	return model{
 		cliFlags:     c,
 		focus:        0,
-		editors:      []ed.Editor{*editor}, // TODO should prolly make this slice of pointers to Editors
+		editors:      []editor.Editor{*e}, // TODO should prolly make this slice of pointers to Editors
 		compList:     latex.NewCompletion(),
 		editorConfig: &editorCfg,
 	}
@@ -65,8 +74,8 @@ func (m model) latex() string {
 		latex = m.editors[0].LatexSource()
 	} else {
 		latex = `\begin{aligned}` + "\n"
-		for _, editor := range m.editors {
-			latex += editor.LatexSource() + `\\` + "\n"
+		for _, e := range m.editors {
+			latex += e.LatexSource() + `\\` + "\n"
 		}
 		latex += `\end{aligned}`
 	}
@@ -90,7 +99,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.KeyMsg:
 		switch msg.Type {
 		// case tea.KeyEnter:
-		// 	editor := ed.NewWithConfig(*m.editorConfig, "")
+		// 	editor := editor.NewWithConfig(*m.editorConfig, "")
 		// 	m.editors = append(m.editors, *editor)
 		// 	m.editors[m.focus].SetFocus(false)
 		// 	m.editors[m.focus], cmd = m.editors[m.focus].Update(msg)
@@ -117,7 +126,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.CopyLatex()
 			return m, tea.Quit
 		case tea.KeyTab, tea.KeyShiftTab:
-			if m.editors[m.focus].GetState() != ed.EDIT_COMMAND {
+			if m.editors[m.focus].GetState() != editor.EDIT_COMMAND {
 				break
 			}
 			lead := m.editors[m.focus].FocusedTextField().BuildString()
@@ -144,8 +153,8 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (m model) View() string {
 	editorsView := make([]string, 0, len(m.editors))
-	for _, editor := range m.editors {
-		editorsView = append(editorsView, editor.View())
+	for _, e := range m.editors {
+		editorsView = append(editorsView, e.View())
 	}
 
 	var compDisplay strings.Builder
@@ -212,35 +221,67 @@ func (m model) helpSection() string {
 	}
 }
 
-func main() {
-	var useUnicode bool
-	var useUnicodeSuperscript bool
-	cliFlags := cliFlags{}
-	flag.BoolVar(&useUnicode, "symbols", false, `Use unicode symbols in latex output wherever possible. e.g. output "α" in place of "\alpha"`)
-	flag.BoolVar(&useUnicode, "s", false, `Use unicode symbols in latex output wherever possible. e.g. output "α" in place of "\alpha"`)
-	flag.BoolVar(&useUnicodeSuperscript, "superscript", true, `Only valid with -render: use unicode superscript/subscript characters for simple scripts (e.g. x², x₁ instead of baseline-raised)`)
-	flag.BoolVar(&useUnicodeSuperscript, "S", true, `Only valid with -render: use unicode superscript/subscript characters for simple scripts (e.g. x², x₁ instead of baseline-raised)`)
-	render := flag.Bool("render", false, `Render equation and exit`)
-	file := flag.String("f", "", "Read initial formula from file; use '-' to read from stdin")
-	cliFlags.helpText = flag.String("helptext", defaultHelpText, "Help text to print below the editor")
-	cliFlags.printOut = flag.Bool("printout", false, "Internal flag for communicating with the nvim plugin")
-	cliFlags.logFile = flag.String("logfile", "", "Print debug logs to file")
-	cliFlags.debugTree = flag.Bool("debugtree", false, "Print AST representation")
-	flag.Parse()
+func readFormula(fileFlag string, positionalArgs []string) string {
+	switch {
+	case fileFlag == "-":
+		l, err := io.ReadAll(os.Stdin)
+		if err != nil {
+			panic("error reading stdin: " + err.Error())
+		}
+		return string(l)
+	case fileFlag != "":
+		l, err := os.ReadFile(fileFlag)
+		if err != nil {
+			panic("error reading " + fileFlag + ": " + err.Error())
+		}
+		return string(l)
+	case len(positionalArgs) > 0:
+		return strings.Join(positionalArgs, " ")
+	default:
+		return ""
+	}
+}
 
-	if useUnicodeSuperscript && !*render {
-		logf("warning: -superscript flag has no effect without -render\n")
+func usage() {
+	fmt.Fprintf(os.Stderr, `Usage:
+  mathcha [edit] [flags] [formula]   Open the TUI equation editor
+  mathcha render [flags] [formula]   Render equation and print to stdout
+  mathcha help                       Print this help message
+`)
+}
+
+func runEdit(args []string) {
+	fs := flag.NewFlagSet("edit", flag.ExitOnError)
+
+	var useUnicode bool
+	var file string
+	var helptext string
+	var printout bool
+	var logfile string
+	var debugtree bool
+
+	fs.BoolVar(&useUnicode, "symbols", false, flagHelpSymbols)
+	fs.BoolVar(&useUnicode, "s", false, flagHelpAliasSymbols)
+	fs.StringVar(&file, "f", "", flagHelpFile)
+	fs.StringVar(&helptext, "helptext", defaultHelpText, flagHelpHelptext)
+	fs.BoolVar(&printout, "printout", false, flagHelpPrintout)
+	fs.StringVar(&logfile, "logfile", "", flagHelpLogfile)
+	fs.BoolVar(&debugtree, "debugtree", false, flagHelpDebugtree)
+
+	err := fs.Parse(args)
+	if err != nil {
+		os.Exit(1)
 	}
 
-	editorCfg := ed.EditorConfig{
+	editorCfg := editor.EditorConfig{
 		LatexCfg: renderer.LatexSourceConfig{
 			UseUnicode:         useUnicode,
 			UnicodeSuperscript: false, // editor doesn't handle editing unicode scripts
 		},
 	}
 
-	if *cliFlags.logFile != "" {
-		f, err := os.OpenFile(*cliFlags.logFile, os.O_CREATE|os.O_APPEND, 0o644)
+	if logfile != "" {
+		f, err := os.OpenFile(logfile, os.O_CREATE|os.O_APPEND, 0o644)
 		if err != nil {
 			println("could not create/open log file:", err.Error())
 			return
@@ -249,42 +290,14 @@ func main() {
 		editorCfg.Logger = log.New(f, "", log.LstdFlags)
 	}
 
-	var latex string
-	switch *file {
-	case "":
-		if *render {
-			l, err := io.ReadAll(os.Stdin)
-			if err != nil {
-				logf("error reading stdin: %s", err.Error())
-			}
-			latex = string(l)
-			if latex == "" {
-				logf("warn: -render flag used but stdin is empty")
-			}
-		}
-	case "-":
-		l, err := io.ReadAll(os.Stdin)
-		if err != nil {
-			panic("error reading stdin: " + err.Error())
-		}
-		latex = string(l)
-	default:
-		l, err := os.ReadFile(*file)
-		if err != nil {
-			panic("error reading " + *file + ": " + err.Error())
-		}
-		latex = string(l)
-	}
+	formula := readFormula(file, fs.Args())
 
-	if *render {
-		// TODO: detect color from tty
-		r := renderer.FromFormula(latex, false, useUnicodeSuperscript)
-		r.Sync(nil, false)
-		fmt.Print(r.Buffer)
-		return
-	}
-
-	e := initialModel(cliFlags, editorCfg, latex)
+	e := initialModel(cliFlags{
+		helpText:  &helptext,
+		printOut:  &printout,
+		logFile:   &logfile,
+		debugTree: &debugtree,
+	}, editorCfg, formula)
 
 	p := tea.NewProgram(e,
 		tea.WithInputTTY(),
@@ -298,5 +311,58 @@ func main() {
 		// cursed magic string
 		fmt.Fprint(os.Stdout, "!mAtHcHa!", e.latex())
 		os.Stdout.Close()
+	}
+}
+
+func runRender(args []string) {
+	fs := flag.NewFlagSet("render", flag.ExitOnError)
+
+	var useUnicode bool
+	var useUnicodeSuperscript bool
+	var file string
+
+	fs.BoolVar(&useUnicode, "symbols", false, flagHelpSymbols)
+	fs.BoolVar(&useUnicode, "s", false, flagHelpAliasSymbols)
+	fs.BoolVar(&useUnicodeSuperscript, "superscript", true, flagHelpSuperscript)
+	fs.BoolVar(&useUnicodeSuperscript, "S", true, flagHelpAliasSuperscript)
+	fs.StringVar(&file, "f", "", flagHelpFile)
+
+	err := fs.Parse(args)
+	if err != nil {
+		os.Exit(1)
+	}
+
+	formula := readFormula(file, fs.Args())
+	if formula == "" {
+		l, err := io.ReadAll(os.Stdin)
+		if err != nil {
+			logf("error reading stdin: %s", err.Error())
+			os.Exit(1)
+		}
+		formula = string(l)
+	}
+
+	r := renderer.FromFormula(formula, false, useUnicodeSuperscript)
+	r.Sync(nil, false)
+	fmt.Print(r.Buffer)
+}
+
+func main() {
+	args := os.Args[1:]
+
+	if len(args) == 0 {
+		runEdit(nil)
+		return
+	}
+
+	switch args[0] {
+	case "edit":
+		runEdit(args[1:])
+	case "render":
+		runRender(args[1:])
+	case "help", "-h", "--help":
+		usage()
+	default:
+		runEdit(args)
 	}
 }
