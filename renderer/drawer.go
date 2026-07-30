@@ -13,19 +13,11 @@ const (
 
 // style definitions
 var (
-	subtle    = lipgloss.AdaptiveColor{Light: "#D9DCCF", Dark: "#383838"}
-	fg        = lipgloss.AdaptiveColor{Light: "#1ff2f7", Dark: "#abb2bf"}
-	invert    = lipgloss.AdaptiveColor{Light: "#abb2bf", Dark: "#1ff2f7"}
-	accent    = fg //lipgloss.AdaptiveColor{Light: "#264f78", Dark: "#A1BAEA"}
-	accentBg  = lipgloss.Color("#555")
-	highlight = lipgloss.Color("#264f78")
+	fg       = lipgloss.AdaptiveColor{Light: "#1ff2f7", Dark: "#abb2bf"}
+	accent   = fg //lipgloss.AdaptiveColor{Light: "#264f78", Dark: "#A1BAEA"}
+	accentBg = lipgloss.Color("#555")
 
-	docStyle       = lipgloss.NewStyle().Foreground(fg)
-	focusStyle     = lipgloss.NewStyle().Foreground(accent).Background(accentBg)
-	highlightStyle = focusStyle.Background(highlight).Foreground(fg)
-
-	// underlineStyle = lipgloss.NewStyle().Underline(true)
-	variableStyle = lipgloss.NewStyle().Italic(true)
+	focusStyle = lipgloss.NewStyle().Foreground(accent).Background(accentBg)
 )
 
 func (r *Renderer) DrawToBuffer(tree parser.Expr) {
