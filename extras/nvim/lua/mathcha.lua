@@ -317,7 +317,8 @@ end
 ---@param bufnr integer|string? Same as usage in |bufname()|
 ---@return string? err
 function M.attach(bufnr)
-	local buf = vim.fn.bufnr(bufnr)
+	-- vim.fn discriminates between nil and no arg :c
+	local buf = bufnr and vim.fn.bufnr(bufnr) or vim.fn.bufnr()
 	if buf == -1 then
 		return "invalid bufnr " .. tostring(bufnr)
 	end
