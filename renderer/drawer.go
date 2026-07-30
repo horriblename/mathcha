@@ -188,20 +188,21 @@ func (r *Renderer) Prerender(node parser.Expr) (out string, baseLevel int) {
 }
 
 func (r *Renderer) PrerenderFlexContainer(node parser.FlexContainer) (output string, baseLine int) {
-	if len(node.Children()) <= 0 {
+	children := node.Children()
+	if len(children) <= 0 {
 		if CONF_RENDER_EMPTY_COMP_EXPR {
 			return " ", 0
 		} else {
 			return "", 0
 		}
 	}
-	var renderedChildren = make([]string, len(node.Children()))
-	var baseLines = make([]int, len(node.Children()))
-	var vertJoinQueue *parser.Cmd1ArgExpr // for elements that need to be rendered on top of one another superscrpit & subscript
+	var renderedChildren = make([]string, 0, len(children))
+	var baseLines = make([]int, 0, len(children))
 
 	// init only when r.FocusOn == node?
 	var selStart, selEnd = -1, -1 // [start, end] of the selection
-	for index, child := range node.Children() {
+	for index := 0; index < len(children); index++ {
+		child := children[index]
 		if r.HasSelection && r.FocusOn == node {
 			if _, ok := child.(*Cursor); ok {
 				if selStart > -1 {
@@ -215,58 +216,32 @@ func (r *Renderer) PrerenderFlexContainer(node parser.FlexContainer) (output str
 			}
 		}
 
-		// deal with elements that render on top of eaech other
-		if c, ok := child.(*parser.Cmd1ArgExpr); ok {
-			switch c.Command() {
-			// stack neighboring superscripts and subscripts onto each other
-			case parser.CMD_subscript:
-				if vertJoinQueue != nil {
-					if vertJoinQueue.Command() == parser.CMD_superscript {
-						sup := renderedChildren[index-1]
-						supBase := baseLines[index-1]
-						sub, subBase := r.Prerender(c)
-						if supBase == 0 && subBase == 0 {
-							renderedChildren[index] = sub + sup
-							baseLines[index] = 0
-							renderedChildren[index-1] = ""
-							continue
-						}
-						baseLines[index] = subBase
-						renderedChildren[index] = lipgloss.JoinVertical(lipgloss.Left, sup, " ", sub)
-						// println(renderedChildren[index])
-						renderedChildren[index-1] = ""
-						continue
-					}
+		// handle neighboring subscript/superscript pairs
+		if cmd, ok := child.(*parser.Cmd1ArgExpr); ok {
+		tryHandleSupSubPair:
+			switch cmd.Command() {
+			case parser.CMD_subscript, parser.CMD_superscript:
+				if index+1 >= len(children) {
+					break tryHandleSupSubPair
 				}
 
-				vertJoinQueue = c
-			case parser.CMD_superscript: // TODO merge above
-				if vertJoinQueue != nil {
-					if vertJoinQueue.Command() == parser.CMD_subscript {
-						sub := renderedChildren[index-1]
-						subBase := baseLines[index-1]
-						sup, supBase := r.Prerender(c)
-						if supBase == 0 && subBase == 0 {
-							renderedChildren[index] = sub + sup
-							baseLines[index] = 0
-							renderedChildren[index-1] = ""
-							continue
-						}
-						baseLines[index] = subBase
-						renderedChildren[index] = lipgloss.JoinVertical(lipgloss.Left, sup, " ", sub)
-						renderedChildren[index-1] = ""
-						continue
-					}
+				next, ok := children[index+1].(*parser.Cmd1ArgExpr)
+				if !ok {
+					break tryHandleSupSubPair
 				}
 
-				vertJoinQueue = c
-			default:
-				vertJoinQueue = nil
+				out, baseLine, ok := r.tryPrerenderSuperSubscriptPair(cmd, next)
+				if ok {
+					renderedChildren = append(renderedChildren, out)
+					baseLines = append(baseLines, baseLine)
+					index++
+					continue
+				}
 			}
-		} else {
-			vertJoinQueue = nil
 		}
-		renderedChildren[index], baseLines[index] = r.Prerender(child)
+		rendered, baseLine := r.Prerender(child)
+		renderedChildren = append(renderedChildren, rendered)
+		baseLines = append(baseLines, baseLine)
 	}
 
 	if 0 <= selStart && selStart < selEnd {
@@ -282,6 +257,55 @@ func (r *Renderer) PrerenderFlexContainer(node parser.FlexContainer) (output str
 		baseLines[selStart] = base
 	}
 	return JoinHorizontal(baseLines, renderedChildren...), min(baseLines...)
+}
+
+// `ok` indicates whether this pair is a super/subscript pair
+func (r *Renderer) tryPrerenderSuperSubscriptPair(
+	cmd *parser.Cmd1ArgExpr,
+	next *parser.Cmd1ArgExpr,
+) (out string, baseLine int, ok bool) {
+	type Pair struct {
+		curr parser.LatexCmd
+		next parser.LatexCmd
+	}
+	pair := Pair{cmd.Command(), next.Command()}
+	if (pair != Pair{parser.CMD_subscript, parser.CMD_superscript} &&
+		pair != Pair{parser.CMD_superscript, parser.CMD_subscript}) {
+		return "", 0, false
+	}
+
+	if r.UnicodeSuperscript {
+		// try render with unicode super/sub-script
+		raw1, ok1 := extractSimpleText(cmd.Children()[0])
+		raw2, ok2 := extractSimpleText(next.Children()[0])
+
+		if ok1 && ok2 {
+			var conv1, conv2 string
+			if cmd.Command() == parser.CMD_superscript {
+				conv1, ok1 = tryConvertToSuperscript(raw1)
+				conv2, ok2 = tryConvertToSubscript(raw2)
+			} else {
+				conv1, ok1 = tryConvertToSubscript(raw1)
+				conv2, ok2 = tryConvertToSuperscript(raw2)
+			}
+
+			if ok1 && ok2 {
+				return conv1 + conv2, 0, true
+			}
+		}
+	}
+
+	// fallback: vertical stacking, sup always above sub
+	var supText, subText string
+	if cmd.Command() == parser.CMD_superscript {
+		supText, _ = r.Prerender(cmd.Children()[0])
+		subText, _ = r.Prerender(next.Children()[0])
+	} else {
+		subText, _ = r.Prerender(cmd.Children()[0])
+		supText, _ = r.Prerender(next.Children()[0])
+	}
+	out = lipgloss.JoinVertical(lipgloss.Left, supText, " ", subText)
+	return out, -lipgloss.Height(subText), true
 }
 
 // TODO remove

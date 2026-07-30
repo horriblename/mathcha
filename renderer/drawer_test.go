@@ -128,7 +128,25 @@ func TestPrerender(t *testing.T) {
 		{
 			desc:   "SubSup - superscript with subscript stacked (both unicode)",
 			input:  "\\Sigma^b_a",
-			expect: "Σₐᵇ",
+			expect: "Σᵇₐ",
+		},
+		{
+			desc:  "Integral - subscript then superscript (one not unicode)",
+			input: "\\int_1^{\\infty}",
+			expect: join(
+				" ∞",
+				"∫ ",
+				" 1",
+			),
+		},
+		{
+			desc:  "Integral - superscript then subscript (one not unicode)",
+			input: "\\int^{\\infty}_1",
+			expect: join(
+				" ∞",
+				"∫ ",
+				" 1",
+			),
 		},
 		{
 			desc:   "Cmd1ArgExpr - sqrt",
@@ -213,7 +231,7 @@ func TestPrerender(t *testing.T) {
 			}
 			out, _ := r.Prerender(tree)
 			if out != tC.expect {
-				t.Errorf("got:  %q\nwant: %q", out, tC.expect)
+				t.Errorf("\n=== got:\n%s\n\n=== want:\n%s", out, tC.expect)
 			}
 		})
 	}
