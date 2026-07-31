@@ -422,7 +422,7 @@ func (x *NumberLit) Content() string     { return x.Source }
 func (x *VarLit) Content() string        { return x.Source }
 func (x *SimpleOpLit) Content() string   { return x.Source }
 func (x *UnknownCmdLit) Content() string { return x.Source }
-func (x *SimpleCmdLit) Content() string  { return x.Type.GetCmd() }
+func (x *SimpleCmdLit) Content() string  { return x.Source }
 
 // CmdLiteral, CmdContainer method definitions
 func (x *UnknownCmdLit) Command() LatexCmd { return CMD_UNKNOWN }

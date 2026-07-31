@@ -76,6 +76,14 @@ func TestLatexConsistent(t *testing.T) {
 			input: "\\left[ x \\right]",
 		},
 		{
+			desc:  "Escaped curly brace",
+			input: "\\{x\\}",
+		},
+		{
+			desc:  "ParenCompExpr - left right curly braces",
+			input: "\\left\\{x\\right\\}",
+		},
+		{
 			desc:  "TextContainer - text command",
 			input: "\\text{hello}",
 		},
