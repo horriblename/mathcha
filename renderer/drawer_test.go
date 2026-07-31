@@ -132,20 +132,29 @@ func TestPrerender(t *testing.T) {
 		},
 		{
 			desc:  "Integral - subscript then superscript (one not unicode)",
-			input: "\\int_1^{\\infty}",
+			input: "\\int_1^{\\infty} x",
 			expect: join(
-				" ∞",
-				"∫ ",
-				" 1",
+				" ∞ ",
+				"∫ x",
+				" 1 ",
 			),
 		},
 		{
 			desc:  "Integral - superscript then subscript (one not unicode)",
-			input: "\\int^{\\infty}_1",
+			input: "\\int^{\\infty}_1 x",
 			expect: join(
-				" ∞",
-				"∫ ",
-				" 1",
+				" ∞ ",
+				"∫ x",
+				" 1 ",
+			),
+		},
+		{
+			desc:  "SuperExpr - superscript and subscript with no unicode mapping has correct spacing",
+			input: `x^\infty y_*`,
+			expect: join(
+				" ∞  ",
+				"x y ",
+				"   *",
 			),
 		},
 		{
@@ -179,13 +188,18 @@ func TestPrerender(t *testing.T) {
 			expect: "[x]",
 		},
 		{
+			desc:   "Escaped curly brace",
+			input:  "\\{x\\}",
+			expect: "{x}",
+		},
+		{
 			desc:   "ParenCompExpr - curly braces single-line",
 			input:  "\\left\\{ x \\right\\}",
 			expect: "{x}",
 		},
 		{
-			desc:   "ParenCompExpr - multi-line parentheses",
-			input:  "\\left( \\frac{a}{b} \\right)",
+			desc:  "ParenCompExpr - multi-line parentheses",
+			input: "\\left( \\frac{a}{b} \\right)",
 			expect: join(
 				"⎛a⎞",
 				"⎜─⎟",
@@ -193,8 +207,8 @@ func TestPrerender(t *testing.T) {
 			),
 		},
 		{
-			desc:   "ParenCompExpr - multi-line brackets",
-			input:  "\\left[ \\frac{a}{b} \\right]",
+			desc:  "ParenCompExpr - multi-line brackets",
+			input: "\\left[ \\frac{a}{b} \\right]",
 			expect: join(
 				"⎡a⎤",
 				"⎢─⎥",
@@ -202,8 +216,8 @@ func TestPrerender(t *testing.T) {
 			),
 		},
 		{
-			desc:   "ParenCompExpr - multi-line curly braces",
-			input:  "\\left\\{ \\frac{a}{b} \\right\\}",
+			desc:  "ParenCompExpr - multi-line curly braces",
+			input: "\\left\\{ \\frac{a}{b} \\right\\}",
 			expect: join(
 				"⎧a⎫",
 				"⎨─⎬",
@@ -221,8 +235,8 @@ func TestPrerender(t *testing.T) {
 			expect: "|x|",
 		},
 		{
-			desc:   "ParenCompExpr - vertical bar multi-line",
-			input:  "\\left| \\frac{a}{b} \\right|",
+			desc:  "ParenCompExpr - vertical bar multi-line",
+			input: "\\left| \\frac{a}{b} \\right|",
 			expect: join(
 				"│a│",
 				"│─│",
@@ -230,8 +244,8 @@ func TestPrerender(t *testing.T) {
 			),
 		},
 		{
-			desc:   "ParenCompExpr - mismatched left paren right bar multi-line",
-			input:  "\\left( \\frac{a}{b} \\right|",
+			desc:  "ParenCompExpr - mismatched left paren right bar multi-line",
+			input: "\\left( \\frac{a}{b} \\right|",
 			expect: join(
 				"⎛a│",
 				"⎜─│",
@@ -239,8 +253,8 @@ func TestPrerender(t *testing.T) {
 			),
 		},
 		{
-			desc:   "ParenCompExpr - tall curly braces use extension piece",
-			input:  "\\left\\{ \\frac{1}{\\frac{2}{3}} \\right\\}",
+			desc:  "ParenCompExpr - tall curly braces use extension piece",
+			input: "\\left\\{ \\frac{1}{\\frac{2}{3}} \\right\\}",
 			expect: join(
 				"⎧1⎫",
 				"⎨─⎬",
@@ -255,9 +269,11 @@ func TestPrerender(t *testing.T) {
 			expect: "hello",
 		},
 		{
-			desc:   "EnvExpr - matrix environment",
-			input:  `\begin{matrix} a & b \\ c & d \end{matrix}`,
-			expect: "⎡a b⎤\n⎣c d⎦",
+			desc:  "EnvExpr - matrix environment",
+			input: `\begin{matrix} a & b \\ c & d \end{matrix}`,
+			expect: join(
+				"⎡a b⎤",
+				"⎣c d⎦"),
 		},
 		{
 			desc:   "EnvExpr - single cell",
