@@ -36,6 +36,10 @@ func TestLatexConsistent(t *testing.T) {
 			input: "\\pi",
 		},
 		{
+			desc:  "SimpleCmdLit - space command",
+			input: "\\ ",
+		},
+		{
 			desc:  "CompositeExpr - simple braces",
 			input: "{x}",
 		},

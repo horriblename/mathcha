@@ -56,6 +56,16 @@ func TestPrerender(t *testing.T) {
 			expect: "π",
 		},
 		{
+			desc:   "SimpleCmdLit - space command",
+			input:  "a\\ b",
+			expect: "a b",
+		},
+		{
+			desc:   "SimpleCmdLit - space command alone",
+			input:  "\\ ",
+			expect: " ",
+		},
+		{
 			desc:   "CompositeExpr - simple braces",
 			input:  "{x}",
 			expect: "x",
