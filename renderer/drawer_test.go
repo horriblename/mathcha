@@ -313,6 +313,29 @@ func TestPrerender(t *testing.T) {
 			),
 		},
 		{
+			desc:  "EnvExpr - tall row gets blank line after it",
+			input: `\begin{matrix} \frac{1}{2} & 3 \\ 4 & 5 \end{matrix}`,
+			expect: join(
+				"⎡1  ⎤",
+				"⎢─ 3⎥",
+				"⎢2  ⎥",
+				"⎢   ⎥",
+				"⎣4 5⎦",
+			),
+		},
+		{
+			desc:  "EnvExpr - blank line only between rows with tall neighbors",
+			input: `\begin{matrix} 1 & \frac{2}{3} \\ 4 & 5 \\ 6 & 7 \end{matrix}`,
+			expect: join(
+				"⎡  2⎤",
+				"⎢1 ─⎥",
+				"⎢  3⎥",
+				"⎢   ⎥",
+				"⎢4 5⎥",
+				"⎣6 7⎦",
+			),
+		},
+		{
 			desc:   "Combined - simple expression",
 			input:  "x + 1",
 			expect: "x + 1",

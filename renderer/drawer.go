@@ -95,7 +95,7 @@ func (r *Renderer) Prerender(node parser.Expr) (out string, baseLevel int) {
 			rows = append(rows, rowStr)
 		}
 
-		body := lipgloss.JoinVertical(lipgloss.Top, rows...)
+		body := JoinVerticalSpaced(rows...)
 		height := lipgloss.Height(body)
 		s, t, m, b := envLeft(n.Name)
 		left := constructParenLike(height, s, t, m, b)

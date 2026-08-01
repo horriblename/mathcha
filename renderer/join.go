@@ -3,6 +3,7 @@ package renderer
 import (
 	"strings"
 
+	"github.com/charmbracelet/lipgloss"
 	"github.com/muesli/reflow/ansi"
 )
 
@@ -128,6 +129,19 @@ func JoinHorizontal(baseline []int, strs ...string) string {
 	}
 
 	return b.String()
+}
+
+// JoinVerticalSpaced joins blocks vertically along the left edge, inserting an
+// empty line between two blocks if either of them has a height greater than 1.
+func JoinVerticalSpaced(strs ...string) string {
+	rows := make([]string, 0, len(strs)*2-1)
+	for i, str := range strs {
+		if i > 0 && (lipgloss.Height(strs[i-1]) > 1 || lipgloss.Height(str) > 1) {
+			rows = append(rows, "")
+		}
+		rows = append(rows, str)
+	}
+	return lipgloss.JoinVertical(lipgloss.Left, rows...)
 }
 
 // Split a string into lines, additionally returning the size of the widest
