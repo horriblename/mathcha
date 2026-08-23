@@ -40,7 +40,8 @@ type Editor struct {
 
 type EditorConfig struct {
 	*log.Logger
-	LatexCfg render.LatexSourceConfig
+	LatexCfg      render.LatexSourceConfig
+	NoLineSpacing bool
 }
 
 func New(formula string) *Editor {
@@ -67,6 +68,7 @@ func NewWithConfig(cfg EditorConfig, formula string) *Editor {
 	editor := New(formula)
 	editor.config = &cfg
 	editor.renderer.UnicodeSuperscript = cfg.LatexCfg.UnicodeSuperscript
+	editor.renderer.DisableEnvLineSpacing = cfg.NoLineSpacing
 	return editor
 }
 
@@ -76,7 +78,8 @@ func (e *Editor) Read(latex string) {
 		ast := parser.Parse(latex)
 		// e.renderer.Load(p.GetTree()) // FIXME why doesn't this work
 		unicodeSup := e.renderer.UnicodeSuperscript
-		e.renderer = &render.Renderer{LatexTree: ast, UnicodeSuperscript: unicodeSup}
+		noLineSpacing := e.renderer.DisableEnvLineSpacing
+		e.renderer = &render.Renderer{LatexTree: ast, UnicodeSuperscript: unicodeSup, DisableEnvLineSpacing: noLineSpacing}
 		// p (Parser object) can be discarded now
 	} else {
 		e.renderer.Load(&parser.UnboundCompExpr{})

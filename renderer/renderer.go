@@ -5,13 +5,14 @@ import (
 )
 
 type Renderer struct {
-	Color                bool
-	UnicodeSuperscript   bool
-	Buffer               string
-	LatexTree            parser.FlexContainer
-	FocusOn              parser.Container
-	HasSelection         bool
-	Focus                bool
+	Color                 bool
+	UnicodeSuperscript    bool
+	DisableEnvLineSpacing bool
+	Buffer                string
+	LatexTree             parser.FlexContainer
+	FocusOn               parser.Container
+	HasSelection          bool
+	Focus                 bool
 }
 
 func New(color bool, unicodeSuperscript bool) Renderer {

@@ -20,6 +20,7 @@ import (
 const (
 	flagHelpSymbols       = "Use unicode symbols in output wherever possible"
 	flagHelpNoSuperscript = "Do not use unicode superscript/subscript characters for simple scripts"
+	flagHelpNoLineSpacing = "disable automatically inserting spacing between rows in an environment block"
 	flagHelpFile          = "Read initial formula from file; '-' for stdin"
 	flagHelpHelptext      = "Help text to print below the editor"
 	flagHelpPrintout      = "Internal flag for communicating with the nvim plugin"
@@ -254,6 +255,7 @@ func runEdit(args []string) {
 	fs := flag.NewFlagSet("edit", flag.ExitOnError)
 
 	var useUnicode bool
+	var noLineSpacing bool
 	var file string
 	var helptext string
 	var printout bool
@@ -262,6 +264,7 @@ func runEdit(args []string) {
 
 	fs.BoolVar(&useUnicode, "symbols", false, flagHelpSymbols)
 	fs.BoolVar(&useUnicode, "s", false, flagHelpAliasSymbols)
+	fs.BoolVar(&noLineSpacing, "nolinespacing", false, flagHelpNoLineSpacing)
 	fs.StringVar(&file, "f", "", flagHelpFile)
 	fs.StringVar(&helptext, "helptext", defaultHelpText, flagHelpHelptext)
 	fs.BoolVar(&printout, "printout", false, flagHelpPrintout)
@@ -278,6 +281,7 @@ func runEdit(args []string) {
 			UseUnicode:         useUnicode,
 			UnicodeSuperscript: false, // editor doesn't handle editing unicode scripts
 		},
+		NoLineSpacing: noLineSpacing,
 	}
 
 	if logfile != "" {
@@ -319,12 +323,14 @@ func runRender(args []string) {
 
 	var useUnicode bool
 	var noUnicodeSuperscript bool
+	var noLineSpacing bool
 	var file string
 
 	fs.BoolVar(&useUnicode, "symbols", false, flagHelpSymbols)
 	fs.BoolVar(&useUnicode, "s", false, flagHelpAliasSymbols)
 	fs.BoolVar(&noUnicodeSuperscript, "nosuperscript", false, flagHelpNoSuperscript)
 	fs.BoolVar(&noUnicodeSuperscript, "S", false, flagHelpAliasSuperscript)
+	fs.BoolVar(&noLineSpacing, "nolinespacing", false, flagHelpNoLineSpacing)
 	fs.StringVar(&file, "f", "", flagHelpFile)
 
 	err := fs.Parse(args)
@@ -343,6 +349,7 @@ func runRender(args []string) {
 	}
 
 	r := renderer.FromFormula(formula, false, !noUnicodeSuperscript)
+	r.DisableEnvLineSpacing = noLineSpacing
 	r.Sync(nil, false)
 	fmt.Print(r.Buffer)
 }
