@@ -10,6 +10,7 @@ M._states = {}
 ---@field pending TSNode[]
 ---@field augroup integer?
 ---@field conceal_job vim.SystemObj?
+---@field debounce_timer uv.uv_timer_t?
 local State = {}
 
 local HlMathchaTexMarker = "Special"
@@ -102,11 +103,17 @@ function State.new(bufnr)
 
 		md_inline_tree:register_cbs({
 			on_changedtree = function(_, tree)
-				vim.schedule(function()
-					-- FIXME: this forces a reload on all renders, I need to
-					-- listen to on_bytes or nvim_buf_attach
+				-- FIXME: this forces a reload on all renders, I need to
+				-- listen to on_bytes or nvim_buf_attach
+				if state.debounce_timer then
+					state.debounce_timer:stop()
+					state.debounce_timer:close()
+				end
+				state.debounce_timer = vim.uv.new_timer()
+				state.debounce_timer:start(500, 0, vim.schedule_wrap(function()
+					state.debounce_timer = nil
 					state:_parse_and_render({ [1] = tree })
-				end)
+				end))
 			end,
 			on_detach = function()
 				vim.api.nvim_buf_clear_namespace(bufnr, ns_id, 0, -1)
