@@ -88,49 +88,65 @@ function State.new(bufnr)
 		return nil, "No markdown parser found"
 	end
 
+	-- do a full parse first, to find markdown_inline tree if any
 	md_parser:parse(true, function(err1)
 		if err1 then
 			vim.notify_once(err1, vim.log.levels.ERROR)
 			return
 		end
-
-		local md_inline_tree = md_parser
-			:children()["markdown_inline"]
-		if md_inline_tree == nil then
-			vim.notify_once("No markdown_inline tree found, did you install the parser?", vim.log.levels.ERROR)
-			return
-		end
-
-		md_inline_tree:register_cbs({
-			on_changedtree = function(_, tree)
-				-- FIXME: this forces a reload on all renders, I need to
-				-- listen to on_bytes or nvim_buf_attach
-				if state.debounce_timer then
-					state.debounce_timer:stop()
-					state.debounce_timer:close()
-				end
-				state.debounce_timer = vim.uv.new_timer()
-				state.debounce_timer:start(500, 0, vim.schedule_wrap(function()
-					state.debounce_timer = nil
-					state:_parse_and_render({ [1] = tree })
-				end))
-			end,
-			on_detach = function()
-				vim.api.nvim_buf_clear_namespace(bufnr, ns_id, 0, -1)
-				M._states[bufnr] = nil
-			end
-		}, true)
-
-		md_inline_tree:parse(false, function(err2, trees)
-			if err2 ~= nil or trees == nil then
-				vim.notify_once("failed to parse markdown_inline: " .. err2, vim.log.levels.ERROR)
-			else
-				state:_parse_and_render(trees)
-			end
-		end)
 	end)
 
+	-- attach to markdown_inline tree now if available
+	local md_inline_tree = md_parser:children()["markdown_inline"]
+	if md_inline_tree then
+		state:attach_md_inline(md_inline_tree)
+	else
+		md_parser:register_cbs({
+			on_child_added = function()
+				-- just wanna make sure `return true` actually detaches
+				assert(md_inline_tree == nil)
+
+				md_inline_tree = md_parser:children()["markdown_inline"]
+				if md_inline_tree then
+					state:attach_md_inline(md_inline_tree)
+					return true
+				end
+			end
+		})
+	end
+
 	return state
+end
+
+---@param md_inline_tree vim.treesitter.LanguageTree
+function State:attach_md_inline(md_inline_tree)
+	md_inline_tree:register_cbs({
+		on_changedtree = function(_, tree)
+			-- FIXME: this forces a reload on all renders, I need to
+			-- listen to on_bytes or nvim_buf_attach
+			if self.debounce_timer then
+				self.debounce_timer:stop()
+				self.debounce_timer:close()
+			end
+			self.debounce_timer = vim.uv.new_timer()
+			self.debounce_timer:start(500, 0, vim.schedule_wrap(function()
+				self.debounce_timer = nil
+				self:_parse_and_render({ [1] = tree })
+			end))
+		end,
+		on_detach = function()
+			vim.api.nvim_buf_clear_namespace(self.buf, ns_id, 0, -1)
+			M._selfs[self.buf] = nil
+		end
+	}, true)
+
+	md_inline_tree:parse(false, function(err2, trees)
+		if err2 ~= nil or trees == nil then
+			vim.notify_once("failed to parse markdown_inline: " .. err2, vim.log.levels.ERROR)
+		else
+			self:_parse_and_render(trees)
+		end
+	end)
 end
 
 ---@param trees table<integer, TSTree>
