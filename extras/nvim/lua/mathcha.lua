@@ -83,9 +83,10 @@ function State.new(bufnr)
 		return nil, err
 	end
 
-	local md_parser = vim.treesitter.get_parser(bufnr, "markdown")
+	local md_parser
+	md_parser, err = vim.treesitter.get_parser(bufnr, "markdown")
 	if md_parser == nil then
-		return nil, "No markdown parser found"
+		return nil, err
 	end
 
 	-- do a full parse first, to find markdown_inline tree if any
