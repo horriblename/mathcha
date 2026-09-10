@@ -529,6 +529,17 @@ func (e *Editor) InsertCmd(cmd string) {
 		cell.AppendChildren(e.cursor)
 		e.traceStack = append(e.traceStack, cell)
 
+	case strings.HasPrefix(cmd, `\left`) && strings.Contains(cmd, `\right`):
+		rest := cmd[len(`\left`):]
+		sep := strings.Index(rest, `\right`)
+		node := &parser.ParenCompExpr{
+			Left:  rest[:sep],
+			Right: rest[sep+len(`\right`):],
+		}
+		e.getParent().DeleteChildren(idx, idx)
+		e.getParent().InsertChildren(idx, node)
+		e.enterContainerFromRight(node)
+
 	case kind.IsTextCmd():
 		node := &parser.TextContainer{Text: &parser.TextStringWrapper{}}
 		e.getParent().DeleteChildren(idx, idx)
@@ -556,10 +567,14 @@ func (e *Editor) InsertCmd(cmd string) {
 	case kind.IsEnclosing():
 		switch kind {
 		case parser.CMD_left:
-			node := &parser.ParenCompExpr{Left: "(", Right: ")"}
+			field := &render.LatexCmdInput{
+				Prefix: `\left:`,
+				Text:   new(parser.TextStringWrapper),
+			}
 			e.getParent().DeleteChildren(idx, idx)
-			e.getParent().InsertChildren(idx, node)
-			e.enterContainerFromRight(node)
+			e.getParent().InsertChildren(idx, field)
+			e.traceStack = append(e.traceStack, field, field.Text)
+			e.getParent().AppendChildren(e.cursor)
 		case parser.CMD_right:
 			e.exitParent(DIR_RIGHT)
 		}
@@ -1084,6 +1099,9 @@ func (e *Editor) realizeCommand() {
 		cmd = "\\" + n.BuildString()
 	case `\begin:`:
 		cmd = "\\begin{" + n.BuildString() + "}"
+	case `\left:`:
+		left, right := parseDelimiterPair(n.BuildString())
+		cmd = `\left` + left + `\right` + right
 	}
 
 	e.exitParent(DIR_RIGHT)
@@ -1129,4 +1147,73 @@ func min(a int, b int) int {
 		return a
 	}
 	return b
+}
+
+// parseDelimiterPair parses the text typed into a `\left:` input field into
+// a pair of LaTeX delimiters.
+//
+// The input is split into tokens, where a backslash escapes the following
+// character(s) (e.g. `{.` is the pair `\{` and `.`). With a single token, the
+// matching delimiter is used for the other side (e.g. `(` -> `( )`). With two
+// tokens, the first is used for `\left` and the second for `\right`
+// (e.g. `{.` -> `\left\{\right.`).
+// Falls back to `()` if nothing usable was entered.
+func parseDelimiterPair(input string) (string, string) {
+	tokens := tokenizeDelimiters([]rune(input))
+	switch len(tokens) {
+	case 1:
+		left := escapeDelimiter(tokens[0])
+		right, ok := matchingDelimiter[tokens[0]]
+		if !ok {
+			right = left
+		}
+		return left, escapeDelimiter(right)
+	case 2:
+		return escapeDelimiter(tokens[0]), escapeDelimiter(tokens[1])
+	default:
+		return "(", ")"
+	}
+}
+
+var matchingDelimiter = map[string]string{
+	"(": ")",
+	"[": "]",
+	"{": "\\}",
+	"<": ">",
+}
+
+func escapeDelimiter(delim string) string {
+	switch delim {
+	case "{":
+		return "\\{"
+	case "}":
+		return "\\}"
+	}
+	return delim
+}
+
+func tokenizeDelimiters(runes []rune) []string {
+	var tokens []string
+	for i := 0; i < len(runes); {
+		if runes[i] == '\\' {
+			j := i + 1
+			for j < len(runes) && unicode.IsLetter(runes[j]) {
+				j++
+			}
+			if j > i+1 { // "\command"
+				tokens = append(tokens, string(runes[i:j]))
+				i = j
+				continue
+			}
+			if j < len(runes) { // escaped symbol e.g. "\{"
+				tokens = append(tokens, string(runes[i:j+1]))
+				i = j + 1
+				continue
+			}
+			break // lone trailing backslash
+		}
+		tokens = append(tokens, string(runes[i:i+1]))
+		i++
+	}
+	return tokens
 }
