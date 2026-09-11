@@ -10,6 +10,7 @@ import (
 	re "regexp"
 	"strconv"
 	"strings"
+	"unicode/utf8"
 )
 
 type Pos int // TODO remove
@@ -157,8 +158,9 @@ func (t *Tokenizer) Eat() string {
 	}
 	stream := t.Stream[t.Cursor:]
 	curr := t.curr
-	tok := SYM  // ensure a new token is assigned each call
-	length := 1 // default value to catch-all
+	tok := SYM // ensure a new token is assigned each call
+	var length int
+	_, length = utf8.DecodeRuneInString(stream) // default: one rune
 
 	defer func() {
 		t.curr = stream[0:length]
@@ -227,7 +229,10 @@ func (t *Tokenizer) SkipToDelimiter(delimiter string) string {
 	if i == -1 {
 		panic("Tokenizer.SkipToDelimiter could not find '" + delimiter + "'")
 	}
-	t.Cursor += Pos(i)
+	// Position cursor past the delimiter. i counts from combined stream
+	// (t.curr + t.Stream[t.Cursor:]), so subtract len(t.curr) to get the
+	// offset within t.Stream, then add delimiter length to skip past it.
+	t.Cursor += Pos(i) + Pos(len(delimiter)) - Pos(len(t.curr))
 	t.Eat()
 
 	return stream[:i]

@@ -381,6 +381,130 @@ func TestParser(t *testing.T) {
 				},
 			},
 		},
+		{
+			desc:  "UTF-8 - single multi-byte char as SYM",
+			input: "é",
+			expect: &UnboundCompExpr{
+				Elts: []Expr{
+					&SimpleOpLit{From: 0, To: 0, Source: "é"},
+				},
+			},
+		},
+		{
+			desc:  "UTF-8 - CJK chars",
+			input: "中文",
+			expect: &UnboundCompExpr{
+				Elts: []Expr{
+					&SimpleOpLit{From: 0, To: 0, Source: "中"},
+					&SimpleOpLit{From: 0, To: 0, Source: "文"},
+				},
+			},
+		},
+		{
+			desc:  "UTF-8 - mixed with ASCII",
+			input: "x + é",
+			expect: &UnboundCompExpr{
+				Elts: []Expr{
+					&VarLit{From: 0, To: 0, Source: "x"},
+					&SimpleOpLit{From: 0, To: 0, Source: "+"},
+					&SimpleOpLit{From: 0, To: 0, Source: "é"},
+				},
+			},
+		},
+		{
+			desc:  "UTF-8 - text command with multi-byte",
+			input: "\\text{é}",
+			expect: &UnboundCompExpr{
+				Elts: []Expr{
+					&TextContainer{
+						CmdText: 0,
+						Type:    CMD_text,
+						From:    0,
+						To:      0,
+						Text: &TextStringWrapper{
+							Runes: []Expr{
+								RawRuneLit('é'),
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			desc:  "UTF-8 - text command with CJK",
+			input: "\\text{中文}",
+			expect: &UnboundCompExpr{
+				Elts: []Expr{
+					&TextContainer{
+						CmdText: 0,
+						Type:    CMD_text,
+						From:    0,
+						To:      0,
+						Text: &TextStringWrapper{
+							Runes: []Expr{
+								RawRuneLit('中'),
+								RawRuneLit('文'),
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			desc:  "UTF-8 - text command without braces",
+			input: "\\text é",
+			expect: &UnboundCompExpr{
+				Elts: []Expr{
+					&TextContainer{
+						CmdText: 0,
+						Type:    CMD_text,
+						From:    0,
+						To:      0,
+						Text: &TextStringWrapper{
+							Runes: []Expr{
+								RawRuneLit('é'),
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			desc:  "UTF-8 - emoji",
+			input: "😀",
+			expect: &UnboundCompExpr{
+				Elts: []Expr{
+					&SimpleOpLit{From: 0, To: 0, Source: "😀"},
+				},
+			},
+		},
+		{
+			desc:  "UTF-8 - fraction with multi-byte",
+			input: "\\frac{é}{x}",
+			expect: &UnboundCompExpr{
+				Elts: []Expr{
+					&Cmd2ArgExpr{
+						Type:      CMD_frac,
+						Backslash: 0,
+						Arg1: &CompositeExpr{
+							Lbrace: 0,
+							Elts: []Expr{
+								&SimpleOpLit{From: 0, To: 0, Source: "é"},
+							},
+							Rbrace: 0,
+						},
+						Arg2: &CompositeExpr{
+							Lbrace: 0,
+							Elts: []Expr{
+								&VarLit{From: 0, To: 0, Source: "x"},
+							},
+							Rbrace: 0,
+						},
+						To: 0,
+					},
+				},
+			},
+		},
 	}
 
 	for _, tc := range testCases {

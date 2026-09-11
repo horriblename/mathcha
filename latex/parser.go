@@ -2,7 +2,7 @@ package latex
 
 import (
 	"fmt"
-	"github.com/mattn/go-runewidth"
+	"unicode/utf8"
 )
 
 type Parser struct {
@@ -216,16 +216,17 @@ func (p *Parser) parseTextCommand(kind LatexCmd) Expr {
 	node := &TextContainer{Text: &TextStringWrapper{}, Type: kind}
 	if p.tok != LBRACE {
 		runes := make([]Expr, 1)
-		runes[0] = RawRuneLit(p.lit[0])
+		r, _ := utf8.DecodeRuneInString(p.lit)
+		runes[0] = RawRuneLit(r)
 		node.Text = &TextStringWrapper{Runes: runes}
 		p.next()
 		return node
 	}
 
 	text := p.tokenizer.SkipToDelimiter("}")
-	runeLiterals := make([]Expr, runewidth.StringWidth(text))
-	for i, r := range text {
-		runeLiterals[i] = RawRuneLit(r)
+	runeLiterals := make([]Expr, 0, utf8.RuneCountInString(text))
+	for _, r := range text {
+		runeLiterals = append(runeLiterals, RawRuneLit(r))
 	}
 	node.Text.Runes = runeLiterals
 
