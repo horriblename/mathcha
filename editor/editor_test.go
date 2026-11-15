@@ -165,6 +165,45 @@ func TestHelpDocumentsEnvColumn(t *testing.T) {
 	}
 }
 
+func TestDeleteBackInEnvFirstColumn(t *testing.T) {
+	tests := []struct {
+		desc     string
+		setup    []interface{}
+		expected string
+	}{
+		{
+			desc:     "first row is a no-op",
+			setup:    []interface{}{'\\', 'm', 'a', 't', tea.KeySpace, 'a'},
+			expected: "\\begin{matrix}\na\n\\end{matrix}",
+		},
+		{
+			desc:     "joins the row to the previous row",
+			setup:    []interface{}{'\\', 'm', 'a', 't', tea.KeySpace, 'a', tea.KeyEnter, 'b'},
+			expected: "\\begin{matrix}\nab\n\\end{matrix}",
+		},
+		{
+			desc:     "joins to the last cell of the previous row",
+			setup:    []interface{}{'\\', 'm', 'a', 't', tea.KeySpace, 'a', '&', 'b', tea.KeyEnter, 'c'},
+			expected: "\\begin{matrix}\na & bc\n\\end{matrix}",
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.desc, func(t *testing.T) {
+			e := New("")
+			typeKeys(e, tc.setup...)
+			typeKeys(e, tea.KeyCtrlA, tea.KeyBackspace)
+
+			if got := e.LatexSource(); got != tc.expected {
+				t.Errorf("expected %q, got %q", tc.expected, got)
+			}
+			if state := e.GetState(); state != EDIT_EQUATION {
+				t.Errorf("expected EDIT_EQUATION after delete, got %v", state)
+			}
+		})
+	}
+}
+
 func TestWrapSelectionInCommand(t *testing.T) {
 	tests := []struct {
 		desc     string

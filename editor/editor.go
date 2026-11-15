@@ -724,11 +724,17 @@ func (e *Editor) flattenDeleteParent() {
 			// TODO: what should I do here?
 			return
 		} else if c == 0 {
-			forest.Elts[r-1] = append(forest.Elts[r-1], row...)
-			for r1 := r; r < len(forest.Elts); r1++ {
-				forest.Elts[r1] = forest.Elts[r1+1]
-			}
-			forest.Elts = forest.Elts[:len(forest.Elts)-1]
+			// Join the first cell of this row to the last cell of the
+			// previous row, erasing the row separator.
+			prevRow := forest.Elts[r-1]
+			prevCell := prevRow[len(prevRow)-1]
+			idx := e.getCursorIdxInParent()
+			oldCell.DeleteChildren(idx, idx)
+			prevCell.AppendChildren(e.cursor)
+			prevCell.AppendChildren(oldCell.Elts...)
+			forest.Elts[r-1] = append(prevRow, row[1:]...)
+			forest.Elts = append(forest.Elts[:r], forest.Elts[r+1:]...)
+			e.traceStack[len(e.traceStack)-1] = prevCell
 		} else {
 			idx := e.getCursorIdxInParent()
 			oldCell.DeleteChildren(idx, idx)
