@@ -89,27 +89,15 @@ function State.new(bufnr)
 		return nil, err
 	end
 
-	-- do a full parse first, to find markdown_inline tree if any
-	md_parser:parse(true, function(err1)
-		if err1 then
-			vim.notify_once(err1, vim.log.levels.ERROR)
-			return
-		end
-	end)
-
 	-- attach to markdown_inline tree now if available
 	local md_inline_tree = md_parser:children()["markdown_inline"]
 	if md_inline_tree then
 		state:attach_md_inline(md_inline_tree)
 	else
 		md_parser:register_cbs({
-			on_child_added = function()
-				-- just wanna make sure `return true` actually detaches
-				assert(md_inline_tree == nil)
-
-				md_inline_tree = md_parser:children()["markdown_inline"]
-				if md_inline_tree then
-					state:attach_md_inline(md_inline_tree)
+			on_child_added = function(tree)
+				if tree:lang() == "markdown_inline" then
+					state:attach_md_inline(tree)
 					return true
 				end
 			end
