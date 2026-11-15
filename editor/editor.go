@@ -498,6 +498,23 @@ func (e *Editor) NavigateToEnd() {
 	parent.AppendChildren(e.cursor)
 }
 
+// insertEnv inserts a new environment at the cursor and moves the cursor into
+// its first cell.
+func (e *Editor) insertEnv(envName parser.EnvName) {
+	idx := e.getCursorIdxInParent()
+	cell := &parser.UnboundCompExpr{}
+	node := &parser.EnvExpr{
+		Name: envName,
+		Elts: [][]*parser.UnboundCompExpr{
+			{cell},
+		},
+	}
+	e.getParent().DeleteChildren(idx, idx)
+	e.getParent().InsertChildren(idx, node)
+	e.traceStack = append(e.traceStack, node, cell)
+	cell.AppendChildren(e.cursor)
+}
+
 func (e *Editor) InsertCmd(cmd string) {
 	kind := parser.MatchLatexCmd(cmd)
 	idx := e.getCursorIdxInParent()
@@ -511,23 +528,14 @@ func (e *Editor) InsertCmd(cmd string) {
 		e.getParent().InsertChildren(idx, field)
 		e.traceStack = append(e.traceStack, field, field.Text)
 		e.getParent().AppendChildren(e.cursor)
+	case cmd == "\\mat":
+		e.insertEnv(parser.ENV_matrix)
 	case strings.HasPrefix(cmd, `\begin{`):
 		start := strings.Index(cmd, "{")
 		end := strings.Index(cmd, "}")
 		envNameStr := cmd[start+1 : end]
 		envName := parser.GetEnvName(envNameStr)
-		cell := &parser.UnboundCompExpr{}
-		node := &parser.EnvExpr{
-			Name: envName,
-			Elts: [][]*parser.UnboundCompExpr{
-				{cell},
-			},
-		}
-		e.getParent().DeleteChildren(idx, idx)
-		e.getParent().InsertChildren(idx, node)
-		e.traceStack = append(e.traceStack, node)
-		cell.AppendChildren(e.cursor)
-		e.traceStack = append(e.traceStack, cell)
+		e.insertEnv(envName)
 
 	case strings.HasPrefix(cmd, `\left`) && strings.Contains(cmd, `\right`):
 		rest := cmd[len(`\left`):]

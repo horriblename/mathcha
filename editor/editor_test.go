@@ -107,3 +107,18 @@ func TestInsertLeftWithContent(t *testing.T) {
 		t.Errorf("expected %q, got %q", expected, got)
 	}
 }
+
+func TestMatShortcut(t *testing.T) {
+	e := New("")
+	typeKeys(e, '\\', 'm', 'a', 't', tea.KeySpace)
+
+	expected := "\\begin{matrix}\n\n\\end{matrix}"
+	if got := e.LatexSource(); got != expected {
+		t.Errorf("expected %q, got %q", expected, got)
+	}
+
+	// cursor should be inside the matrix cell
+	if state := e.GetState(); state != EDIT_EQUATION {
+		t.Errorf("expected EDIT_EQUATION inside matrix, got %v", state)
+	}
+}
