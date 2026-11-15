@@ -173,6 +173,9 @@ function State:update_conceal()
 	end
 
 	if node == nil then
+		vim.api.nvim_exec_autocmds("User", {
+			pattern = "MathchaJobsDone"
+		})
 		return
 	end
 
