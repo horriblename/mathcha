@@ -526,6 +526,32 @@ func (e *Editor) NavigateToEnd() {
 	parent.AppendChildren(e.cursor)
 }
 
+// insertEnvColumn inserts a new cell (column) after the current one in the
+// enclosing environment. Children after the cursor are moved into the new
+// cell, so the cell is split at the cursor. Returns false when the cursor is
+// not inside an environment.
+func (e *Editor) insertEnvColumn() bool {
+	if len(e.traceStack) < 2 {
+		return false
+	}
+	env, ok := e.traceStack[len(e.traceStack)-2].(*parser.EnvExpr)
+	if !ok {
+		return false
+	}
+	r, c := env.FindCell(e.getParent().(*parser.UnboundCompExpr))
+	cell := env.InsertCell(r, c+1)
+
+	idx := e.getCursorIdxInParent()
+	children := e.getParent().Children()
+	afterCursor := children[idx:]
+	cell.AppendChildren(afterCursor...)
+	e.getParent().DeleteChildren(idx, len(children)-1)
+
+	e.popStack()
+	e.traceStack = append(e.traceStack, cell)
+	return true
+}
+
 // insertEnv inserts a new environment at the cursor and moves the cursor into
 // its first cell. Any selected nodes are moved into that cell.
 func (e *Editor) insertEnv(envName parser.EnvName, selected ...parser.Expr) {
@@ -918,24 +944,8 @@ func (e *Editor) handleRest(char rune) {
 			e.getParent().AppendChildren(e.cursor)
 
 		case '&':
-			if len(e.traceStack) < 2 {
-				break // TODO
-			}
-			if env, ok := e.traceStack[len(e.traceStack)-2].(*parser.EnvExpr); ok {
-				r, c := env.FindCell(e.getParent().(*parser.UnboundCompExpr))
-				idx := e.getCursorIdxInParent()
-				cell := env.InsertCell(r, c+1)
-
-				children := e.getParent().Children()
-				afterCursor := children[idx:]
-				cell.AppendChildren(afterCursor...)
-				e.getParent().DeleteChildren(idx, len(children)-1)
-
-				e.popStack()
-				e.traceStack = append(e.traceStack, cell)
-				return
-			}
-
+			e.insertEnvColumn()
+			return
 		case '/':
 			e.InsertFrac(true)
 			e.NavigateLeft()
@@ -1014,6 +1024,8 @@ const KeybindsHelp = `
 
 	ctrl + u - delete to start of node
 	ctrl + k - delete to end of node
+
+	ctrl + space / & - create a new column in an environment
 	`
 
 func (e Editor) Update(msg tea.Msg) (Editor, tea.Cmd) {
@@ -1105,6 +1117,9 @@ func (e Editor) Update(msg tea.Msg) (Editor, tea.Cmd) {
 					n.InsertChildren(idx, parser.RawRuneLit(' '))
 				}
 			}
+		case tea.KeyCtrlAt:
+			// ctrl+space is sent as NUL, which bubbletea calls ctrl+@
+			e.insertEnvColumn()
 		case tea.KeyRunes:
 			if len(msg.Runes) == 1 {
 				if msg.Alt {

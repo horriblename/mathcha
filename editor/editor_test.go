@@ -1,6 +1,7 @@
 package editor
 
 import (
+	"strings"
 	"testing"
 
 	tea "github.com/charmbracelet/bubbletea"
@@ -126,6 +127,41 @@ func TestMatShortcut(t *testing.T) {
 func selectAll(e *Editor) {
 	e.NavigateToBeginning()
 	for e.selectRight() {
+	}
+}
+
+func TestInsertEnvColumn(t *testing.T) {
+	tests := []struct {
+		desc string
+		key  interface{}
+	}{
+		{desc: "ampersand", key: '&'},
+		{desc: "ctrl+space", key: tea.KeyCtrlAt},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.desc, func(t *testing.T) {
+			e := New("")
+			typeKeys(e, '\\', 'm', 'a', 't', tea.KeySpace)
+			typeKeys(e, "ab")
+			typeKeys(e, tc.key)
+			typeKeys(e, "c")
+
+			expected := "\\begin{matrix}\nab & c\n\\end{matrix}"
+			if got := e.LatexSource(); got != expected {
+				t.Errorf("expected %q, got %q", expected, got)
+			}
+
+			if state := e.GetState(); state != EDIT_EQUATION {
+				t.Errorf("expected EDIT_EQUATION inside new cell, got %v", state)
+			}
+		})
+	}
+}
+
+func TestHelpDocumentsEnvColumn(t *testing.T) {
+	if !strings.Contains(KeybindsHelp, "ctrl + space") {
+		t.Errorf("expected help text to document ctrl+space, got %q", KeybindsHelp)
 	}
 }
 
