@@ -136,16 +136,21 @@ func (e *Editor) GetState() editorState {
 	return state
 }
 
+// hasSelection reports whether there is a selection in the current parent.
 func (e *Editor) hasSelection() bool {
-	return e.markSelect != nil
+	return e.markSelect != nil && e.getSelectionIdxInParent() >= 0
 }
 
+// cancelSelection removes the selection marker. The caller must ensure the
+// selection is in the current parent (see hasSelection).
 func (e *Editor) cancelSelection() {
 	markIdx := e.getSelectionIdxInParent()
 	e.getParent().DeleteChildren(markIdx, markIdx)
 	e.markSelect = nil
 }
 
+// deleteSelection deletes the selected nodes. The caller must ensure the
+// selection is in the current parent (see hasSelection).
 func (e *Editor) deleteSelection() {
 	idx := e.getCursorIdxInParent()
 	mark := e.getSelectionIdxInParent()
@@ -157,8 +162,31 @@ func (e *Editor) deleteSelection() {
 	e.markSelect = nil
 }
 
+// takeSelection removes the current selection from the parent and returns the
+// selected nodes, leaving the cursor where the selection started. It returns
+// nil when there is no selection in the current parent.
+func (e *Editor) takeSelection() []parser.Expr {
+	if !e.hasSelection() {
+		return nil
+	}
+
+	idx := e.getCursorIdxInParent()
+	mark := e.getSelectionIdxInParent()
+	children := e.getParent().Children()
+	var selected []parser.Expr
+	if mark < idx {
+		selected = append(selected, children[mark+1:idx]...)
+		e.getParent().DeleteChildren(mark, idx-1)
+	} else {
+		selected = append(selected, children[idx+1:mark]...)
+		e.getParent().DeleteChildren(idx+1, mark)
+	}
+	e.markSelect = nil
+	return selected
+}
+
 func (e *Editor) deleteToStart() {
-	if e.markSelect != nil {
+	if e.hasSelection() {
 		e.deleteSelection()
 	}
 
@@ -171,7 +199,7 @@ func (e *Editor) deleteToStart() {
 }
 
 func (e *Editor) deleteToEnd() {
-	if e.markSelect != nil {
+	if e.hasSelection() {
 		e.deleteSelection()
 	}
 
@@ -499,10 +527,10 @@ func (e *Editor) NavigateToEnd() {
 }
 
 // insertEnv inserts a new environment at the cursor and moves the cursor into
-// its first cell.
-func (e *Editor) insertEnv(envName parser.EnvName) {
+// its first cell. Any selected nodes are moved into that cell.
+func (e *Editor) insertEnv(envName parser.EnvName, selected ...parser.Expr) {
 	idx := e.getCursorIdxInParent()
-	cell := &parser.UnboundCompExpr{}
+	cell := &parser.UnboundCompExpr{Elts: selected}
 	node := &parser.EnvExpr{
 		Name: envName,
 		Elts: [][]*parser.UnboundCompExpr{
@@ -517,9 +545,9 @@ func (e *Editor) insertEnv(envName parser.EnvName) {
 
 func (e *Editor) InsertCmd(cmd string) {
 	kind := parser.MatchLatexCmd(cmd)
-	idx := e.getCursorIdxInParent()
-	switch {
-	case cmd == "\\begin":
+
+	if cmd == "\\begin" {
+		idx := e.getCursorIdxInParent()
 		field := &render.LatexCmdInput{
 			Prefix: `\begin:`,
 			Text:   new(parser.TextStringWrapper),
@@ -528,14 +556,26 @@ func (e *Editor) InsertCmd(cmd string) {
 		e.getParent().InsertChildren(idx, field)
 		e.traceStack = append(e.traceStack, field, field.Text)
 		e.getParent().AppendChildren(e.cursor)
+		return
+	}
+
+	// `\left` and `\right` only become complete commands after their input
+	// fields are realized; leave the selection alone until then.
+	var selected []parser.Expr
+	if cmd != `\left` && cmd != `\right` {
+		selected = e.takeSelection()
+	}
+
+	idx := e.getCursorIdxInParent()
+	switch {
 	case cmd == "\\mat":
-		e.insertEnv(parser.ENV_matrix)
+		e.insertEnv(parser.ENV_matrix, selected...)
 	case strings.HasPrefix(cmd, `\begin{`):
 		start := strings.Index(cmd, "{")
 		end := strings.Index(cmd, "}")
 		envNameStr := cmd[start+1 : end]
 		envName := parser.GetEnvName(envNameStr)
-		e.insertEnv(envName)
+		e.insertEnv(envName, selected...)
 
 	case strings.HasPrefix(cmd, `\left`) && strings.Contains(cmd, `\right`):
 		rest := cmd[len(`\left`):]
@@ -543,28 +583,33 @@ func (e *Editor) InsertCmd(cmd string) {
 		node := &parser.ParenCompExpr{
 			Left:  rest[:sep],
 			Right: rest[sep+len(`\right`):],
+			Elts:  selected,
 		}
 		e.getParent().DeleteChildren(idx, idx)
 		e.getParent().InsertChildren(idx, node)
 		e.enterContainerFromRight(node)
 
 	case kind.IsTextCmd():
-		node := &parser.TextContainer{Text: &parser.TextStringWrapper{}}
+		node := &parser.TextContainer{Text: &parser.TextStringWrapper{Runes: selected}}
 		e.getParent().DeleteChildren(idx, idx)
 		e.getParent().InsertChildren(idx, node)
 		e.enterContainerFromRight(node)
 	case kind.TakesOneArg():
-		node := &parser.Cmd1ArgExpr{Type: kind, Arg1: new(parser.CompositeExpr)}
+		node := &parser.Cmd1ArgExpr{Type: kind, Arg1: &parser.CompositeExpr{Elts: selected}}
 		e.getParent().DeleteChildren(idx, idx)
 		e.getParent().InsertChildren(idx, node)
 		e.enterContainerFromRight(node)
 	case kind.TakesTwoArg():
-		node := &parser.Cmd2ArgExpr{Type: kind, Arg1: new(parser.CompositeExpr), Arg2: new(parser.CompositeExpr)}
+		node := &parser.Cmd2ArgExpr{Type: kind, Arg1: &parser.CompositeExpr{Elts: selected}, Arg2: new(parser.CompositeExpr)}
 		e.getParent().DeleteChildren(idx, idx)
 		e.getParent().InsertChildren(idx, node)
 		e.enterContainerFromRight(node)
+		if len(selected) > 0 {
+			// put the cursor in the second argument, like wrapping with `/`
+			e.NavigateDown()
+		}
 	case kind.TakesRawStrArg():
-		node := &parser.TextContainer{Text: &parser.TextStringWrapper{}}
+		node := &parser.TextContainer{Text: &parser.TextStringWrapper{Runes: selected}}
 		e.getParent().DeleteChildren(idx, idx)
 		e.getParent().InsertChildren(idx, node)
 		e.enterContainerFromRight(node)
@@ -681,7 +726,7 @@ func (e *Editor) flattenDeleteParent() {
 }
 
 func (e *Editor) DeleteBack() {
-	if e.markSelect != nil {
+	if e.hasSelection() {
 		e.deleteSelection()
 		return
 	}
@@ -830,6 +875,9 @@ func (e *Editor) handleRest(char rune) {
 			e.markSelect = nil
 			return
 
+		case '\\':
+			// Starting a command: keep the selection so that the command can
+			// wrap it once it is complete (see InsertCmd).
 		default:
 			mark := e.getSelectionIdxInParent()
 			if mark < idx {
@@ -977,7 +1025,7 @@ func (e Editor) Update(msg tea.Msg) (Editor, tea.Cmd) {
 				e.selectLeft()
 				e.renderer.Sync(e.getLastOnStack(), true)
 				return e, nil
-			} else if e.markSelect != nil {
+			} else if e.hasSelection() {
 				e.cancelSelection()
 			}
 			e.NavigateLeft()
@@ -986,17 +1034,17 @@ func (e Editor) Update(msg tea.Msg) (Editor, tea.Cmd) {
 				e.selectRight()
 				e.renderer.Sync(e.getLastOnStack(), true)
 				return e, nil
-			} else if e.markSelect != nil {
+			} else if e.hasSelection() {
 				e.cancelSelection()
 			}
 			e.NavigateRight()
 		case tea.KeyDown, tea.KeyCtrlN:
-			if e.markSelect != nil {
+			if e.hasSelection() {
 				e.cancelSelection()
 			}
 			e.NavigateDown()
 		case tea.KeyUp, tea.KeyCtrlP:
-			if e.markSelect != nil {
+			if e.hasSelection() {
 				e.cancelSelection()
 			}
 			e.NavigateUp()

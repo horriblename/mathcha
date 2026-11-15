@@ -122,3 +122,56 @@ func TestMatShortcut(t *testing.T) {
 		t.Errorf("expected EDIT_EQUATION inside matrix, got %v", state)
 	}
 }
+
+func selectAll(e *Editor) {
+	e.NavigateToBeginning()
+	for e.selectRight() {
+	}
+}
+
+func TestWrapSelectionInCommand(t *testing.T) {
+	tests := []struct {
+		desc     string
+		keys     []interface{}
+		expected string
+	}{
+		{
+			desc:     "one-argument command",
+			keys:     []interface{}{'\\', 's', 'q', 'r', 't', tea.KeySpace},
+			expected: `\sqrt {abc}`,
+		},
+		{
+			desc:     "two-argument command",
+			keys:     []interface{}{'\\', 'f', 'r', 'a', 'c', tea.KeySpace},
+			expected: `\frac {abc}{}`,
+		},
+		{
+			desc:     "matrix shortcut",
+			keys:     []interface{}{'\\', 'm', 'a', 't', tea.KeySpace},
+			expected: "\\begin{matrix}\nabc\n\\end{matrix}",
+		},
+		{
+			desc:     "begin with environment name",
+			keys:     []interface{}{'\\', 'b', 'e', 'g', 'i', 'n', tea.KeySpace, 'm', 'a', 't', 'r', 'i', 'x', tea.KeySpace},
+			expected: "\\begin{matrix}\nabc\n\\end{matrix}",
+		},
+		{
+			desc:     "left/right delimiters",
+			keys:     []interface{}{'\\', 'l', 'e', 'f', 't', tea.KeySpace, '(', tea.KeySpace},
+			expected: `\left(abc\right)`,
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.desc, func(t *testing.T) {
+			e := New("")
+			typeKeys(e, "abc")
+			selectAll(e)
+			typeKeys(e, tc.keys...)
+
+			if got := e.LatexSource(); got != tc.expected {
+				t.Errorf("expected %q, got %q", tc.expected, got)
+			}
+		})
+	}
+}
