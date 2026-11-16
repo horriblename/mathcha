@@ -2,7 +2,7 @@
 --
 -- Run from extras/nvim with:
 --
---   nvim --headless -u NONE -c 'luafile tests/e2e.lua'
+--   nvim --clean --headless -c 'luafile tests/e2e.lua'
 --
 -- The script adds PWD to 'runtimepath', so it must be run from the plugin
 -- root. It quits nvim on success and exits with a non-zero code on failure.
@@ -88,6 +88,38 @@ local function virt_lines_text(virt_lines)
 	return lines
 end
 
+---Open a fixture file, reusing the buffer if it is already open and resetting
+---it to the file's on-disk contents.
+---
+---Reusing a single markdown buffer avoids juggling multiple markdown
+---highlights/parsers between tests.
+---@param path string
+---@return integer buf
+---@return boolean changed
+local function open_fixture(path)
+	local existing = vim.fn.bufnr(path)
+	if existing == -1 then
+		vim.cmd.edit(vim.fn.fnameescape(path))
+		return vim.api.nvim_get_current_buf(), false
+	end
+
+	vim.api.nvim_set_current_buf(existing)
+	local on_disk = vim.fn.readfile(path)
+	if vim.deep_equal(vim.api.nvim_buf_get_lines(existing, 0, -1, false), on_disk) then
+		return existing, false
+	end
+	vim.api.nvim_buf_set_lines(existing, 0, -1, false, on_disk)
+	return existing, true
+end
+
+local function await_jobs_done(timeout_ms)
+	local ok, args = await_event("User", "MathchaJobsDone", timeout_ms or 5000)
+	if not ok then
+		error(args, 0)
+	end
+	assert_eq(type(args), "table", "MathchaJobsDone args")
+end
+
 local tests = {}
 
 tests[#tests + 1] = {
@@ -101,15 +133,10 @@ tests[#tests + 1] = {
 			"basic.md"
 		)
 
-		vim.cmd.edit(vim.fn.fnameescape(fixture))
-		local buf = vim.api.nvim_get_current_buf()
+		local buf = open_fixture(fixture)
 		assert_eq(vim.bo[buf].filetype, "markdown", "filetype")
 
-		local ok, args = await_event("User", "MathchaJobsDone", 5000)
-		if not ok then
-			error(args, 0)
-		end
-		assert_eq(type(args), "table", "MathchaJobsDone args")
+		await_jobs_done()
 
 		local state = mathcha.instance(buf)
 		if not state then
@@ -131,6 +158,56 @@ tests[#tests + 1] = {
 		)
 		assert_eq(details.virt_lines[1][1][2], "Special", "marker highlight")
 		assert_eq(details.virt_lines[2][1][2], "TabLineSel", "render highlight")
+	end,
+}
+
+tests[#tests + 1] = {
+	name = "rerenders an existing $$ block after it is edited",
+	fn = function()
+		local mathcha = require("mathcha")
+		local fixture = vim.fs.joinpath(
+			assert(vim.env.PWD, "PWD is not set"),
+			"tests",
+			"fixtures",
+			"basic.md"
+		)
+
+		local buf, changed = open_fixture(fixture)
+		assert_eq(vim.bo[buf].filetype, "markdown", "filetype")
+
+		-- if the buffer was already rendered by another test, there is no new
+		-- MathchaJobsDone event to wait for
+		if changed or not mathcha.instance(buf) or #mathcha_extmarks(buf) == 0 then
+			await_jobs_done()
+		end
+
+		local marks = mathcha_extmarks(buf)
+		assert_eq(#marks, 1, "initial extmark count")
+		assert_eq(
+			virt_lines_text(marks[1][4].virt_lines),
+			{ { "" }, { "x² + y²" } },
+			"initial rendered virtual lines"
+		)
+
+		-- replace the body of the existing latex block
+		vim.api.nvim_buf_set_lines(buf, 3, 4, false, { "a^2 + b^2" })
+
+		await_jobs_done()
+
+		local state = mathcha.instance(buf)
+		if not state then
+			error("mathcha did not attach to buffer " .. buf, 2)
+		end
+		assert_eq(#state.pending, 0, "state.pending")
+		assert_eq(state.conceal_job, nil, "state.conceal_job")
+
+		marks = mathcha_extmarks(buf)
+		assert_eq(#marks, 1, "extmark count after edit")
+		assert_eq(
+			virt_lines_text(marks[1][4].virt_lines),
+			{ { "" }, { "a² + b²" } },
+			"rerendered virtual lines"
+		)
 	end,
 }
 
