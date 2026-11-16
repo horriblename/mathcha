@@ -17,6 +17,13 @@ if not headless then
 	end
 end
 
+local results = {
+	passed = 0,
+	failed = 0,
+	failures = {},
+}
+local current_test
+
 -- Defined below, forward declared so async helpers can resume the top-level
 -- coroutine and report failures through a single path.
 local resume_main
@@ -50,18 +57,41 @@ local function await_event(event, pattern, timeout_ms)
 	return coroutine.yield()
 end
 
+---@param msg string
+local function record_failure(msg)
+	if current_test then
+		msg = string.format("[%s] %s", current_test, msg)
+	end
+	results.failed = results.failed + 1
+	results.failures[#results.failures + 1] = msg
+	log("FAIL: %s", msg)
+end
+
+local function summarize()
+	log("")
+	log("summary: %d passed, %d failed", results.passed, results.failed)
+	for _, msg in ipairs(results.failures) do
+		log("  failed: %s", msg)
+	end
+end
+
+---Record an assertion result instead of aborting the test run.
 ---@param actual any
 ---@param expected any
 ---@param what string
+---@return boolean passed
 local function assert_eq(actual, expected, what)
-	if not vim.deep_equal(actual, expected) then
-		error(string.format(
-			"%s: expected %s, got %s",
-			what,
-			vim.inspect(expected),
-			vim.inspect(actual)
-		), 2)
+	if vim.deep_equal(actual, expected) then
+		results.passed = results.passed + 1
+		return true
 	end
+	record_failure(string.format(
+		"%s: expected %s, got %s",
+		what,
+		vim.inspect(expected),
+		vim.inspect(actual)
+	))
+	return false
 end
 
 ---@param buf integer
@@ -112,12 +142,14 @@ local function open_fixture(path)
 	return existing, true
 end
 
+---@return boolean ok
 local function await_jobs_done(timeout_ms)
 	local ok, args = await_event("User", "MathchaJobsDone", timeout_ms or 5000)
 	if not ok then
-		error(args, 0)
+		record_failure(args)
+		return false
 	end
-	assert_eq(type(args), "table", "MathchaJobsDone args")
+	return assert_eq(type(args), "table", "MathchaJobsDone args")
 end
 
 local tests = {}
@@ -136,18 +168,23 @@ tests[#tests + 1] = {
 		local buf = open_fixture(fixture)
 		assert_eq(vim.bo[buf].filetype, "markdown", "filetype")
 
-		await_jobs_done()
+		if not await_jobs_done() then
+			return
+		end
 
 		local state = mathcha.instance(buf)
 		if not state then
-			error("mathcha did not attach to buffer " .. buf, 2)
+			record_failure("mathcha did not attach to buffer " .. buf)
+			return
 		end
 		assert_eq(state.buf, buf, "state.buf")
 		assert_eq(#state.pending, 0, "state.pending")
 		assert_eq(state.conceal_job, nil, "state.conceal_job")
 
 		local marks = mathcha_extmarks(buf)
-		assert_eq(#marks, 1, "extmark count")
+		if not assert_eq(#marks, 1, "extmark count") then
+			return
+		end
 		local details = marks[1][4]
 		assert_eq(details.invalidate, true, "extmark.invalidate")
 		assert_eq(details.virt_lines_above, true, "extmark.virt_lines_above")
@@ -178,11 +215,15 @@ tests[#tests + 1] = {
 		-- if the buffer was already rendered by another test, there is no new
 		-- MathchaJobsDone event to wait for
 		if changed or not mathcha.instance(buf) or #mathcha_extmarks(buf) == 0 then
-			await_jobs_done()
+			if not await_jobs_done() then
+				return
+			end
 		end
 
 		local marks = mathcha_extmarks(buf)
-		assert_eq(#marks, 1, "initial extmark count")
+		if not assert_eq(#marks, 1, "initial extmark count") then
+			return
+		end
 		assert_eq(
 			virt_lines_text(marks[1][4].virt_lines),
 			{ { "" }, { "x² + y²" } },
@@ -192,17 +233,22 @@ tests[#tests + 1] = {
 		-- replace the body of the existing latex block
 		vim.api.nvim_buf_set_lines(buf, 3, 4, false, { "a^2 + b^2" })
 
-		await_jobs_done()
+		if not await_jobs_done() then
+			return
+		end
 
 		local state = mathcha.instance(buf)
 		if not state then
-			error("mathcha did not attach to buffer " .. buf, 2)
+			record_failure("mathcha did not attach to buffer " .. buf)
+			return
 		end
 		assert_eq(#state.pending, 0, "state.pending")
 		assert_eq(state.conceal_job, nil, "state.conceal_job")
 
 		marks = mathcha_extmarks(buf)
-		assert_eq(#marks, 1, "extmark count after edit")
+		if not assert_eq(#marks, 1, "extmark count after edit") then
+			return
+		end
 		assert_eq(
 			virt_lines_text(marks[1][4].virt_lines),
 			{ { "" }, { "a² + b²" } },
@@ -215,13 +261,20 @@ local main = coroutine.create(function()
 	-- tests must be run from the plugin root so the ftplugin is found
 	local root = assert(vim.env.PWD, "PWD is not set")
 	vim.opt.runtimepath:prepend(root)
-	-- -u NONE means neither filetype detection nor ftplugins are enabled
+	-- --clean skips user config, so filetype plugins are not enabled by default
 	vim.cmd("filetype plugin on")
 
 	for _, test in ipairs(tests) do
+		current_test = test.name
+		local failures_before = results.failed
 		log("test: %s", test.name)
 		test.fn()
-		log("ok: %s", test.name)
+		if results.failed == failures_before then
+			log("ok: %s", test.name)
+		else
+			log("FAIL: %s", test.name)
+		end
+		current_test = nil
 	end
 end)
 
@@ -229,16 +282,22 @@ end)
 resume_main = function(...)
 	local ok, err = coroutine.resume(main, ...)
 	if not ok then
-		log("FAIL: %s", tostring(err))
+		record_failure("unexpected error: " .. tostring(err))
+		summarize()
 		if headless then
 			vim.cmd("cquit 1")
 		end
 		return
 	end
 	if coroutine.status(main) == "dead" then
-		log("all tests passed")
-		if headless then
-			vim.cmd("qa!")
+		summarize()
+		if results.failed == 0 then
+			log("all tests passed")
+			if headless then
+				vim.cmd("qa!")
+			end
+		elseif headless then
+			vim.cmd("cquit 1")
 		end
 	end
 end
